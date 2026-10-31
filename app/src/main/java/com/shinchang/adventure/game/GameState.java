@@ -15,10 +15,20 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v4";
+    private static final String SAVE_VERSION = "v5";
 
     public double money;
+    /** 이번 회차(교회 기부 이후) 총수입. 별 개수 계산에 쓴다. */
     public double totalEarned;
+
+    // ---- 회차를 넘어 남는 것 ----
+    /** 교회 기부로 받은 별. 완전 리셋 때만 사라진다. */
+    public long stars;
+    /** 완전 리셋으로 받은 해 (기능은 추후 업데이트) */
+    public long suns;
+    public int donations;
+    /** 신창에게 투자한 항목. 교회 기부로 리셋해도 남는다. */
+    public final boolean[] selfOwned = new boolean[GameData.SELF_INVESTMENTS.length];
     public int job;
     /** 지금까지 도달한 가장 높은 직업. 그 아래 직업으로는 언제든 전환할 수 있다. */
     public int highestJob;
@@ -139,7 +149,7 @@ public final class GameState {
 
     /** 오토클릭으로 버는 초당 금액 (공인중개사는 반복 계약 기준 예상치, 소방기술사는 배수 포함) */
     public double incomePerSecond() {
-        return baseIncomePerSecond() * boostMultiplier();
+        return baseIncomePerSecond() * boostMultiplier() * incomeMultiplier();
     }
 
     private double baseIncomePerSecond() {
@@ -157,9 +167,91 @@ public final class GameState {
         return c.reward / (c.clicks / speed + CONTRACT_RESTART_SECONDS);
     }
 
-    public void earn(double amount) {
-        money += amount;
-        totalEarned += amount;
+    /** 게임 플레이로 번 돈. 별·자기 투자 배수를 곱해서 더하고, 실제로 더한 금액을 돌려준다. */
+    public double earn(double base) {
+        double actual = base * incomeMultiplier();
+        receive(actual);
+        return actual;
+    }
+
+    /** 이미 배수가 적용된 금액을 그대로 더한다 */
+    public void receive(double actual) {
+        money += actual;
+        totalEarned += actual;
+    }
+
+    // ---- 수입 배수 ----
+
+    /** 별(신의 축복) 배수: 별 1개당 +10% */
+    public double starMultiplier() {
+        return 1 + stars * GameData.STAR_BONUS;
+    }
+
+    /** 자기 투자로 오른 수입 비율 합 (0.25 = +25%) */
+    public double selfBonus() {
+        double b = 0;
+        for (int i = 0; i < selfOwned.length; i++) if (selfOwned[i]) b += GameData.SELF_INVESTMENTS[i].bonus;
+        return b;
+    }
+
+    /** 모든 수입에 곱해지는 배수 */
+    public double incomeMultiplier() {
+        return starMultiplier() * (1 + selfBonus());
+    }
+
+    // ---- 신창에게 투자 ----
+
+    public boolean isSelfUnlocked(int i) {
+        return i == 0 || selfOwned[i - 1];
+    }
+
+    public boolean canInvest(int i) {
+        return !selfOwned[i] && isSelfUnlocked(i) && money >= GameData.SELF_INVESTMENTS[i].cost;
+    }
+
+    public boolean invest(int i) {
+        if (!canInvest(i)) return false;
+        money -= GameData.SELF_INVESTMENTS[i].cost;
+        selfOwned[i] = true;
+        return true;
+    }
+
+    // ---- 교회 기부 (리셋 멀티플라이어) ----
+
+    /** 지금 전액 기부하면 받을 별 */
+    public long starsForDonation() {
+        return (long) Math.floor(Math.cbrt(totalEarned / GameData.STAR_UNIT) + 1e-9);
+    }
+
+    public boolean canDonate() {
+        return starsForDonation() >= 1;
+    }
+
+    /** 전액을 기부하고 처음부터. 별과 자기 투자, 해는 남는다. */
+    public GameState donate() {
+        if (!canDonate()) return this;
+        GameState n = new GameState();
+        n.stars = stars + starsForDonation();
+        n.suns = suns;
+        n.donations = donations + 1;
+        System.arraycopy(selfOwned, 0, n.selfOwned, 0, selfOwned.length);
+        n.autoOn = autoOn;
+        return n;
+    }
+
+    // ---- 완전 리셋 ----
+
+    /** 지금 완전 리셋하면 받을 해 (소지금 기준) */
+    public long sunsForFullReset() {
+        return (long) Math.floor(Math.cbrt(money / GameData.SUN_UNIT) + 1e-9);
+    }
+
+    /** 별과 자기 투자까지 모두 지우고 처음부터. 해만 남는다. */
+    public GameState fullReset() {
+        GameState n = new GameState();
+        n.suns = suns + sunsForFullReset();
+        n.autoOn = autoOn;
+        return n;
     }
 
     /** 손으로 한 번 누른다. 번 돈을 돌려준다 (계약 중이거나 공인중개사면 계약 진행만 하므로 0). */
@@ -172,16 +264,14 @@ public final class GameState {
         }
         if (isBroker()) return 0;
         sinceTap = 0;
-        double v = clickValue();
-        earn(v);
-        return v;
+        return earn(clickValue());
     }
 
     public void update(double seconds) {
         if (seconds <= 0) return;
         if (!isBroker()) {
             if (isDelivery()) updateWeather(seconds);
-            earn(incomePerSecond() * seconds);
+            receive(incomePerSecond() * seconds);
             if (isBoostJob()) {
                 boostLeft = Math.max(0, boostLeft - seconds);
                 // 소방 계약은 손으로만 클릭한다
@@ -431,7 +521,7 @@ public final class GameState {
         if (lastSavedMillis <= 0 || nowMillis <= lastSavedMillis) return 0;
         double seconds = Math.min((nowMillis - lastSavedMillis) / 1000.0, OFFLINE_MAX_SECONDS);
         // 소방기술사 배수는 앱을 켜 둔 동안만 적용
-        return baseIncomePerSecond() * seconds * OFFLINE_RATE;
+        return baseIncomePerSecond() * incomeMultiplier() * seconds * OFFLINE_RATE;
     }
 
     // ---- 저장 ----
@@ -467,7 +557,11 @@ public final class GameState {
             if (j > 0) sb.append(',');
             sb.append(maxEverItem[j]);
         }
-        sb.append(';').append(boostLeft);
+        sb.append(';').append(boostLeft)
+                .append(';').append(stars)
+                .append(';').append(suns)
+                .append(';').append(donations).append(';');
+        for (boolean b : selfOwned) sb.append(b ? '1' : '0');
         return sb.toString();
     }
 
@@ -479,7 +573,8 @@ public final class GameState {
             String[] p = data.split(";", -1);
             boolean v2 = "v2".equals(p[0]);
             boolean v3 = "v3".equals(p[0]);
-            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3) return new GameState();
+            boolean v4 = "v4".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -508,6 +603,14 @@ public final class GameState {
             int last = Integer.parseInt(p[10]);
             s.lastContract = s.isBroker() && last >= 0 && last < GameData.CONTRACTS.length ? last : -1;
             if (!v2 && !v3) s.boostLeft = Math.max(0, Math.min(GameData.BOOST_MAX_SECONDS, Double.parseDouble(p[14])));
+            if (!v2 && !v3 && !v4) {
+                s.stars = Math.max(0, Long.parseLong(p[15]));
+                s.suns = Math.max(0, Long.parseLong(p[16]));
+                s.donations = Math.max(0, Integer.parseInt(p[17]));
+                for (int i = 0; i < p[18].length() && i < s.selfOwned.length; i++) {
+                    s.selfOwned[i] = p[18].charAt(i) == '1';
+                }
+            }
             if (v2) {
                 // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다
                 for (int j = 0; j < s.levels.length; j++) {

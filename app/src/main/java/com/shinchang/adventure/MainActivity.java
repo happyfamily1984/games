@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.shinchang.adventure.game.GameData;
 import com.shinchang.adventure.game.GameState;
@@ -50,6 +51,7 @@ public class MainActivity extends Activity {
     private int shownWeather = -1;
 
     private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint, weatherBanner;
+    private TextView starText, multText, sunText;
     private WeatherView weatherView;
     private View header;
     private TextView promoteTitle, promoteInfo;
@@ -135,6 +137,10 @@ public class MainActivity extends Activity {
         weatherView = findViewById(R.id.weatherView);
         weatherBanner = findViewById(R.id.weatherBanner);
         header = findViewById(R.id.header);
+        starText = findViewById(R.id.starText);
+        multText = findViewById(R.id.multText);
+        sunText = findViewById(R.id.sunText);
+        buildMenuBar(findViewById(R.id.menuBar));
 
         state = GameState.deserialize(prefs().getString(KEY_SAVE, null));
         shownEventSeq = state.eventSeq;
@@ -211,7 +217,7 @@ public class MainActivity extends Activity {
         double earned = state.offlineEarnings(System.currentTimeMillis());
         save();
         if (earned < 1) return;
-        state.earn(earned);
+        state.receive(earned);
         new AlertDialog.Builder(this)
                 .setTitle("🌙 자리를 비운 동안")
                 .setMessage("오토클릭으로 " + Money.format(earned) + "을 벌었어요!\n(최대 8시간, 50% 적립)")
@@ -244,6 +250,10 @@ public class MainActivity extends Activity {
         GameData.Job job = state.currentJob();
         jobText.setText(job.emoji + " Lv." + (state.job + 1) + " " + job.name);
         moneyText.setText(Money.format(state.money));
+        starText.setText("⭐ 별 " + String.format(Locale.KOREA, "%,d", state.stars) + "개");
+        multText.setText("🙏 수입 ×" + multiplierText(state.incomeMultiplier()));
+        sunText.setVisibility(state.suns > 0 ? View.VISIBLE : View.GONE);
+        sunText.setText("☀️ 해 " + String.format(Locale.KOREA, "%,d", state.suns) + "개");
 
         double speed = state.autoSpeed();
         if (state.isBroker()) {
@@ -254,7 +264,7 @@ public class MainActivity extends Activity {
                     : "⚡ 자동 클릭 초당 " + Money.speed(speed) + "회\n"
                     + (income > 0 ? "🔁 반복 계약 초당 약 " + Money.format(income) : "🔁 마지막 계약을 자동 반복"));
         } else {
-            rateText.setText("클릭당 " + Money.format(state.clickValue())
+            rateText.setText("클릭당 " + Money.format(state.clickValue() * state.incomeMultiplier())
                     + (state.isDelivery() ? " (배달 1건)" : state.isBoostJob() ? " · 계약 성사 시 오토 수익 ×3" : ""));
             String boost = state.boostMultiplier() > 1 ? "  🔥×" + (int) state.boostMultiplier() : "";
             autoText.setText(state.autoOn
@@ -716,7 +726,7 @@ public class MainActivity extends Activity {
         if (state.eventSuccess) {
             spawnFloatingText(x, y, c.boostSeconds > 0
                     ? "🔥 계약 성사! " + (int) c.boostSeconds + "초간 오토 ×3"
-                    : "🎉 계약 성사! +" + Money.format(c.reward), getColor(R.color.primary_dark));
+                    : "🎉 계약 성사! +" + Money.format(c.reward * state.incomeMultiplier()), getColor(R.color.primary_dark));
             pulse();
         } else {
             spawnFloatingText(x, y, "⌛ 시간 초과… 계약 실패", getColor(R.color.text_sub));
@@ -803,6 +813,149 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    // ---- 신창에게 투자 / 교회 기부 / 완전 리셋 ----
+
+    private static String multiplierText(double m) {
+        return m < 100 ? String.format(Locale.ROOT, "%.2f", m) : String.format(Locale.KOREA, "%,d", (long) m);
+    }
+
+    private void buildMenuBar(LinearLayout bar) {
+        String[] labels = {"🙋 신창에게 투자", "⛪ 교회 기부", "☀️ 완전 리셋"};
+        Runnable[] actions = {this::showSelfInvest, this::confirmDonate, this::confirmFullReset};
+        for (int i = 0; i < labels.length; i++) {
+            Button b = newActionButton();
+            b.setText(labels[i]);
+            b.setMinWidth(0);
+            b.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            if (i > 0) {
+                b.setBackgroundResource(R.drawable.bg_button_sub);
+                b.setTextColor(getColor(R.color.text));
+            }
+            Runnable action = actions[i];
+            b.setOnClickListener(v -> action.run());
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(42), 1);
+            if (i > 0) lp.leftMargin = dp(6);
+            bar.addView(b, lp);
+        }
+    }
+
+    private void showSelfInvest() {
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(16), dp(8), dp(16), dp(8));
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(list);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("🙋 신창에게 투자")
+                .setView(scroll)
+                .setPositiveButton("닫기", null)
+                .create();
+        fillSelfInvest(list);
+        dialog.show();
+    }
+
+    private void fillSelfInvest(LinearLayout list) {
+        list.removeAllViews();
+        TextView head = new TextView(this);
+        head.setText("자기 자신에게 투자하면 모든 직업의 수입이 올라요.\n교회 기부로 리셋해도 남아요.\n지금 투자 보너스: +"
+                + Math.round(state.selfBonus() * 100) + "%");
+        head.setTextColor(getColor(R.color.text_sub));
+        head.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        head.setPadding(0, 0, 0, dp(10));
+        list.addView(head);
+        for (int i = 0; i < GameData.SELF_INVESTMENTS.length; i++) {
+            GameData.SelfInvestment inv = GameData.SELF_INVESTMENTS[i];
+            LinearLayout row = newCardRow();
+            TextView emoji = new TextView(this);
+            emoji.setText(inv.emoji);
+            emoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
+            emoji.setGravity(Gravity.CENTER);
+            row.addView(emoji, new LinearLayout.LayoutParams(dp(40), LinearLayout.LayoutParams.WRAP_CONTENT));
+            TextView[] name = new TextView[1];
+            TextView info = addTexts(row, name);
+            name[0].setText(inv.name);
+            info.setText("모든 수입 +" + Math.round(inv.bonus * 100) + "%");
+            Button b = newActionButton();
+            final int index = i;
+            if (state.selfOwned[i]) {
+                b.setText("완료 ✅");
+                b.setEnabled(false);
+            } else if (!state.isSelfUnlocked(i)) {
+                b.setText("🔒 잠김");
+                b.setEnabled(false);
+                row.setAlpha(0.5f);
+            } else {
+                b.setText("투자\n" + Money.format(inv.cost));
+                b.setEnabled(state.canInvest(i));
+            }
+            b.setOnClickListener(v -> {
+                if (state.invest(index)) {
+                    save();
+                    refresh();
+                    fillSelfInvest(list);
+                }
+            });
+            row.addView(b, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+            list.addView(row);
+        }
+    }
+
+    private void confirmDonate() {
+        long stars = state.starsForDonation();
+        double newMult = (1 + (state.stars + stars) * GameData.STAR_BONUS) * (1 + state.selfBonus());
+        String msg = "가진 돈 " + Money.format(state.money) + "을 모두 교회에 기부합니다.\n\n"
+                + "이번 회차 총수입: " + Money.format(state.totalEarned) + "\n"
+                + "받을 별: ⭐ " + String.format(Locale.KOREA, "%,d", stars) + "개 (별 1개당 수입 +10%)\n"
+                + "기부 후 수입 배수: ×" + multiplierText(newMult) + "\n\n"
+                + "직업·아이템·탈것·계약 기록과 돈은 처음으로 돌아가요.\n"
+                + "별, 신창에게 투자, 해는 남아요."
+                + (stars < 1 ? "\n\n⚠️ 총수입이 1억원 이상이어야 별을 받을 수 있어요." : "");
+        AlertDialog d = new AlertDialog.Builder(this)
+                .setTitle("⛪ 교회에 전액 기부")
+                .setMessage(msg)
+                .setPositiveButton("기부하기", (dialog, w) -> {
+                    replaceState(state.donate());
+                    new AlertDialog.Builder(this)
+                            .setTitle("🙏 신의 축복")
+                            .setMessage("별 " + stars + "개를 받았어요!\n이제 모든 수입이 ×"
+                                    + multiplierText(state.incomeMultiplier()) + " 입니다.\n도보 배달부터 다시 시작해요.")
+                            .setPositiveButton("좋아!", null)
+                            .show();
+                })
+                .setNegativeButton("취소", null)
+                .show();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(state.canDonate());
+    }
+
+    private void confirmFullReset() {
+        long suns = state.sunsForFullReset();
+        AlertDialog d = new AlertDialog.Builder(this)
+                .setTitle("☀️ 완전 리셋")
+                .setMessage("별(신의 축복)과 신창에게 투자까지 모두 지우고 완전히 처음부터 시작합니다.\n\n"
+                        + "소지금 " + Money.format(state.money) + " 기준으로\n"
+                        + "받을 해: ☀️ " + String.format(Locale.KOREA, "%,d", suns) + "개 (소지금 1조원부터)\n\n"
+                        + "해의 기능은 추후 업데이트 예정이에요. 해는 계속 남아요.")
+                .setPositiveButton("완전 리셋", (dialog, w) -> {
+                    replaceState(state.fullReset());
+                    Toast.makeText(this, "☀️ 해 " + suns + "개를 받고 새로 시작해요", Toast.LENGTH_LONG).show();
+                })
+                .setNegativeButton("취소", null)
+                .show();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(0xFFD7262E);
+    }
+
+    private void replaceState(GameState next) {
+        state = next;
+        shownEventSeq = state.eventSeq;
+        shownWeatherSeq = state.weatherSeq;
+        shownIncidentSeq = state.incidentSeq;
+        autoSwitch.setChecked(state.autoOn);
+        shownJob = -1;
+        shownHighestJob = -1;
+        save();
+        refresh();
+    }
+
     private void confirmReset() {
         new AlertDialog.Builder(this)
                 .setTitle("처음부터 다시 하기")
@@ -827,7 +980,8 @@ public class MainActivity extends Activity {
     private void showAutoTap(int taps) {
         float x = tapArea.getWidth() / 2f + (random.nextFloat() - 0.5f) * dp(200);
         float y = tapArea.getHeight() / 2f + (random.nextFloat() - 0.5f) * dp(120);
-        spawnFloatingText(x, y, "+" + Money.format(state.clickValue() * taps), getColor(R.color.accent));
+        spawnFloatingText(x, y, "+" + Money.format(state.clickValue() * taps * state.incomeMultiplier()
+                * state.boostMultiplier()), getColor(R.color.accent));
         pulse();
     }
 

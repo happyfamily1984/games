@@ -266,6 +266,46 @@ public final class GameData {
         JOBS[2].contracts = FIRE_CONTRACTS;
     }
 
+    // ------------------------------------------------------------ 신창에게 투자 / 교회 기부 / 완전 리셋
+
+    /** 자기 투자: 모든 직업의 수입이 오른다. 비쌀수록 비율이 크다. 교회 기부로 리셋해도 남는다. */
+    public static final class SelfInvestment {
+        public final String emoji;
+        public final String name;
+        public final double cost;
+        /** 수입 증가율 (0.05 = +5%) */
+        public final double bonus;
+
+        SelfInvestment(String emoji, String name, double cost, double bonus) {
+            this.emoji = emoji;
+            this.name = name;
+            this.cost = cost;
+            this.bonus = bonus;
+        }
+    }
+
+    public static final SelfInvestment[] SELF_INVESTMENTS = {
+            new SelfInvestment("💪", "헬스 운동", 100_000, 0.02),
+            new SelfInvestment("💻", "PC 자격증 취득", 500_000, 0.03),
+            new SelfInvestment("🚗", "1종 운전면허", 2_000_000, 0.05),
+            new SelfInvestment("🗣️", "영어 회화", 10_000_000, 0.08),
+            new SelfInvestment("📈", "재테크 공부", 50_000_000, 0.12),
+            new SelfInvestment("🎓", "MBA 대학원", 300_000_000, 0.20),
+            new SelfInvestment("🧘", "명상 리트릿", 2_000_000_000, 0.30),
+            new SelfInvestment("🏌️", "골프 인맥 쌓기", 20_000_000_000.0, 0.50),
+            new SelfInvestment("🧠", "경영자 코칭", 200_000_000_000.0, 0.80),
+            new SelfInvestment("🌍", "세계 일주", 2e12, 1.20),
+            new SelfInvestment("🧬", "프리미엄 건강관리", 5e13, 2.00),
+            new SelfInvestment("🚀", "우주 여행", 2e15, 3.00),
+    };
+
+    /** 교회 기부: 별 1개당 수입 +10% */
+    public static final double STAR_BONUS = 0.10;
+    /** 별 = (이번 회차 총수입 / 1억)의 세제곱근 */
+    public static final double STAR_UNIT = 100_000_000;
+    /** 해 = (소지금 / 1조)의 세제곱근 */
+    public static final double SUN_UNIT = 1e12;
+
     public static int lastJob() {
         return JOBS.length - 1;
     }
