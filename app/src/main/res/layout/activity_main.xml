@@ -50,11 +50,29 @@
             android:textSize="13sp" />
     </LinearLayout>
 
+    <!-- 직업 전환 -->
+    <HorizontalScrollView
+        android:id="@+id/jobBarScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/jobBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
     <!-- 탭 영역 -->
     <FrameLayout
         android:id="@+id/tapArea"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="240dp"
         android:clipChildren="true">
 
         <TextView
@@ -66,7 +84,66 @@
             android:gravity="center"
             android:textSize="72sp" />
 
+        <ImageView
+            android:id="@+id/vehicleImage"
+            android:layout_width="288dp"
+            android:layout_height="180dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <!-- 공인중개사 계약 진행 -->
+        <LinearLayout
+            android:id="@+id/contractPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/contractTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/clickBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:max="1000"
+                android:progressTint="@color/primary" />
+
+            <ProgressBar
+                android:id="@+id/timeBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginTop="4dp"
+                android:max="1000"
+                android:progressTint="@color/accent" />
+
+            <TextView
+                android:id="@+id/contractInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_sub"
+                android:textSize="12sp" />
+        </LinearLayout>
+
         <TextView
+            android:id="@+id/tapHint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
@@ -125,6 +202,7 @@
 
             <!-- 전직 카드 -->
             <LinearLayout
+                android:id="@+id/promoteCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
@@ -159,6 +237,12 @@
                     android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/contractContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
             <TextView
                 android:layout_width="wrap_content"

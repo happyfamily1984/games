@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도보 배달 (tools/vehicles.py 로 생성) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="100dp"
+    android:viewportWidth="160"
+    android:viewportHeight="100">
+    <path android:fillColor="#22000000" android:pathData="M50,94a31,3 0 1,0 62,0a31,3 0 1,0 -62,0z" />
+    <path android:strokeColor="#35506E" android:strokeWidth="9" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M80,62L70,78L62,92" />
+    <path android:strokeColor="#E06000" android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M80,34L70,46L64,56" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55,26h16a3,3 0 0,1 3,3v20a3,3 0 0,1 -3,3h-16a3,3 0 0,1 -3,-3v-20a3,3 0 0,1 3,-3z" />
+    <path android:strokeColor="#C9CED4" android:strokeWidth="1.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M55,26h16a3,3 0 0,1 3,3v20a3,3 0 0,1 -3,3h-16a3,3 0 0,1 -3,-3v-20a3,3 0 0,1 3,-3z" />
+    <path android:fillColor="#FF7A00" android:pathData="M52,36h22v5h-22z" />
+    <path android:fillColor="#FF7A00" android:pathData="M72,30Q82,24 92,30L90,64L74,64z" />
+    <path android:strokeColor="#35506E" android:strokeWidth="9" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M84,62L94,76L106,90" />
+    <path android:fillColor="#262626" android:pathData="M100,87h12a3,3 0 0,1 0,6h-14z" />
+    <path android:fillColor="#262626" android:pathData="M56,88h10v6h-12z" />
+    <path android:fillColor="#F2C19A" android:pathData="M75,17a9,9 0 1,0 18,0a9,9 0 1,0 -18,0z" />
+    <path android:fillColor="#2E7DFF" android:pathData="M74,16a10,10 0 0,1 20,-2l-2,2h-18z" />
+    <path android:strokeColor="#FF7A00" android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M88,34L98,46L106,40" />
+    <path android:fillColor="#333333" android:pathData="M105,33h3a1,1 0 0,1 1,1v7a1,1 0 0,1 -1,1h-3a1,1 0 0,1 -1,-1v-7a1,1 0 0,1 1,-1z" />
+</vector>

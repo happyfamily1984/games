@@ -14,7 +14,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -22,6 +24,7 @@ import com.shinchang.adventure.game.GameData;
 import com.shinchang.adventure.game.GameState;
 import com.shinchang.adventure.game.Money;
 
+import java.util.Locale;
 import java.util.Random;
 
 public class MainActivity extends Activity {
@@ -31,6 +34,7 @@ public class MainActivity extends Activity {
     private static final long TICK_MS = 100;
     private static final long SAVE_INTERVAL_MS = 10_000;
     private static final int MAX_FLOATING_TEXTS = 25;
+    private static final String[] CATEGORY_ICONS = {"🔑", "🏦", "📝"};
 
     private GameState state;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -39,20 +43,33 @@ public class MainActivity extends Activity {
     private long lastSave;
     private double autoTapAcc;
     private int shownJob = -1;
+    private int shownHighestJob = -1;
+    private int shownEventSeq;
 
-    private TextView jobText, moneyText, rateText, autoText, tapButton;
+    private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint;
     private TextView promoteTitle, promoteInfo;
+    private TextView contractTitle, contractInfo;
+    private ProgressBar clickBar, timeBar;
+    private View contractPanel, promoteCard, jobBarScroll;
+    private ImageView vehicleImage;
     private Button promoteButton;
     private Switch autoSwitch;
     private FrameLayout tapArea;
-    private LinearLayout itemContainer;
+    private LinearLayout itemContainer, contractContainer, jobBar;
     private ItemRow[] rows = new ItemRow[0];
+    private ContractRow[] contractRows = new ContractRow[0];
 
     private static final class ItemRow {
         View root;
         TextView name;
         TextView info;
         Button buy;
+    }
+
+    private static final class ContractRow {
+        View root;
+        TextView info;
+        Button start;
     }
 
     private final Runnable tick = new Runnable() {
@@ -63,7 +80,7 @@ public class MainActivity extends Activity {
             lastTick = now;
             state.update(dt);
 
-            if (state.autoOn) {
+            if (state.autoOn && !state.isBroker()) {
                 autoTapAcc += state.autoSpeed() * dt;
                 if (autoTapAcc >= 1) {
                     int taps = (int) autoTapAcc;
@@ -73,6 +90,7 @@ public class MainActivity extends Activity {
             }
 
             if (now - lastSave >= SAVE_INTERVAL_MS) save();
+            showContractEvent();
             refresh();
             checkEnding();
             handler.postDelayed(this, TICK_MS);
@@ -89,23 +107,32 @@ public class MainActivity extends Activity {
         rateText = findViewById(R.id.rateText);
         autoText = findViewById(R.id.autoText);
         tapButton = findViewById(R.id.tapButton);
+        tapHint = findViewById(R.id.tapHint);
         tapArea = findViewById(R.id.tapArea);
+        vehicleImage = findViewById(R.id.vehicleImage);
         autoSwitch = findViewById(R.id.autoSwitch);
+        promoteCard = findViewById(R.id.promoteCard);
         promoteTitle = findViewById(R.id.promoteTitle);
         promoteInfo = findViewById(R.id.promoteInfo);
         promoteButton = findViewById(R.id.promoteButton);
         itemContainer = findViewById(R.id.itemContainer);
+        contractContainer = findViewById(R.id.contractContainer);
+        contractPanel = findViewById(R.id.contractPanel);
+        contractTitle = findViewById(R.id.contractTitle);
+        contractInfo = findViewById(R.id.contractInfo);
+        clickBar = findViewById(R.id.clickBar);
+        timeBar = findViewById(R.id.timeBar);
+        jobBarScroll = findViewById(R.id.jobBarScroll);
+        jobBar = findViewById(R.id.jobBar);
 
         state = GameState.deserialize(prefs().getString(KEY_SAVE, null));
+        shownEventSeq = state.eventSeq;
 
         tapArea.setOnTouchListener((v, e) -> {
             int action = e.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
                 int i = e.getActionIndex();
-                double got = state.tap();
-                spawnFloatingText(e.getX(i), e.getY(i), "+" + Money.format(got), getColor(R.color.primary_dark));
-                pulse();
-                refresh();
+                onTap(e.getX(i), e.getY(i));
             }
             return true;
         });
@@ -121,10 +148,13 @@ public class MainActivity extends Activity {
                 save();
                 refresh();
                 GameData.Job job = state.currentJob();
+                String how = state.isBroker()
+                        ? "이제 클릭으로 돈을 벌지 않아요.\n아래 계약을 골라 제한 시간 안에 목표 클릭 수를 채우면 중개보수를 받습니다!"
+                        : "클릭당 금액: " + Money.format(job.clickValue);
                 new AlertDialog.Builder(this)
                         .setTitle(job.emoji + " " + job.name + "(으)로 전직!")
-                        .setMessage(job.story + "\n\n클릭당 금액: " + Money.format(job.clickValue)
-                                + "\n새 아이템 " + job.items.length + "종이 열렸습니다.")
+                        .setMessage(job.story + "\n\n" + how
+                                + "\n\n위쪽 직업 버튼으로 이전 직업에 언제든 돌아갈 수 있어요.")
                         .setPositiveButton("좋아!", null)
                         .show();
             }
@@ -173,25 +203,122 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    private void onTap(float x, float y) {
+        if (state.isBroker()) {
+            if (state.activeContract < 0) {
+                spawnFloatingText(x, y, "계약을 먼저 고르세요", getColor(R.color.text_sub));
+                return;
+            }
+            state.tap();
+            spawnFloatingText(x, y, "+1", getColor(R.color.primary_dark));
+            showContractEvent();
+        } else {
+            double got = state.tap();
+            spawnFloatingText(x, y, "+" + Money.format(got), getColor(R.color.primary_dark));
+        }
+        pulse();
+        refresh();
+    }
+
     // ---- 화면 갱신 ----
 
     private void refresh() {
-        if (shownJob != state.job) buildItemRows();
+        if (shownJob != state.job) buildLists();
+        if (shownHighestJob != state.highestJob) buildJobBar();
 
         GameData.Job job = state.currentJob();
         jobText.setText(job.emoji + " Lv." + (state.job + 1) + " " + job.name);
         moneyText.setText(Money.format(state.money));
-        rateText.setText("클릭당 " + Money.format(state.tapValue())
-                + "  ·  오토 1회당 " + Money.format(state.clickValue()));
-        tapButton.setText(bestOwnedEmoji());
 
         double speed = state.autoSpeed();
-        autoText.setText(state.autoOn
-                ? "⚡ 초당 " + Money.speed(speed) + "회\n💰 초당 " + Money.format(state.incomePerSecond())
-                : "⏸ 오토클릭 꺼짐\n(켜면 초당 " + Money.speed(speed) + "회)");
+        if (state.isBroker()) {
+            rateText.setText("계약 성사 시 중개보수를 받아요");
+            double income = state.incomePerSecond();
+            autoText.setText(!state.autoOn
+                    ? "⏸ 오토클릭 꺼짐\n(켜면 초당 " + Money.speed(speed) + "회 자동 클릭)"
+                    : "⚡ 자동 클릭 초당 " + Money.speed(speed) + "회\n"
+                    + (income > 0 ? "🔁 반복 계약 초당 약 " + Money.format(income) : "🔁 마지막 계약을 자동 반복"));
+        } else {
+            rateText.setText("클릭당 " + Money.format(state.clickValue())
+                    + (state.job == 0 ? " (배달 1건)" : ""));
+            autoText.setText(state.autoOn
+                    ? "⚡ 초당 " + Money.speed(speed) + "회\n💰 초당 " + Money.format(state.incomePerSecond())
+                    : "⏸ 오토클릭 꺼짐\n(켜면 초당 " + Money.speed(speed) + "회)");
+        }
 
+        refreshTapArea();
         refreshItems();
+        refreshContracts();
         refreshPromotion();
+        refreshJobBar();
+    }
+
+    private void refreshTapArea() {
+        int vehicle = bestVehicleImage();
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tapButton.getLayoutParams();
+        if (state.isBroker()) {
+            vehicleImage.setVisibility(View.GONE);
+            tapButton.setVisibility(View.VISIBLE);
+            tapButton.setText("🤝");
+            tapButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52);
+            setTapButtonLayout(lp, dp(124), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, dp(22));
+            contractPanel.setVisibility(View.VISIBLE);
+            tapHint.setText(state.activeContract >= 0 ? "빠르게 연타!" : "아래에서 계약을 고르세요");
+
+            if (state.activeContract >= 0) {
+                GameData.Contract c = GameData.CONTRACTS[state.activeContract];
+                contractTitle.setText(c.emoji + " " + c.name + " 계약 중 · 보수 " + Money.format(c.reward));
+                clickBar.setProgress((int) (1000 * Math.min(1, state.contractClicks / c.clicks)));
+                timeBar.setProgress((int) (1000 * Math.max(0, state.contractTimeLeft / c.seconds)));
+                contractInfo.setText(String.format(Locale.KOREA, "클릭 %d / %d   ·   남은 시간 %.1f초",
+                        (int) state.contractClicks, c.clicks, Math.max(0, state.contractTimeLeft)));
+            } else {
+                boolean repeating = state.autoOn && state.lastContract >= 0;
+                contractTitle.setText(repeating
+                        ? "🔁 " + GameData.CONTRACTS[state.lastContract].name + " 다음 손님 기다리는 중..."
+                        : "📋 진행 중인 계약 없음");
+                clickBar.setProgress(0);
+                timeBar.setProgress(0);
+                contractInfo.setText("월세 → 전세 → 매매 순으로 큰 계약이 열려요");
+            }
+        } else {
+            contractPanel.setVisibility(View.GONE);
+            tapHint.setText(R.string.tap_hint);
+            if (vehicle != 0) {
+                tapButton.setVisibility(View.INVISIBLE);
+                vehicleImage.setVisibility(View.VISIBLE);
+                vehicleImage.setImageResource(vehicle);
+            } else {
+                vehicleImage.setVisibility(View.GONE);
+                tapButton.setVisibility(View.VISIBLE);
+                tapButton.setText(bestOwnedEmoji());
+                tapButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 72);
+                setTapButtonLayout(lp, dp(170), Gravity.CENTER, 0);
+            }
+        }
+    }
+
+    private void setTapButtonLayout(FrameLayout.LayoutParams lp, int size, int gravity, int bottomMargin) {
+        if (lp.width == size && lp.gravity == gravity && lp.bottomMargin == bottomMargin) return;
+        lp.width = size;
+        lp.height = size;
+        lp.gravity = gravity;
+        lp.bottomMargin = bottomMargin;
+        tapButton.setLayoutParams(lp);
+    }
+
+    /** 현재 직업에서 가진 가장 좋은 아이템의 그림 (없으면 0) */
+    private int bestVehicleImage() {
+        GameData.Item[] items = state.currentJob().items;
+        for (int k = items.length - 1; k >= 0; k--) {
+            if (state.level(k) > 0) return imageRes(items[k]);
+        }
+        return 0;
+    }
+
+    private int imageRes(GameData.Item item) {
+        if (item.image == null) return 0;
+        return getResources().getIdentifier(item.image, "drawable", getPackageName());
     }
 
     private String bestOwnedEmoji() {
@@ -202,120 +329,281 @@ public class MainActivity extends Activity {
         return state.currentJob().emoji;
     }
 
-    private void buildItemRows() {
+    private void buildLists() {
         shownJob = state.job;
+        autoTapAcc = 0;
+
         itemContainer.removeAllViews();
         GameData.Item[] items = state.currentJob().items;
         rows = new ItemRow[items.length];
         for (int k = 0; k < items.length; k++) {
-            rows[k] = createRow(k, items[k]);
+            rows[k] = createItemRow(k, items[k]);
             itemContainer.addView(rows[k].root);
+        }
+
+        contractContainer.removeAllViews();
+        if (!state.isBroker()) {
+            contractRows = new ContractRow[0];
+            return;
+        }
+        contractRows = new ContractRow[GameData.CONTRACTS.length];
+        for (int cat = 0; cat < GameData.CONTRACT_CATEGORIES.length; cat++) {
+            TextView header = new TextView(this);
+            header.setText(CATEGORY_ICONS[cat] + " " + GameData.CONTRACT_CATEGORIES[cat] + " 계약");
+            header.setTextColor(getColor(R.color.text));
+            header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            header.setTypeface(Typeface.DEFAULT_BOLD);
+            header.setPadding(0, dp(16), 0, dp(8));
+            contractContainer.addView(header);
+            for (int i = 0; i < GameData.CONTRACTS.length; i++) {
+                if (GameData.CONTRACTS[i].category != cat) continue;
+                contractRows[i] = createContractRow(i, GameData.CONTRACTS[i]);
+                contractContainer.addView(contractRows[i].root);
+            }
         }
     }
 
-    private ItemRow createRow(int index, GameData.Item item) {
-        ItemRow row = new ItemRow();
-
+    private LinearLayout newCardRow() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.HORIZONTAL);
         root.setGravity(Gravity.CENTER_VERTICAL);
         root.setBackgroundResource(R.drawable.bg_card);
-        root.setPadding(dp(12), dp(10), dp(12), dp(10));
-        LinearLayout.LayoutParams rootLp = new LinearLayout.LayoutParams(
+        root.setPadding(dp(10), dp(8), dp(10), dp(8));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        rootLp.bottomMargin = dp(8);
-        root.setLayoutParams(rootLp);
+        lp.bottomMargin = dp(8);
+        root.setLayoutParams(lp);
+        return root;
+    }
 
-        TextView emoji = new TextView(this);
-        emoji.setText(item.emoji);
-        emoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
-        emoji.setGravity(Gravity.CENTER);
-        root.addView(emoji, new LinearLayout.LayoutParams(dp(52), LinearLayout.LayoutParams.WRAP_CONTENT));
+    private Button newActionButton() {
+        Button b = new Button(this);
+        b.setAllCaps(false);
+        b.setBackgroundResource(R.drawable.bg_button);
+        b.setTextColor(0xFFFFFFFF);
+        b.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setMinWidth(dp(96));
+        b.setPadding(dp(8), 0, dp(8), 0);
+        return b;
+    }
 
+    private TextView addTexts(LinearLayout root, TextView[] out) {
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
-        texts.setPadding(dp(6), 0, dp(6), 0);
+        texts.setPadding(dp(8), 0, dp(6), 0);
         root.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-        row.name = new TextView(this);
-        row.name.setTextColor(getColor(R.color.text));
-        row.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        row.name.setTypeface(Typeface.DEFAULT_BOLD);
-        texts.addView(row.name);
+        TextView name = new TextView(this);
+        name.setTextColor(getColor(R.color.text));
+        name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        name.setTypeface(Typeface.DEFAULT_BOLD);
+        texts.addView(name);
 
-        row.info = new TextView(this);
-        row.info.setTextColor(getColor(R.color.text_sub));
-        row.info.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        texts.addView(row.info);
+        TextView info = new TextView(this);
+        info.setTextColor(getColor(R.color.text_sub));
+        info.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        texts.addView(info);
+        out[0] = name;
+        return info;
+    }
 
-        row.buy = new Button(this);
-        row.buy.setAllCaps(false);
-        row.buy.setBackgroundResource(R.drawable.bg_button);
-        row.buy.setTextColor(0xFFFFFFFF);
-        row.buy.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        row.buy.setTypeface(Typeface.DEFAULT_BOLD);
-        row.buy.setMinWidth(dp(104));
-        row.buy.setPadding(dp(8), 0, dp(8), 0);
+    private ItemRow createItemRow(int index, GameData.Item item) {
+        ItemRow row = new ItemRow();
+        LinearLayout root = newCardRow();
+
+        int image = imageRes(item);
+        if (image != 0) {
+            ImageView iv = new ImageView(this);
+            iv.setImageResource(image);
+            iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            root.addView(iv, new LinearLayout.LayoutParams(dp(72), dp(45)));
+        } else {
+            TextView emoji = new TextView(this);
+            emoji.setText(item.emoji);
+            emoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
+            emoji.setGravity(Gravity.CENTER);
+            root.addView(emoji, new LinearLayout.LayoutParams(dp(52), LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+
+        TextView[] name = new TextView[1];
+        row.info = addTexts(root, name);
+        row.name = name[0];
+
+        row.buy = newActionButton();
         row.buy.setOnClickListener(v -> {
             if (state.buy(index)) {
                 pulse();
                 refresh();
             }
         });
-        root.addView(row.buy, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+        root.addView(row.buy, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+        row.root = root;
+        return row;
+    }
 
+    private ContractRow createContractRow(int index, GameData.Contract c) {
+        ContractRow row = new ContractRow();
+        LinearLayout root = newCardRow();
+
+        TextView emoji = new TextView(this);
+        emoji.setText(c.emoji);
+        emoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        emoji.setGravity(Gravity.CENTER);
+        root.addView(emoji, new LinearLayout.LayoutParams(dp(44), LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView[] name = new TextView[1];
+        row.info = addTexts(root, name);
+        name[0].setText(c.name + "  " + Money.format(c.reward));
+
+        row.start = newActionButton();
+        row.start.setOnClickListener(v -> {
+            if (state.startContract(index)) refresh();
+        });
+        root.addView(row.start, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
         row.root = root;
         return row;
     }
 
     private void refreshItems() {
-        GameData.Item[] items = state.currentJob().items;
+        GameData.Job job = state.currentJob();
+        GameData.Item[] items = job.items;
+        int best = -1;
+        for (int k = 0; k < items.length; k++) if (state.level(k) > 0) best = k;
+
         for (int k = 0; k < rows.length; k++) {
             ItemRow row = rows[k];
             GameData.Item item = items[k];
             int level = state.level(k);
             boolean unlocked = state.isUnlocked(k);
+            boolean single = item.maxLevel == 1;
 
-            row.name.setText(level > 0 ? item.name + "  Lv." + level : item.name);
+            row.name.setText(level > 0 && !single ? item.name + "  Lv." + level : item.name);
             row.root.setAlpha(unlocked ? 1f : 0.5f);
+
+            String effect = state.isBroker()
+                    ? "자동 클릭 +" + Money.speed(item.speedPerLevel) + "회/초"
+                    : job.bestItemOnly
+                    ? "오토 배달 초당 " + Money.speed(item.speedPerLevel) + "건"
+                    : "오토 +" + Money.speed(item.speedPerLevel) + "회/초";
 
             if (!unlocked) {
                 row.info.setText("🔒 " + items[k - 1].name + " 먼저 구매");
                 row.buy.setText("잠김");
                 row.buy.setEnabled(false);
             } else if (state.isMaxed(k)) {
-                row.info.setText("오토 +" + Money.speed(item.speedPerLevel * level) + "회/초 · 최대 레벨");
-                row.buy.setText("MAX");
+                row.info.setText(single ? effect : effect + " · 최대 레벨");
+                row.buy.setText(single ? (job.bestItemOnly && k == best ? "타는 중" : "보유") : "MAX");
                 row.buy.setEnabled(false);
             } else {
-                row.info.setText("오토 +" + Money.speed(item.speedPerLevel) + "회/초 · "
-                        + level + "/" + GameData.ITEM_MAX_LEVEL);
-                row.buy.setText((level == 0 ? "구매\n" : "강화\n") + Money.format(state.itemCost(k)));
+                row.info.setText(single ? effect : effect + " · " + level + "/" + item.maxLevel);
+                double cost = state.itemCost(k);
+                row.buy.setText((level == 0 ? "구매\n" : "강화\n") + (cost == 0 ? "무료" : Money.format(cost)));
                 row.buy.setEnabled(state.canBuy(k));
             }
         }
     }
 
+    private void refreshContracts() {
+        for (int i = 0; i < contractRows.length; i++) {
+            ContractRow row = contractRows[i];
+            GameData.Contract c = GameData.CONTRACTS[i];
+            boolean unlocked = state.isContractUnlocked(i);
+            row.root.setAlpha(unlocked ? 1f : 0.5f);
+            if (!unlocked) {
+                int need = state.unlockRequirement(i);
+                row.info.setText(c.detail + "\n🔒 " + GameData.CONTRACTS[need].name + " "
+                        + Math.min(state.contractDone[need], GameData.CONTRACT_UNLOCK_COUNT) + "/"
+                        + GameData.CONTRACT_UNLOCK_COUNT + "회 성사하면 열림");
+                row.start.setText("잠김");
+                row.start.setEnabled(false);
+                continue;
+            }
+            row.info.setText(c.detail + "\n⏱ " + c.seconds + "초 안에 " + c.clicks + "번 클릭 · 성사 "
+                    + state.contractDone[i] + "회");
+            if (state.activeContract == i) {
+                row.start.setText("진행 중");
+                row.start.setEnabled(false);
+            } else {
+                row.start.setText(state.lastContract == i && state.autoOn ? "🔁 반복 중" : "계약 시작");
+                row.start.setEnabled(true);
+            }
+        }
+    }
+
+    private void showContractEvent() {
+        if (state.eventSeq == shownEventSeq) return;
+        shownEventSeq = state.eventSeq;
+        GameData.Contract c = GameData.CONTRACTS[state.eventContract];
+        float x = tapArea.getWidth() / 2f;
+        float y = tapArea.getHeight() / 2f;
+        if (state.eventSuccess) {
+            spawnFloatingText(x, y, "🎉 계약 성사! +" + Money.format(c.reward), getColor(R.color.primary_dark));
+            pulse();
+        } else {
+            spawnFloatingText(x, y, "⌛ 시간 초과… 계약 실패", getColor(R.color.text_sub));
+        }
+    }
+
+    private void buildJobBar() {
+        shownHighestJob = state.highestJob;
+        jobBar.removeAllViews();
+        jobBarScroll.setVisibility(state.highestJob > 0 ? View.VISIBLE : View.GONE);
+        for (int j = 0; j <= state.highestJob; j++) {
+            final int target = j;
+            Button b = newActionButton();
+            GameData.Job job = GameData.JOBS[j];
+            b.setText(job.emoji + " " + job.name);
+            b.setOnClickListener(v -> {
+                if (state.switchJob(target)) {
+                    save();
+                    refresh();
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+            lp.rightMargin = dp(6);
+            jobBar.addView(b, lp);
+        }
+    }
+
+    private void refreshJobBar() {
+        for (int j = 0; j < jobBar.getChildCount(); j++) {
+            View b = jobBar.getChildAt(j);
+            // 지금 직업 버튼은 눌린 상태(비활성)로 표시
+            b.setEnabled(j != state.job);
+        }
+    }
+
     private void refreshPromotion() {
-        if (!state.hasNextJob()) {
+        GameData.Job cur = state.currentJob();
+        if (state.job == GameData.lastJob()) {
+            promoteCard.setVisibility(View.VISIBLE);
             promoteTitle.setText("🏆 최종 목표");
-            GameData.Item[] items = state.currentJob().items;
+            GameData.Item[] items = cur.items;
             promoteInfo.setText(state.isEnding()
                     ? "🎉 신창은 대한민국 최고의 재벌이 되었다!\n총 수익 " + Money.format(state.totalEarned)
                     : items[items.length - 1].emoji + " " + items[items.length - 1].name + "를 세우면 엔딩!");
             promoteButton.setVisibility(View.GONE);
             return;
         }
+        if (!state.hasNextJob()) {
+            // 이전 직업으로 돌아와 있는 중: 전직은 가장 높은 직업에서만
+            promoteCard.setVisibility(View.GONE);
+            return;
+        }
 
-        GameData.Job cur = state.currentJob();
+        promoteCard.setVisibility(View.VISIBLE);
         GameData.Job next = GameData.JOBS[state.job + 1];
         GameData.Item lastItem = cur.items[cur.items.length - 1];
         boolean itemReady = state.promoteItemReady();
         boolean moneyReady = state.money >= cur.promoteCost;
 
+        String nextInfo = next.type == GameData.JobType.BROKER
+                ? "월세·전세·매매 계약으로 큰돈을 버는 직업"
+                : "클릭당 " + Money.format(next.clickValue);
         promoteTitle.setText("다음 직업: " + next.emoji + " " + next.name);
-        promoteInfo.setText("클릭당 " + Money.format(cur.clickValue) + " → " + Money.format(next.clickValue)
+        promoteInfo.setText(nextInfo
                 + "\n" + (itemReady ? "✅ " : "⬜ ") + lastItem.emoji + " " + lastItem.name + " 보유"
                 + "\n" + (moneyReady ? "✅ " : "⬜ ") + "전직 비용 " + Money.format(cur.promoteCost));
         promoteButton.setVisibility(View.VISIBLE);
@@ -331,7 +619,7 @@ public class MainActivity extends Activity {
                 .setTitle("👑 엔딩: 신창 그룹 회장")
                 .setMessage("도보 배달로 시작한 신창은 마침내 대한민국 최고의 재벌이 되었습니다!\n\n"
                         + "총 수익: " + Money.format(state.totalEarned) + "\n"
-                        + "손으로 누른 횟수: " + String.format("%,d", state.manualTaps) + "번\n\n"
+                        + "손으로 누른 횟수: " + String.format(Locale.KOREA, "%,d", state.manualTaps) + "번\n\n"
                         + "계속 플레이하며 아이템을 모두 MAX로 만들어 보세요.")
                 .setPositiveButton("최고야!", null)
                 .show();
@@ -343,8 +631,10 @@ public class MainActivity extends Activity {
                 .setMessage("모든 진행 상황이 지워집니다. 정말 처음부터 시작할까요?")
                 .setPositiveButton("초기화", (d, w) -> {
                     state = new GameState();
+                    shownEventSeq = state.eventSeq;
                     autoSwitch.setChecked(state.autoOn);
                     shownJob = -1;
+                    shownHighestJob = -1;
                     save();
                     refresh();
                 })
@@ -362,10 +652,11 @@ public class MainActivity extends Activity {
     }
 
     private void pulse() {
-        tapButton.animate().cancel();
-        tapButton.setScaleX(0.9f);
-        tapButton.setScaleY(0.9f);
-        tapButton.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+        View target = vehicleImage.getVisibility() == View.VISIBLE ? vehicleImage : tapButton;
+        target.animate().cancel();
+        target.setScaleX(0.92f);
+        target.setScaleY(0.92f);
+        target.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
     }
 
     private void spawnFloatingText(float x, float y, String text, int color) {
@@ -379,12 +670,12 @@ public class MainActivity extends Activity {
         tapArea.addView(tv, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
         tv.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        tv.setX(x - tv.getMeasuredWidth() / 2f);
+        tv.setX(Math.max(0, Math.min(tapArea.getWidth() - tv.getMeasuredWidth(), x - tv.getMeasuredWidth() / 2f)));
         tv.setY(y - tv.getMeasuredHeight());
         tv.animate()
                 .translationYBy(-dp(80))
                 .alpha(0f)
-                .setDuration(800)
+                .setDuration(900)
                 .withEndAction(() -> tapArea.removeView(tv))
                 .start();
     }

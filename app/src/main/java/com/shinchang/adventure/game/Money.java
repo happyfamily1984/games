@@ -19,12 +19,22 @@ public final class Money {
         }
         long big = (long) Math.floor(won / unitValue);
         long small = (long) Math.floor((won - big * unitValue) / (unitValue / 10_000) + 1e-6);
+        if (small >= 10_000) {
+            big++;
+            small -= 10_000;
+        }
         StringBuilder sb = new StringBuilder();
         sb.append(String.format(Locale.KOREA, "%,d", big)).append(UNITS[unit]);
         if (small > 0 && big < 1000) {
             sb.append(' ').append(String.format(Locale.KOREA, "%,d", small)).append(UNITS[unit - 1]);
         }
         return sb.append('원').toString();
+    }
+
+    /** "1억 5,000만" 처럼 '원' 없이 표시 (매물 가격용) */
+    public static String plain(double won) {
+        String s = format(won);
+        return s.substring(0, s.length() - 1);
     }
 
     /** 오토클릭 속도 표시용 */

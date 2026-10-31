@@ -11,20 +11,37 @@ public final class GameState {
     public static final double OFFLINE_RATE = 0.5;
     /** 오프라인 수익 최대 인정 시간 */
     public static final double OFFLINE_MAX_SECONDS = 8 * 3600;
+    /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
+    public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    public static final double TAP_BONUS_PER_SPEED = 0.1;
-
-    private static final String SAVE_VERSION = "v1";
+    private static final String SAVE_VERSION = "v2";
 
     public double money;
     public double totalEarned;
     public int job;
+    /** 지금까지 도달한 가장 높은 직업. 그 아래 직업으로는 언제든 전환할 수 있다. */
+    public int highestJob;
     /** levels[직업][아이템] */
     public final int[][] levels;
     public boolean autoOn = true;
     public boolean endingSeen;
     public long manualTaps;
     public long lastSavedMillis;
+
+    // ---- 공인중개사 계약 ----
+    public final int[] contractDone = new int[GameData.CONTRACTS.length];
+    /** 진행 중인 계약 (-1 이면 없음) */
+    public int activeContract = -1;
+    public double contractClicks;
+    public double contractTimeLeft;
+    /** 오토 모드에서 반복할 계약 */
+    public int lastContract = -1;
+    private double restartWait;
+
+    /** 계약 결과 알림용. 결과가 나올 때마다 eventSeq 가 1씩 오른다. */
+    public int eventSeq;
+    public boolean eventSuccess;
+    public int eventContract;
 
     public GameState() {
         levels = new int[GameData.JOBS.length][];
@@ -39,30 +56,41 @@ public final class GameState {
         return GameData.JOBS[job];
     }
 
-    /** 직업이 정하는 기본 클릭 금액. 오토클릭 1회도 이 금액을 번다. */
+    public boolean isBroker() {
+        return currentJob().type == GameData.JobType.BROKER;
+    }
+
+    /** 클릭 1회 금액. 공인중개사는 클릭으로 바로 돈을 벌지 않는다. */
     public double clickValue() {
-        return currentJob().clickValue;
+        return isBroker() ? 0 : currentJob().clickValue;
     }
 
-    /** 손으로 누르는 클릭은 오토클릭 속도에 비례한 보너스를 받는다 (속도 1회/초당 +10%). */
-    public double tapValue() {
-        return clickValue() * (1 + autoSpeed() * TAP_BONUS_PER_SPEED);
-    }
-
-    /** 오토클릭 속도(회/초). 이전 직업에서 산 아이템도 계속 효과가 있다. */
+    /** 현재 직업의 오토클릭 속도(회/초) */
     public double autoSpeed() {
+        GameData.Job j = currentJob();
         double speed = 0;
-        for (int j = 0; j <= job; j++) {
-            GameData.Item[] items = GameData.JOBS[j].items;
-            for (int k = 0; k < items.length; k++) {
-                speed += levels[j][k] * items[k].speedPerLevel;
-            }
+        for (int k = 0; k < j.items.length; k++) {
+            if (levels[job][k] == 0) continue;
+            double s = levels[job][k] * j.items[k].speedPerLevel;
+            speed = j.bestItemOnly ? Math.max(speed, s) : speed + s;
         }
         return speed;
     }
 
+    /** 오토클릭으로 버는 초당 금액 (공인중개사는 반복 계약 기준 예상치) */
     public double incomePerSecond() {
-        return autoOn ? autoSpeed() * clickValue() : 0;
+        if (!autoOn) return 0;
+        if (!isBroker()) return autoSpeed() * clickValue();
+        return autoContractIncome(lastContract);
+    }
+
+    /** 오토클릭만으로 계약을 반복할 때의 초당 수입. 시간 안에 못 채우면 0. */
+    public double autoContractIncome(int contract) {
+        if (contract < 0) return 0;
+        double speed = autoSpeed();
+        GameData.Contract c = GameData.CONTRACTS[contract];
+        if (speed <= 0 || c.clicks / speed > c.seconds) return 0;
+        return c.reward / (c.clicks / speed + CONTRACT_RESTART_SECONDS);
     }
 
     public void earn(double amount) {
@@ -70,17 +98,94 @@ public final class GameState {
         totalEarned += amount;
     }
 
+    /** 손으로 한 번 누른다. 번 돈을 돌려준다 (공인중개사는 계약 진행만 하므로 0). */
     public double tap() {
-        double v = tapValue();
-        earn(v);
         manualTaps++;
+        if (isBroker()) {
+            if (activeContract >= 0) {
+                contractClicks += 1;
+                checkContract();
+            }
+            return 0;
+        }
+        double v = clickValue();
+        earn(v);
         return v;
     }
 
     public void update(double seconds) {
-        if (seconds > 0) {
+        if (seconds <= 0) return;
+        if (!isBroker()) {
             earn(incomePerSecond() * seconds);
+            return;
         }
+        if (activeContract >= 0) {
+            if (autoOn) contractClicks += autoSpeed() * seconds;
+            contractTimeLeft -= seconds;
+            checkContract();
+        } else if (autoOn && lastContract >= 0 && isContractUnlocked(lastContract)) {
+            restartWait -= seconds;
+            if (restartWait <= 0) startContract(lastContract);
+        }
+    }
+
+    // ---- 공인중개사 계약 ----
+
+    public boolean isContractUnlocked(int i) {
+        GameData.Contract c = GameData.CONTRACTS[i];
+        if (c.tier == 0 && c.category == 0) return true;
+        int need = c.tier > 0 ? contractIndex(c.category, c.tier - 1) : contractIndex(c.category - 1, 1);
+        return contractDone[need] >= GameData.CONTRACT_UNLOCK_COUNT;
+    }
+
+    /** 잠긴 계약을 열려면 성사시켜야 하는 계약 */
+    public int unlockRequirement(int i) {
+        GameData.Contract c = GameData.CONTRACTS[i];
+        if (c.tier == 0 && c.category == 0) return -1;
+        return c.tier > 0 ? contractIndex(c.category, c.tier - 1) : contractIndex(c.category - 1, 1);
+    }
+
+    public static int contractIndex(int category, int tier) {
+        for (int i = 0; i < GameData.CONTRACTS.length; i++) {
+            if (GameData.CONTRACTS[i].category == category && GameData.CONTRACTS[i].tier == tier) return i;
+        }
+        throw new IllegalArgumentException("no contract " + category + "/" + tier);
+    }
+
+    /** 계약을 시작한다. 진행 중인 다른 계약이 있으면 그 계약은 취소된다. */
+    public boolean startContract(int i) {
+        if (!isBroker() || !isContractUnlocked(i)) return false;
+        activeContract = i;
+        lastContract = i;
+        contractClicks = 0;
+        contractTimeLeft = GameData.CONTRACTS[i].seconds;
+        return true;
+    }
+
+    public void stopAutoRepeat() {
+        lastContract = -1;
+    }
+
+    private void checkContract() {
+        if (activeContract < 0) return;
+        GameData.Contract c = GameData.CONTRACTS[activeContract];
+        if (contractClicks >= c.clicks) {
+            earn(c.reward);
+            contractDone[activeContract]++;
+            finishContract(true);
+        } else if (contractTimeLeft <= 0) {
+            finishContract(false);
+        }
+    }
+
+    private void finishContract(boolean success) {
+        eventSeq++;
+        eventSuccess = success;
+        eventContract = activeContract;
+        activeContract = -1;
+        contractClicks = 0;
+        contractTimeLeft = 0;
+        restartWait = CONTRACT_RESTART_SECONDS;
     }
 
     // ---- 아이템 ----
@@ -99,7 +204,7 @@ public final class GameState {
     }
 
     public boolean isMaxed(int item) {
-        return levels[job][item] >= GameData.ITEM_MAX_LEVEL;
+        return levels[job][item] >= currentJob().items[item].maxLevel;
     }
 
     public boolean canBuy(int item) {
@@ -115,8 +220,22 @@ public final class GameState {
 
     // ---- 전직 ----
 
+    /** 전직은 지금까지 도달한 가장 높은 직업에서만 할 수 있다 */
     public boolean hasNextJob() {
-        return job < GameData.lastJob();
+        return job == highestJob && job < GameData.lastJob();
+    }
+
+    public boolean canSwitchTo(int j) {
+        return j >= 0 && j <= highestJob && j != job;
+    }
+
+    /** 이미 도달한 다른 직업으로 바꾼다. 진행 중인 계약은 취소된다. */
+    public boolean switchJob(int j) {
+        if (!canSwitchTo(j)) return false;
+        job = j;
+        activeContract = -1;
+        lastContract = -1;
+        return true;
     }
 
     /** 전직 조건: 현재 직업의 마지막 아이템 보유 */
@@ -133,6 +252,10 @@ public final class GameState {
         if (!canPromote()) return false;
         money -= currentJob().promoteCost;
         job++;
+        highestJob = job;
+        activeContract = -1;
+        lastContract = -1;
+        // 첫 아이템(기본형)을 가지고 시작해서 바로 오토클릭이 돈다
         if (levels[job][0] == 0) levels[job][0] = 1;
         return true;
     }
@@ -171,10 +294,16 @@ public final class GameState {
                 sb.append(levels[j][k]);
             }
         }
+        sb.append(';');
+        for (int i = 0; i < contractDone.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(contractDone[i]);
+        }
+        sb.append(';').append(lastContract).append(';').append(highestJob);
         return sb.toString();
     }
 
-    /** 저장 데이터가 깨져 있으면 새 게임을 돌려준다. */
+    /** 저장 데이터가 없거나 깨져 있거나 예전 버전이면 새 게임을 돌려준다. */
     public static GameState deserialize(String data) {
         GameState s = new GameState();
         if (data == null || data.isEmpty()) return s;
@@ -192,9 +321,17 @@ public final class GameState {
             for (int j = 0; j < jobs.length && j < s.levels.length; j++) {
                 String[] lv = jobs[j].split(",");
                 for (int k = 0; k < lv.length && k < s.levels[j].length; k++) {
-                    s.levels[j][k] = Math.max(0, Math.min(GameData.ITEM_MAX_LEVEL, Integer.parseInt(lv[k])));
+                    int max = GameData.JOBS[j].items[k].maxLevel;
+                    s.levels[j][k] = Math.max(0, Math.min(max, Integer.parseInt(lv[k])));
                 }
             }
+            String[] done = p[9].split(",");
+            for (int i = 0; i < done.length && i < s.contractDone.length; i++) {
+                s.contractDone[i] = Math.max(0, Integer.parseInt(done[i]));
+            }
+            s.highestJob = Math.max(s.job, Math.min(GameData.lastJob(), Integer.parseInt(p[11])));
+            int last = Integer.parseInt(p[10]);
+            s.lastContract = s.isBroker() && last >= 0 && last < GameData.CONTRACTS.length ? last : -1;
             return s;
         } catch (RuntimeException e) {
             return new GameState();
