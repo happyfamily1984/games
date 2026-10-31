@@ -97,16 +97,39 @@ public final class GameData {
 
     private static final Item[] DELIVERY_ITEMS = {
             // 가격: 2025년 국내 신차가 기준 (PCX·NMAX 공식가, 나머지는 해외 가격 환산 추정)
+            // 탈것은 겹치지 않고 하나만 골라 타므로, 상위 탈것일수록 속도 가중치를 크게 준다
             new Item("🚶", "도보 배달", "veh_walk", 0, 0.5, 1),
             new Item("🚲", "자전거", "veh_bicycle", 300_000, 1, 1),
             new Item("🛵", "CITI 100", "veh_citi100", 2_100_000, 2, 1),
-            new Item("🛵", "PCX", "veh_pcx", 4_720_000, 3, 1),
-            new Item("🛵", "NMAX 155", "veh_nmax", 5_000_000, 3.5, 1),
-            new Item("🛵", "XMAX 300", "veh_xmax", 8_900_000, 5, 1),
-            new Item("🛵", "TMAX 650", "veh_tmax", 18_000_000, 7, 1),
-            new Item("🏍️", "R3", "veh_r3", 7_500_000, 8, 1),
-            new Item("🏍️", "R1000", "veh_r1000", 28_000_000, 10, 1),
+            new Item("🛵", "PCX", "veh_pcx", 4_720_000, 3.2, 1),
+            new Item("🛵", "NMAX 155", "veh_nmax", 5_000_000, 4, 1),
+            new Item("🛵", "XMAX 300", "veh_xmax", 8_900_000, 5.5, 1),
+            new Item("🛵", "TMAX 650", "veh_tmax", 18_000_000, 7.5, 1),
+            new Item("🏍️", "R3", "veh_r3", 7_500_000, 9, 1),
+            new Item("🏍️", "R1000", "veh_r1000", 28_000_000, 12, 1),
     };
+
+    /** 탈것을 되팔 때 받는 비율 */
+    public static final double VEHICLE_RESALE_RATE = 0.7;
+
+    // ------------------------------------------------------------ 배달 날씨 (피버타임)
+
+    public static final int CLEAR = 0, RAIN = 1, SNOW = 2;
+    public static final String[] WEATHER_NAMES = {"맑음", "우천", "설천"};
+    /** 날씨별 배달 1건 수입 */
+    public static final double[] WEATHER_FEE = {DELIVERY_FEE, 10_000, 20_000};
+    /** 맑은 날 1초마다 비/눈이 시작될 확률 (평균 3분/10분에 한 번) */
+    public static final double RAIN_CHANCE_PER_SEC = 1.0 / 180;
+    public static final double SNOW_CHANCE_PER_SEC = 1.0 / 600;
+    public static final double[] WEATHER_SECONDS = {0, 30, 20};
+
+    public static final double SLIP_PENALTY = 120_000;
+    public static final double ACCIDENT_PENALTY = 500_000;
+    /** 비/눈 오는 동안 배달 중 1초마다 미끄러질 확률 */
+    public static final double[] SLIP_CHANCE_PER_SEC = {0, 0.02, 0.04};
+    /** 탈것별 사고 확률 (비 기준 1초당, 눈은 2배). 도보는 사고가 나지 않는다. */
+    public static final double[] ACCIDENT_CHANCE_PER_SEC = {
+            0, 0.015, 0.012, 0.009, 0.007, 0.005, 0.003, 0.0015, 0.0005};
 
     // ------------------------------------------------------------ 2. 공인중개사
 

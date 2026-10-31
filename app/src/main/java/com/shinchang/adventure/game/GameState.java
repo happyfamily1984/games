@@ -1,6 +1,7 @@
 package com.shinchang.adventure.game;
 
 import java.util.Locale;
+import java.util.Random;
 
 /**
  * 게임 진행 상태와 규칙. 안드로이드 의존성이 없어서 PC에서도 테스트/시뮬레이션할 수 있다.
@@ -14,7 +15,7 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v2";
+    private static final String SAVE_VERSION = "v3";
 
     public double money;
     public double totalEarned;
@@ -38,6 +39,24 @@ public final class GameState {
     public int lastContract = -1;
     private double restartWait;
 
+    // ---- 배달 탈것 / 날씨 ----
+    /** 지금 타고 있는 탈것 (배달원) */
+    public int selectedVehicle;
+    /** 직업별로 지금까지 산 적 있는 가장 높은 아이템 (팔아도 다음 아이템 해금은 유지) */
+    public final int[] maxEverItem = new int[GameData.JOBS.length];
+    public int weather = GameData.CLEAR;
+    public double weatherLeft;
+    /** 마지막 손 클릭 뒤 지난 시간. 오토가 꺼져 있고 손도 안 쓰면 배달 중이 아니므로 사고도 없다. */
+    private double sinceTap = 999;
+    private Random random = new Random();
+
+    /** 날씨/사고 알림용 */
+    public int weatherSeq;
+    public int incidentSeq;
+    /** 1 = 슬립, 2 = 사고 */
+    public int incidentType;
+    public double incidentPenalty;
+
     /** 계약 결과 알림용. 결과가 나올 때마다 eventSeq 가 1씩 오른다. */
     public int eventSeq;
     public boolean eventSuccess;
@@ -56,18 +75,30 @@ public final class GameState {
         return GameData.JOBS[job];
     }
 
+    public void setRandom(Random random) {
+        this.random = random;
+    }
+
+    public boolean isDelivery() {
+        return job == 0;
+    }
+
     public boolean isBroker() {
         return currentJob().type == GameData.JobType.BROKER;
     }
 
     /** 클릭 1회 금액. 공인중개사는 클릭으로 바로 돈을 벌지 않는다. */
     public double clickValue() {
-        return isBroker() ? 0 : currentJob().clickValue;
+        if (isBroker()) return 0;
+        if (isDelivery()) return GameData.WEATHER_FEE[weather];
+        return currentJob().clickValue;
     }
 
     /** 현재 직업의 오토클릭 속도(회/초) */
     public double autoSpeed() {
         GameData.Job j = currentJob();
+        // 탈것은 겹치지 않는다: 지금 고른 탈것 하나의 속도만 적용
+        if (isDelivery()) return j.items[selectedVehicle].speedPerLevel;
         double speed = 0;
         for (int k = 0; k < j.items.length; k++) {
             if (levels[job][k] == 0) continue;
@@ -108,6 +139,7 @@ public final class GameState {
             }
             return 0;
         }
+        sinceTap = 0;
         double v = clickValue();
         earn(v);
         return v;
@@ -116,6 +148,7 @@ public final class GameState {
     public void update(double seconds) {
         if (seconds <= 0) return;
         if (!isBroker()) {
+            if (isDelivery()) updateWeather(seconds);
             earn(incomePerSecond() * seconds);
             return;
         }
@@ -127,6 +160,83 @@ public final class GameState {
             restartWait -= seconds;
             if (restartWait <= 0) startContract(lastContract);
         }
+    }
+
+    // ---- 날씨 ----
+
+    private void updateWeather(double seconds) {
+        sinceTap += seconds;
+        if (weather == GameData.CLEAR) {
+            if (random.nextDouble() < GameData.SNOW_CHANCE_PER_SEC * seconds) {
+                setWeather(GameData.SNOW);
+            } else if (random.nextDouble() < GameData.RAIN_CHANCE_PER_SEC * seconds) {
+                setWeather(GameData.RAIN);
+            }
+            return;
+        }
+        weatherLeft -= seconds;
+        if (weatherLeft <= 0) {
+            setWeather(GameData.CLEAR);
+            return;
+        }
+        boolean delivering = autoOn || sinceTap < 2;
+        if (!delivering) return;
+        double accident = GameData.ACCIDENT_CHANCE_PER_SEC[selectedVehicle] * (weather == GameData.SNOW ? 2 : 1);
+        if (random.nextDouble() < accident * seconds) {
+            penalty(2, GameData.ACCIDENT_PENALTY);
+        } else if (random.nextDouble() < GameData.SLIP_CHANCE_PER_SEC[weather] * seconds) {
+            penalty(1, GameData.SLIP_PENALTY);
+        }
+    }
+
+    /** 테스트/연출용으로 날씨를 바로 바꾼다 */
+    public void setWeather(int w) {
+        weather = w;
+        weatherLeft = GameData.WEATHER_SECONDS[w];
+        weatherSeq++;
+    }
+
+    private void penalty(int type, double amount) {
+        incidentType = type;
+        incidentPenalty = Math.min(money, amount);
+        money -= incidentPenalty;
+        incidentSeq++;
+    }
+
+    // ---- 탈것 ----
+
+    public boolean canSelectVehicle(int k) {
+        return isDelivery() && levels[0][k] > 0 && k != selectedVehicle;
+    }
+
+    public boolean selectVehicle(int k) {
+        if (!canSelectVehicle(k)) return false;
+        selectedVehicle = k;
+        return true;
+    }
+
+    public double sellPrice(int k) {
+        return currentJob().items[k].baseCost * GameData.VEHICLE_RESALE_RATE;
+    }
+
+    /** 도보 배달은 팔 수 없다 */
+    public boolean canSell(int k) {
+        return isDelivery() && k > 0 && levels[0][k] > 0;
+    }
+
+    public boolean sell(int k) {
+        if (!canSell(k)) return false;
+        money += sellPrice(k);
+        levels[0][k] = 0;
+        if (selectedVehicle == k) selectedVehicle = bestOwnedItem();
+        return true;
+    }
+
+    public int bestOwnedItem() {
+        for (int k = levels[job].length - 1; k >= 0; k--) {
+            if (levels[job][k] > 0) return k;
+        }
+        return 0;
     }
 
     // ---- 공인중개사 계약 ----
@@ -200,7 +310,7 @@ public final class GameState {
     }
 
     public boolean isUnlocked(int item) {
-        return item == 0 || levels[job][item - 1] > 0;
+        return item == 0 || maxEverItem[job] >= item - 1;
     }
 
     public boolean isMaxed(int item) {
@@ -215,6 +325,9 @@ public final class GameState {
         if (!canBuy(item)) return false;
         money -= itemCost(item);
         levels[job][item]++;
+        maxEverItem[job] = Math.max(maxEverItem[job], item);
+        // 새 탈것을 사면 바로 그 탈것을 탄다
+        if (isDelivery()) selectedVehicle = item;
         return true;
     }
 
@@ -233,6 +346,8 @@ public final class GameState {
     public boolean switchJob(int j) {
         if (!canSwitchTo(j)) return false;
         job = j;
+        weather = GameData.CLEAR;
+        weatherLeft = 0;
         activeContract = -1;
         lastContract = -1;
         return true;
@@ -253,6 +368,8 @@ public final class GameState {
         money -= currentJob().promoteCost;
         job++;
         highestJob = job;
+        weather = GameData.CLEAR;
+        weatherLeft = 0;
         activeContract = -1;
         lastContract = -1;
         // 첫 아이템(기본형)을 가지고 시작해서 바로 오토클릭이 돈다
@@ -299,7 +416,12 @@ public final class GameState {
             if (i > 0) sb.append(',');
             sb.append(contractDone[i]);
         }
-        sb.append(';').append(lastContract).append(';').append(highestJob);
+        sb.append(';').append(lastContract).append(';').append(highestJob)
+                .append(';').append(selectedVehicle).append(';');
+        for (int j = 0; j < maxEverItem.length; j++) {
+            if (j > 0) sb.append(',');
+            sb.append(maxEverItem[j]);
+        }
         return sb.toString();
     }
 
@@ -309,7 +431,8 @@ public final class GameState {
         if (data == null || data.isEmpty()) return s;
         try {
             String[] p = data.split(";", -1);
-            if (!SAVE_VERSION.equals(p[0])) return new GameState();
+            boolean v2 = "v2".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -332,6 +455,24 @@ public final class GameState {
             s.highestJob = Math.max(s.job, Math.min(GameData.lastJob(), Integer.parseInt(p[11])));
             int last = Integer.parseInt(p[10]);
             s.lastContract = s.isBroker() && last >= 0 && last < GameData.CONTRACTS.length ? last : -1;
+            if (v2) {
+                // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다
+                for (int j = 0; j < s.levels.length; j++) {
+                    for (int k = 0; k < s.levels[j].length; k++) if (s.levels[j][k] > 0) s.maxEverItem[j] = k;
+                }
+                s.selectedVehicle = s.maxEverItem[0];
+            } else {
+                String[] ever = p[13].split(",");
+                for (int j = 0; j < ever.length && j < s.maxEverItem.length; j++) {
+                    s.maxEverItem[j] = Math.max(0, Math.min(s.levels[j].length - 1, Integer.parseInt(ever[j])));
+                }
+                s.selectedVehicle = Integer.parseInt(p[12]);
+            }
+            if (s.selectedVehicle < 0 || s.selectedVehicle >= s.levels[0].length || s.levels[0][s.selectedVehicle] == 0) {
+                int best = 0;
+                for (int k = 0; k < s.levels[0].length; k++) if (s.levels[0][k] > 0) best = k;
+                s.selectedVehicle = best;
+            }
             return s;
         } catch (RuntimeException e) {
             return new GameState();

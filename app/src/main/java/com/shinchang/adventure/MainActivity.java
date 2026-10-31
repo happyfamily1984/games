@@ -45,8 +45,13 @@ public class MainActivity extends Activity {
     private int shownJob = -1;
     private int shownHighestJob = -1;
     private int shownEventSeq;
+    private int shownWeatherSeq;
+    private int shownIncidentSeq;
+    private int shownWeather = -1;
 
-    private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint;
+    private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint, weatherBanner;
+    private WeatherView weatherView;
+    private View header;
     private TextView promoteTitle, promoteInfo;
     private TextView contractTitle, contractInfo;
     private ProgressBar clickBar, timeBar;
@@ -64,6 +69,8 @@ public class MainActivity extends Activity {
         TextView name;
         TextView info;
         Button buy;
+        /** 탈것 판매 버튼 (배달원만) */
+        Button sell;
     }
 
     private static final class ContractRow {
@@ -91,6 +98,7 @@ public class MainActivity extends Activity {
 
             if (now - lastSave >= SAVE_INTERVAL_MS) save();
             showContractEvent();
+            showWeatherEvents();
             refresh();
             checkEnding();
             handler.postDelayed(this, TICK_MS);
@@ -124,9 +132,14 @@ public class MainActivity extends Activity {
         timeBar = findViewById(R.id.timeBar);
         jobBarScroll = findViewById(R.id.jobBarScroll);
         jobBar = findViewById(R.id.jobBar);
+        weatherView = findViewById(R.id.weatherView);
+        weatherBanner = findViewById(R.id.weatherBanner);
+        header = findViewById(R.id.header);
 
         state = GameState.deserialize(prefs().getString(KEY_SAVE, null));
         shownEventSeq = state.eventSeq;
+        shownWeatherSeq = state.weatherSeq;
+        shownIncidentSeq = state.incidentSeq;
 
         tapArea.setOnTouchListener((v, e) -> {
             int action = e.getActionMasked();
@@ -240,12 +253,13 @@ public class MainActivity extends Activity {
                     + (income > 0 ? "🔁 반복 계약 초당 약 " + Money.format(income) : "🔁 마지막 계약을 자동 반복"));
         } else {
             rateText.setText("클릭당 " + Money.format(state.clickValue())
-                    + (state.job == 0 ? " (배달 1건)" : ""));
+                    + (state.isDelivery() ? " (배달 1건)" : ""));
             autoText.setText(state.autoOn
                     ? "⚡ 초당 " + Money.speed(speed) + "회\n💰 초당 " + Money.format(state.incomePerSecond())
                     : "⏸ 오토클릭 꺼짐\n(켜면 초당 " + Money.speed(speed) + "회)");
         }
 
+        refreshWeather();
         refreshTapArea();
         refreshItems();
         refreshContracts();
@@ -307,9 +321,10 @@ public class MainActivity extends Activity {
         tapButton.setLayoutParams(lp);
     }
 
-    /** 현재 직업에서 가진 가장 좋은 아이템의 그림 (없으면 0) */
+    /** 배달원은 타고 있는 탈것, 그 외에는 가진 가장 좋은 아이템의 그림 (없으면 0) */
     private int bestVehicleImage() {
         GameData.Item[] items = state.currentJob().items;
+        if (state.isDelivery()) return imageRes(items[state.selectedVehicle]);
         for (int k = items.length - 1; k >= 0; k--) {
             if (state.level(k) > 0) return imageRes(items[k]);
         }
@@ -432,12 +447,31 @@ public class MainActivity extends Activity {
 
         row.buy = newActionButton();
         row.buy.setOnClickListener(v -> {
-            if (state.buy(index)) {
+            // 배달원: 가진 탈것이면 바꿔 타기, 아니면 구매
+            if (state.selectVehicle(index) || state.buy(index)) {
                 pulse();
                 refresh();
             }
         });
-        root.addView(row.buy, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+        if (!state.isDelivery()) {
+            root.addView(row.buy, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+            row.root = root;
+            return row;
+        }
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.VERTICAL);
+        buttons.addView(row.buy, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)));
+        row.sell = newActionButton();
+        row.sell.setBackgroundResource(R.drawable.bg_button_sub);
+        row.sell.setTextColor(getColor(R.color.text_sub));
+        row.sell.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        row.sell.setOnClickListener(v -> confirmSell(index));
+        LinearLayout.LayoutParams sellLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(32));
+        sellLp.topMargin = dp(4);
+        buttons.addView(row.sell, sellLp);
+        root.addView(buttons, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         row.root = root;
         return row;
     }
@@ -466,6 +500,10 @@ public class MainActivity extends Activity {
     }
 
     private void refreshItems() {
+        if (state.isDelivery()) {
+            refreshVehicles();
+            return;
+        }
         GameData.Job job = state.currentJob();
         GameData.Item[] items = job.items;
         int best = -1;
@@ -502,6 +540,114 @@ public class MainActivity extends Activity {
                 row.buy.setEnabled(state.canBuy(k));
             }
         }
+    }
+
+    private void refreshVehicles() {
+        GameData.Item[] items = state.currentJob().items;
+        for (int k = 0; k < rows.length; k++) {
+            ItemRow row = rows[k];
+            GameData.Item item = items[k];
+            boolean owned = state.level(k) > 0;
+            boolean unlocked = state.isUnlocked(k);
+            row.name.setText(item.name);
+            row.root.setAlpha(unlocked ? 1f : 0.5f);
+            row.info.setText("오토 배달 초당 " + Money.speed(item.speedPerLevel) + "건\n" + riskText(k));
+
+            if (!unlocked) {
+                row.buy.setText("잠김");
+                row.buy.setEnabled(false);
+            } else if (owned && state.selectedVehicle == k) {
+                row.buy.setText("타는 중");
+                row.buy.setEnabled(false);
+            } else if (owned) {
+                row.buy.setText("타기");
+                row.buy.setEnabled(true);
+            } else {
+                double cost = state.itemCost(k);
+                row.buy.setText("구매 " + Money.format(cost));
+                row.buy.setEnabled(state.canBuy(k));
+            }
+
+            boolean sellable = state.canSell(k);
+            row.sell.setVisibility(sellable ? View.VISIBLE : View.INVISIBLE);
+            if (sellable) row.sell.setText("판매 " + Money.format(state.sellPrice(k)));
+        }
+    }
+
+    private static String riskText(int vehicle) {
+        double p = GameData.ACCIDENT_CHANCE_PER_SEC[vehicle];
+        if (p == 0) return "🛡️ 사고 없음 (슬립만 주의)";
+        if (p >= 0.012) return "⚠️ 사고 위험 높음";
+        if (p >= 0.007) return "⚠️ 사고 위험 보통";
+        if (p >= 0.003) return "✅ 사고 위험 낮음";
+        return "✅ 사고 거의 없음";
+    }
+
+    private void confirmSell(int k) {
+        if (!state.canSell(k)) return;
+        GameData.Item item = state.currentJob().items[k];
+        new AlertDialog.Builder(this)
+                .setTitle(item.name + " 판매")
+                .setMessage(item.name + "을(를) " + Money.format(state.sellPrice(k))
+                        + "에 팔까요?\n(구매가의 70%)"
+                        + (k == state.currentJob().items.length - 1 ? "\n\n⚠️ R1000이 없으면 전직할 수 없어요." : ""))
+                .setPositiveButton("판매", (d, w) -> {
+                    if (state.sell(k)) {
+                        save();
+                        refresh();
+                    }
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    // ---- 날씨 ----
+
+    private void refreshWeather() {
+        int w = state.isDelivery() ? state.weather : GameData.CLEAR;
+        if (w != shownWeather) {
+            shownWeather = w;
+            weatherView.setWeather(w);
+            header.setBackgroundResource(w == GameData.RAIN ? R.drawable.bg_header_rain
+                    : w == GameData.SNOW ? R.drawable.bg_header_snow : R.drawable.bg_header);
+            tapArea.setBackgroundColor(w == GameData.RAIN ? 0xFFDCE6F0 : w == GameData.SNOW ? 0xFFF2F7FC : 0);
+        }
+        if (w == GameData.CLEAR) {
+            weatherBanner.setVisibility(View.GONE);
+            return;
+        }
+        weatherBanner.setVisibility(View.VISIBLE);
+        weatherBanner.setText(String.format(Locale.KOREA, "%s %s 피버! 배달 1건 %s · %d초 남음",
+                w == GameData.RAIN ? "🌧️" : "❄️", GameData.WEATHER_NAMES[w],
+                Money.format(GameData.WEATHER_FEE[w]), (int) Math.ceil(state.weatherLeft)));
+    }
+
+    private void showWeatherEvents() {
+        float cx = tapArea.getWidth() / 2f;
+        if (state.weatherSeq != shownWeatherSeq) {
+            shownWeatherSeq = state.weatherSeq;
+            if (state.isDelivery() && state.weather != GameData.CLEAR) {
+                spawnFloatingText(cx, tapArea.getHeight() * 0.35f,
+                        state.weather == GameData.RAIN ? "🌧️ 비가 온다! 피버타임 10,000원" : "❄️ 눈이 온다! 피버타임 20,000원",
+                        getColor(R.color.accent));
+            }
+        }
+        if (state.incidentSeq != shownIncidentSeq) {
+            shownIncidentSeq = state.incidentSeq;
+            boolean accident = state.incidentType == 2;
+            spawnFloatingText(cx, tapArea.getHeight() * 0.6f,
+                    (accident ? "💥 사고! -" : "💦 미끄러졌다! -") + Money.format(state.incidentPenalty), 0xFFD7262E);
+            shake(accident ? dp(14) : dp(7));
+        }
+    }
+
+    private void shake(float distance) {
+        View target = vehicleImage.getVisibility() == View.VISIBLE ? vehicleImage : tapButton;
+        target.animate().cancel();
+        target.setTranslationX(distance);
+        target.setRotation(distance > dp(10) ? -12 : -5);
+        target.animate().translationX(0).rotation(0).setDuration(450)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(4f)).start();
     }
 
     private void refreshContracts() {
@@ -632,6 +778,8 @@ public class MainActivity extends Activity {
                 .setPositiveButton("초기화", (d, w) -> {
                     state = new GameState();
                     shownEventSeq = state.eventSeq;
+                    shownWeatherSeq = state.weatherSeq;
+                    shownIncidentSeq = state.incidentSeq;
                     autoSwitch.setChecked(state.autoOn);
                     shownJob = -1;
                     shownHighestJob = -1;
