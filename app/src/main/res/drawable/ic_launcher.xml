@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주황 배경 위 금화 아이콘 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FF7A00" android:pathData="M54,2a52,52 0,1 1,0 104a52,52 0,1 1,0 -104z" />
+    <path android:fillColor="#FFC233" android:pathData="M54,22a32,32 0,1 1,0 64a32,32 0,1 1,0 -64z" />
+    <path android:fillColor="#FFE38A" android:pathData="M54,29a25,25 0,1 1,0 50a25,25 0,1 1,0 -50z" />
+    <!-- ₩ 모양 -->
+    <path android:fillColor="#E06000"
+        android:pathData="M36,40h6l5,20l4,-14h6l4,14l5,-20h6l-8,28h-6l-4,-14l-4,14h-6z M34,49h40v4h-40z M34,56h40v4h-40z" />
+</vector>

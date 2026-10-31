@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">신창의 모험</string>
+    <string name="tap_hint">탭해서 돈 벌기!</string>
+    <string name="auto_click">오토클릭</string>
+    <string name="items_title">아이템</string>
+</resources>
