@@ -15,7 +15,7 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v3";
+    private static final String SAVE_VERSION = "v4";
 
     public double money;
     public double totalEarned;
@@ -29,8 +29,9 @@ public final class GameState {
     public long manualTaps;
     public long lastSavedMillis;
 
-    // ---- 공인중개사 계약 ----
-    public final int[] contractDone = new int[GameData.CONTRACTS.length];
+    // ---- 계약 (공인중개사·소방기술사) ----
+    /** contractDone[직업][계약] = 성사 횟수 */
+    public final int[][] contractDone;
     /** 진행 중인 계약 (-1 이면 없음) */
     public int activeContract = -1;
     public double contractClicks;
@@ -38,6 +39,8 @@ public final class GameState {
     /** 오토 모드에서 반복할 계약 */
     public int lastContract = -1;
     private double restartWait;
+    /** 소방기술사: 오토 수익 배수가 남은 시간 */
+    public double boostLeft;
 
     // ---- 배달 탈것 / 날씨 ----
     /** 지금 타고 있는 탈것 (배달원) */
@@ -64,8 +67,11 @@ public final class GameState {
 
     public GameState() {
         levels = new int[GameData.JOBS.length][];
+        contractDone = new int[GameData.JOBS.length][];
         for (int j = 0; j < GameData.JOBS.length; j++) {
             levels[j] = new int[GameData.JOBS[j].items.length];
+            GameData.Contract[] cs = GameData.JOBS[j].contracts;
+            contractDone[j] = new int[cs == null ? 0 : cs.length];
         }
         // 기본형 아이템(도보 배달)은 처음부터 가지고 시작
         levels[0][0] = 1;
@@ -85,6 +91,29 @@ public final class GameState {
 
     public boolean isBroker() {
         return currentJob().type == GameData.JobType.BROKER;
+    }
+
+    public boolean isBoostJob() {
+        return currentJob().type == GameData.JobType.BOOST;
+    }
+
+    public boolean hasContracts() {
+        return currentJob().contracts != null;
+    }
+
+    /** 현재 직업의 계약 목록 (없으면 빈 배열) */
+    public GameData.Contract[] contracts() {
+        GameData.Contract[] cs = currentJob().contracts;
+        return cs == null ? new GameData.Contract[0] : cs;
+    }
+
+    public int[] done() {
+        return contractDone[job];
+    }
+
+    /** 지금 적용 중인 오토 수익 배수 */
+    public double boostMultiplier() {
+        return isBoostJob() && boostLeft > 0 ? GameData.BOOST_MULTIPLIER : 1;
     }
 
     /** 클릭 1회 금액. 공인중개사는 클릭으로 바로 돈을 벌지 않는다. */
@@ -108,8 +137,12 @@ public final class GameState {
         return speed;
     }
 
-    /** 오토클릭으로 버는 초당 금액 (공인중개사는 반복 계약 기준 예상치) */
+    /** 오토클릭으로 버는 초당 금액 (공인중개사는 반복 계약 기준 예상치, 소방기술사는 배수 포함) */
     public double incomePerSecond() {
+        return baseIncomePerSecond() * boostMultiplier();
+    }
+
+    private double baseIncomePerSecond() {
         if (!autoOn) return 0;
         if (!isBroker()) return autoSpeed() * clickValue();
         return autoContractIncome(lastContract);
@@ -119,7 +152,7 @@ public final class GameState {
     public double autoContractIncome(int contract) {
         if (contract < 0) return 0;
         double speed = autoSpeed();
-        GameData.Contract c = GameData.CONTRACTS[contract];
+        GameData.Contract c = contracts()[contract];
         if (speed <= 0 || c.clicks / speed > c.seconds) return 0;
         return c.reward / (c.clicks / speed + CONTRACT_RESTART_SECONDS);
     }
@@ -129,16 +162,15 @@ public final class GameState {
         totalEarned += amount;
     }
 
-    /** 손으로 한 번 누른다. 번 돈을 돌려준다 (공인중개사는 계약 진행만 하므로 0). */
+    /** 손으로 한 번 누른다. 번 돈을 돌려준다 (계약 중이거나 공인중개사면 계약 진행만 하므로 0). */
     public double tap() {
         manualTaps++;
-        if (isBroker()) {
-            if (activeContract >= 0) {
-                contractClicks += 1;
-                checkContract();
-            }
+        if (activeContract >= 0) {
+            contractClicks += 1;
+            checkContract();
             return 0;
         }
+        if (isBroker()) return 0;
         sinceTap = 0;
         double v = clickValue();
         earn(v);
@@ -150,6 +182,14 @@ public final class GameState {
         if (!isBroker()) {
             if (isDelivery()) updateWeather(seconds);
             earn(incomePerSecond() * seconds);
+            if (isBoostJob()) {
+                boostLeft = Math.max(0, boostLeft - seconds);
+                // 소방 계약은 손으로만 클릭한다
+                if (activeContract >= 0) {
+                    contractTimeLeft -= seconds;
+                    checkContract();
+                }
+            }
             return;
         }
         if (activeContract >= 0) {
@@ -239,36 +279,36 @@ public final class GameState {
         return 0;
     }
 
-    // ---- 공인중개사 계약 ----
+    // ---- 계약 ----
 
     public boolean isContractUnlocked(int i) {
-        GameData.Contract c = GameData.CONTRACTS[i];
-        if (c.tier == 0 && c.category == 0) return true;
-        int need = c.tier > 0 ? contractIndex(c.category, c.tier - 1) : contractIndex(c.category - 1, 1);
-        return contractDone[need] >= GameData.CONTRACT_UNLOCK_COUNT;
+        int need = unlockRequirement(i);
+        return need < 0 || done()[need] >= GameData.CONTRACT_UNLOCK_COUNT;
     }
 
-    /** 잠긴 계약을 열려면 성사시켜야 하는 계약 */
+    /** 잠긴 계약을 열려면 성사시켜야 하는 계약 (-1 이면 처음부터 열림) */
     public int unlockRequirement(int i) {
-        GameData.Contract c = GameData.CONTRACTS[i];
+        GameData.Contract c = contracts()[i];
         if (c.tier == 0 && c.category == 0) return -1;
         return c.tier > 0 ? contractIndex(c.category, c.tier - 1) : contractIndex(c.category - 1, 1);
     }
 
-    public static int contractIndex(int category, int tier) {
-        for (int i = 0; i < GameData.CONTRACTS.length; i++) {
-            if (GameData.CONTRACTS[i].category == category && GameData.CONTRACTS[i].tier == tier) return i;
+    private int contractIndex(int category, int tier) {
+        GameData.Contract[] cs = contracts();
+        for (int i = 0; i < cs.length; i++) {
+            if (cs[i].category == category && cs[i].tier == tier) return i;
         }
         throw new IllegalArgumentException("no contract " + category + "/" + tier);
     }
 
     /** 계약을 시작한다. 진행 중인 다른 계약이 있으면 그 계약은 취소된다. */
     public boolean startContract(int i) {
-        if (!isBroker() || !isContractUnlocked(i)) return false;
+        if (!hasContracts() || !isContractUnlocked(i)) return false;
         activeContract = i;
-        lastContract = i;
+        // 오토 반복은 공인중개사만
+        lastContract = isBroker() ? i : -1;
         contractClicks = 0;
-        contractTimeLeft = GameData.CONTRACTS[i].seconds;
+        contractTimeLeft = contracts()[i].seconds;
         return true;
     }
 
@@ -278,10 +318,11 @@ public final class GameState {
 
     private void checkContract() {
         if (activeContract < 0) return;
-        GameData.Contract c = GameData.CONTRACTS[activeContract];
+        GameData.Contract c = contracts()[activeContract];
         if (contractClicks >= c.clicks) {
             earn(c.reward);
-            contractDone[activeContract]++;
+            if (c.boostSeconds > 0) boostLeft = Math.min(GameData.BOOST_MAX_SECONDS, boostLeft + c.boostSeconds);
+            done()[activeContract]++;
             finishContract(true);
         } else if (contractTimeLeft <= 0) {
             finishContract(false);
@@ -389,7 +430,8 @@ public final class GameState {
     public double offlineEarnings(long nowMillis) {
         if (lastSavedMillis <= 0 || nowMillis <= lastSavedMillis) return 0;
         double seconds = Math.min((nowMillis - lastSavedMillis) / 1000.0, OFFLINE_MAX_SECONDS);
-        return incomePerSecond() * seconds * OFFLINE_RATE;
+        // 소방기술사 배수는 앱을 켜 둔 동안만 적용
+        return baseIncomePerSecond() * seconds * OFFLINE_RATE;
     }
 
     // ---- 저장 ----
@@ -412,9 +454,12 @@ public final class GameState {
             }
         }
         sb.append(';');
-        for (int i = 0; i < contractDone.length; i++) {
-            if (i > 0) sb.append(',');
-            sb.append(contractDone[i]);
+        for (int j = 0; j < contractDone.length; j++) {
+            if (j > 0) sb.append('/');
+            for (int i = 0; i < contractDone[j].length; i++) {
+                if (i > 0) sb.append(',');
+                sb.append(contractDone[j][i]);
+            }
         }
         sb.append(';').append(lastContract).append(';').append(highestJob)
                 .append(';').append(selectedVehicle).append(';');
@@ -422,6 +467,7 @@ public final class GameState {
             if (j > 0) sb.append(',');
             sb.append(maxEverItem[j]);
         }
+        sb.append(';').append(boostLeft);
         return sb.toString();
     }
 
@@ -432,7 +478,8 @@ public final class GameState {
         try {
             String[] p = data.split(";", -1);
             boolean v2 = "v2".equals(p[0]);
-            if (!SAVE_VERSION.equals(p[0]) && !v2) return new GameState();
+            boolean v3 = "v3".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -448,13 +495,19 @@ public final class GameState {
                     s.levels[j][k] = Math.max(0, Math.min(max, Integer.parseInt(lv[k])));
                 }
             }
-            String[] done = p[9].split(",");
-            for (int i = 0; i < done.length && i < s.contractDone.length; i++) {
-                s.contractDone[i] = Math.max(0, Integer.parseInt(done[i]));
+            // v2·v3 는 공인중개사 계약 기록만 있었다
+            String[] doneJobs = v2 || v3 ? new String[]{"", p[9]} : p[9].split("/", -1);
+            for (int j = 0; j < doneJobs.length && j < s.contractDone.length; j++) {
+                if (doneJobs[j].isEmpty()) continue;
+                String[] done = doneJobs[j].split(",");
+                for (int i = 0; i < done.length && i < s.contractDone[j].length; i++) {
+                    s.contractDone[j][i] = Math.max(0, Integer.parseInt(done[i]));
+                }
             }
             s.highestJob = Math.max(s.job, Math.min(GameData.lastJob(), Integer.parseInt(p[11])));
             int last = Integer.parseInt(p[10]);
             s.lastContract = s.isBroker() && last >= 0 && last < GameData.CONTRACTS.length ? last : -1;
+            if (!v2 && !v3) s.boostLeft = Math.max(0, Math.min(GameData.BOOST_MAX_SECONDS, Double.parseDouble(p[14])));
             if (v2) {
                 // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다
                 for (int j = 0; j < s.levels.length; j++) {

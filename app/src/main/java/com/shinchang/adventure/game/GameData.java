@@ -11,7 +11,9 @@ public final class GameData {
         /** 클릭 1회마다 돈을 버는 직업 */
         CLICKER,
         /** 제한 시간 안에 목표 클릭 수를 채워 계약을 성사시키는 직업 */
-        BROKER
+        BROKER,
+        /** 클릭형 + 계약을 성사시키면 일정 시간 오토 수익이 몇 배가 되는 직업 */
+        BOOST
     }
 
     public static final class Item {
@@ -46,6 +48,8 @@ public final class GameData {
         public final Item[] items;
         /** true 면 아이템 효과가 합산되지 않고 가장 좋은 아이템 하나만 적용된다 (탈것 교체) */
         public final boolean bestItemOnly;
+        /** 이 직업의 계약 목록 (없으면 null) */
+        public Contract[] contracts;
 
         Job(JobType type, String emoji, String name, String story, double clickValue,
             double promoteCost, Item[] items, boolean bestItemOnly) {
@@ -60,7 +64,7 @@ public final class GameData {
         }
     }
 
-    /** 공인중개사 계약 */
+    /** 공인중개사·소방기술사 계약 */
     public static final class Contract {
         public final int category;
         public final int tier;
@@ -70,6 +74,8 @@ public final class GameData {
         public final String detail;
         /** 중개보수 (매도·매수 또는 임대·임차 양쪽 합산) */
         public final double reward;
+        /** 성사 시 오토 수익 배수가 적용되는 시간 (소방기술사) */
+        public final double boostSeconds;
         public final int clicks;
         public final int seconds;
 
@@ -83,6 +89,20 @@ public final class GameData {
             this.reward = reward;
             this.clicks = clicks;
             this.seconds = seconds;
+            this.boostSeconds = 0;
+        }
+
+        /** 소방기술사 계약: 성사하면 제한 시간 x3 동안 오토 수익 x3 */
+        Contract(int tier, String emoji, String name, String detail, int clicks, int seconds) {
+            this.category = 0;
+            this.tier = tier;
+            this.emoji = emoji;
+            this.name = name;
+            this.detail = detail;
+            this.reward = 0;
+            this.clicks = clicks;
+            this.seconds = seconds;
+            this.boostSeconds = seconds * BOOST_TIME_FACTOR;
         }
 
         public double requiredCps() {
@@ -98,15 +118,16 @@ public final class GameData {
     private static final Item[] DELIVERY_ITEMS = {
             // 가격: 2025년 국내 신차가 기준 (PCX·NMAX 공식가, 나머지는 해외 가격 환산 추정)
             // 탈것은 겹치지 않고 하나만 골라 타므로, 상위 탈것일수록 속도 가중치를 크게 준다
+            // 한 단계 오를 때마다 오토 배달 속도가 거의 2배
             new Item("🚶", "도보 배달", "veh_walk", 0, 0.5, 1),
             new Item("🚲", "자전거", "veh_bicycle", 300_000, 1, 1),
             new Item("🛵", "CITI 100", "veh_citi100", 2_100_000, 2, 1),
-            new Item("🛵", "PCX", "veh_pcx", 4_720_000, 3.2, 1),
-            new Item("🛵", "NMAX 155", "veh_nmax", 5_000_000, 4, 1),
-            new Item("🛵", "XMAX 300", "veh_xmax", 8_900_000, 5.5, 1),
-            new Item("🛵", "TMAX 650", "veh_tmax", 18_000_000, 7.5, 1),
-            new Item("🏍️", "R3", "veh_r3", 7_500_000, 9, 1),
-            new Item("🏍️", "R1000", "veh_r1000", 28_000_000, 12, 1),
+            new Item("🛵", "PCX", "veh_pcx", 4_720_000, 3.8, 1),
+            new Item("🛵", "NMAX 155", "veh_nmax", 5_000_000, 7, 1),
+            new Item("🛵", "XMAX 300", "veh_xmax", 8_900_000, 13, 1),
+            new Item("🛵", "TMAX 650", "veh_tmax", 18_000_000, 24, 1),
+            new Item("🏍️", "R3", "veh_r3", 7_500_000, 44, 1),
+            new Item("🏍️", "R1000", "veh_r1000", 28_000_000, 80, 1),
     };
 
     /** 탈것을 되팔 때 받는 비율 */
@@ -158,15 +179,16 @@ public final class GameData {
     };
 
     private static final Item[] BROKER_ITEMS = {
+            // 비싼 아이템일수록 자동 클릭 효과가 조금 더 크다
             new Item("📄", "전단지 돌리기", null, 0, 1, 1),
             new Item("📱", "중개 앱 등록", null, 2_000_000, 1, 1),
-            new Item("🚗", "중고 경차", null, 8_000_000, 1, 1),
-            new Item("🏢", "상가 사무실", null, 30_000_000, 1.5, 1),
-            new Item("📺", "부동산 유튜브", null, 60_000_000, 1.5, 1),
-            new Item("👥", "중개보조원 채용", null, 150_000_000, 2, 1),
-            new Item("🏬", "2호점 오픈", null, 500_000_000, 2, 1),
-            new Item("🏗️", "빌딩 전문팀", null, 1_500_000_000, 2.5, 1),
-            new Item("🌐", "부동산 플랫폼", null, 5_000_000_000.0, 3, 1),
+            new Item("🚗", "중고 경차", null, 8_000_000, 1.2, 1),
+            new Item("🏢", "상가 사무실", null, 30_000_000, 1.8, 1),
+            new Item("📺", "부동산 유튜브", null, 60_000_000, 2.4, 1),
+            new Item("👥", "중개보조원 채용", null, 150_000_000, 3.2, 1),
+            new Item("🏬", "2호점 오픈", null, 500_000_000, 4.2, 1),
+            new Item("🏗️", "빌딩 전문팀", null, 1_500_000_000, 5.5, 1),
+            new Item("🌐", "부동산 플랫폼", null, 5_000_000_000.0, 7, 1),
     };
 
     // ------------------------------------------------------------ 직업 목록
@@ -174,12 +196,12 @@ public final class GameData {
     public static final Job[] JOBS = {
             new Job(JobType.CLICKER, "🛵", "배달원",
                     "오늘도 콜을 잡는다. 언젠가는 재벌이 될 거야!",
-                    DELIVERY_FEE, 30_000_000, DELIVERY_ITEMS, true),
+                    DELIVERY_FEE, 200_000_000, DELIVERY_ITEMS, true),
             new Job(JobType.BROKER, "🏠", "공인중개사",
                     "배달하며 외운 골목길이 최고의 무기. 손님을 설득해 계약을 따내자!",
                     0, 5_000_000_000.0, BROKER_ITEMS, false),
-            generated("🚒", "소방기술사", "건물을 보다 보니 안전이 보였다. 국가 기술사 합격!",
-                    2_000_000, 8e11, 1,
+            generated(JobType.BOOST, "🚒", "소방기술사", "건물을 보다 보니 안전이 보였다. 국가 기술사 합격!",
+                    2_000_000, 3e12, 1,
                     new String[][]{
                             {"🧰", "공구 세트"},
                             {"🧯", "점검 장비"},
@@ -191,7 +213,7 @@ public final class GameData {
                             {"🏙️", "랜드마크 수주"},
                             {"🔥", "소방 엔지니어링 그룹"},
                     }),
-            generated("🛍️", "쇼핑몰 사장", "현장에서 번 돈으로 창업. 이제는 내가 사장이다.",
+            generated(JobType.CLICKER, "🛍️", "쇼핑몰 CEO", "현장에서 번 돈으로 창업. 이제는 내가 CEO다.",
                     100_000_000, 5e13, 1,
                     new String[][]{
                             {"🏪", "스마트스토어"},
@@ -204,7 +226,7 @@ public final class GameData {
                             {"✈️", "해외 진출"},
                             {"🦄", "유니콘 플랫폼"},
                     }),
-            generated("👑", "재벌 회장", "배달부에서 그룹 회장까지. 신창 그룹의 신화가 시작된다.",
+            generated(JobType.CLICKER, "👑", "재벌 회장", "배달부에서 그룹 회장까지. 신창 그룹의 신화가 시작된다.",
                     5_000_000_000.0, 0, 3,
                     new String[][]{
                             {"🏦", "계열사 인수"},
@@ -219,12 +241,37 @@ public final class GameData {
                     }),
     };
 
+    // ------------------------------------------------------------ 3. 소방기술사 계약
+
+    /** 계약 성사 시 오토 수익 배수 */
+    public static final double BOOST_MULTIPLIER = 3;
+    /** 성사 시 배수가 적용되는 시간 = 제한 시간 x 이 값 */
+    public static final int BOOST_TIME_FACTOR = 3;
+    /** 배수 시간은 계약을 이어서 성사시키면 쌓이며, 최대 이 시간까지 */
+    public static final double BOOST_MAX_SECONDS = 600;
+
+    public static final Contract[] FIRE_CONTRACTS = {
+            new Contract(0, "🏠", "주택 감지기 점검", "단독주택 화재감지기", 8, 3),
+            new Contract(1, "🏪", "상가 소방점검", "근린상가 작동점검", 22, 5),
+            new Contract(2, "🏢", "오피스 정밀점검", "업무시설 종합정밀점검", 40, 8),
+            new Contract(3, "🏬", "아파트 단지 점검", "1,000세대 단지", 65, 12),
+            new Contract(4, "🏭", "공장 소방설계", "물류센터·공장 설계", 95, 16),
+            new Contract(5, "🏥", "병원 성능위주설계", "종합병원 성능위주설계", 135, 21),
+            new Contract(6, "🏙️", "초고층 빌딩 감리", "50층 이상 빌딩 감리", 180, 26),
+            new Contract(7, "✈️", "공항 소방감리", "국제공항 터미널 감리", 240, 32),
+    };
+
+    static {
+        JOBS[1].contracts = CONTRACTS;
+        JOBS[2].contracts = FIRE_CONTRACTS;
+    }
+
     public static int lastJob() {
         return JOBS.length - 1;
     }
 
     /** 아이템을 공식으로 만드는 직업. 아이템마다 최대 10레벨까지 강화한다. */
-    private static Job generated(String emoji, String name, String story,
+    private static Job generated(JobType type, String emoji, String name, String story,
                                  double clickValue, double promoteCost, double costScale, String[][] itemNames) {
         Item[] items = new Item[itemNames.length];
         for (int k = 0; k < itemNames.length; k++) {
@@ -232,7 +279,7 @@ public final class GameData {
             double speed = 0.5 * Math.pow(2.0, k);
             items[k] = new Item(itemNames[k][0], itemNames[k][1], null, cost, speed, 10);
         }
-        return new Job(JobType.CLICKER, emoji, name, story, clickValue, promoteCost, items, false);
+        return new Job(type, emoji, name, story, clickValue, promoteCost, items, false);
     }
 
     // ------------------------------------------------------------ 중개보수 계산

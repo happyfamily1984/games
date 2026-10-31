@@ -26,11 +26,12 @@ public class Simulate {
             if (s.job != lastJob) {
                 System.out.printf("%7.1f분  %s 시작%n", t / 60, s.currentJob().name);
                 lastJob = s.job;
+                lastBest = -1;
             }
-            if (s.isBroker() && s.activeContract < 0) {
+            if (s.hasContracts() && s.activeContract < 0) {
                 int best = bestContract(s, tapsPerSec);
                 if (best >= 0) {
-                    if (best != lastBest) System.out.printf("%7.1f분    · %s 계약 반복 (보유 %s)%n", t / 60, GameData.CONTRACTS[best].name, Money.format(s.money));
+                    if (best != lastBest) System.out.printf("%7.1f분    · %s 계약 반복 (보유 %s)%n", t / 60, s.contracts()[best].name, Money.format(s.money));
                     lastBest = best;
                     s.startContract(best);
                 }
@@ -47,7 +48,7 @@ public class Simulate {
                 continue;
             }
             int bought = buyItems(s);
-            if (bought > 0 && s.job <= 1) {
+            if (bought > 0 && s.job <= 2) {
                 lastItemsBought += bought;
                 System.out.printf("%7.1f분    └ %s 구매 (오토 %s회/초)%n", t / 60, bestOwned(s), Money.speed(s.autoSpeed()));
             }
@@ -65,16 +66,19 @@ public class Simulate {
 
     /** 손+오토 속도로 시간 안에 끝낼 수 있는 계약 중 보수가 가장 큰 것 (실제 플레이어처럼 새 계약 우선) */
     private static int bestContract(GameState s, double taps) {
-        double speed = taps + s.autoSpeed();
+        // 소방 계약은 손으로만 클릭
+        double speed = taps + (s.isBroker() ? s.autoSpeed() : 0);
         int best = -1;
         double bestRate = 0;
-        for (int i = 0; i < GameData.CONTRACTS.length; i++) {
-            GameData.Contract c = GameData.CONTRACTS[i];
+        GameData.Contract[] cs = s.contracts();
+        for (int i = 0; i < cs.length; i++) {
+            GameData.Contract c = cs[i];
             if (!s.isContractUnlocked(i)) continue;
             double need = c.clicks / speed;
             if (need > c.seconds * 0.95) continue;
             // 아직 3번 못 채운 새 계약을 우선 (다음 계약을 열기 위해)
-            double rate = c.reward * (s.contractDone[i] < GameData.CONTRACT_UNLOCK_COUNT ? 1000 : 1);
+            double value = c.reward + c.boostSeconds;
+            double rate = value * (s.done()[i] < GameData.CONTRACT_UNLOCK_COUNT ? 1000 : 1);
             if (rate > bestRate) {
                 bestRate = rate;
                 best = i;

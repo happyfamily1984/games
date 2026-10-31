@@ -163,6 +163,9 @@ public class MainActivity extends Activity {
                 GameData.Job job = state.currentJob();
                 String how = state.isBroker()
                         ? "이제 클릭으로 돈을 벌지 않아요.\n아래 계약을 골라 제한 시간 안에 목표 클릭 수를 채우면 중개보수를 받습니다!"
+                        : state.isBoostJob()
+                        ? "클릭당 금액: " + Money.format(job.clickValue)
+                        + "\n\n아래 소방 계약을 제한 시간 안에 성사시키면, 제한 시간의 3배 동안 오토 수익이 3배가 됩니다!"
                         : "클릭당 금액: " + Money.format(job.clickValue);
                 new AlertDialog.Builder(this)
                         .setTitle(job.emoji + " " + job.name + "(으)로 전직!")
@@ -217,14 +220,13 @@ public class MainActivity extends Activity {
     }
 
     private void onTap(float x, float y) {
-        if (state.isBroker()) {
-            if (state.activeContract < 0) {
-                spawnFloatingText(x, y, "계약을 먼저 고르세요", getColor(R.color.text_sub));
-                return;
-            }
+        if (state.activeContract >= 0) {
             state.tap();
             spawnFloatingText(x, y, "+1", getColor(R.color.primary_dark));
             showContractEvent();
+        } else if (state.isBroker()) {
+            spawnFloatingText(x, y, "계약을 먼저 고르세요", getColor(R.color.text_sub));
+            return;
         } else {
             double got = state.tap();
             spawnFloatingText(x, y, "+" + Money.format(got), getColor(R.color.primary_dark));
@@ -253,9 +255,10 @@ public class MainActivity extends Activity {
                     + (income > 0 ? "🔁 반복 계약 초당 약 " + Money.format(income) : "🔁 마지막 계약을 자동 반복"));
         } else {
             rateText.setText("클릭당 " + Money.format(state.clickValue())
-                    + (state.isDelivery() ? " (배달 1건)" : ""));
+                    + (state.isDelivery() ? " (배달 1건)" : state.isBoostJob() ? " · 계약 성사 시 오토 수익 ×3" : ""));
+            String boost = state.boostMultiplier() > 1 ? "  🔥×" + (int) state.boostMultiplier() : "";
             autoText.setText(state.autoOn
-                    ? "⚡ 초당 " + Money.speed(speed) + "회\n💰 초당 " + Money.format(state.incomePerSecond())
+                    ? "⚡ 초당 " + Money.speed(speed) + "회" + boost + "\n💰 초당 " + Money.format(state.incomePerSecond())
                     : "⏸ 오토클릭 꺼짐\n(켜면 초당 " + Money.speed(speed) + "회)");
         }
 
@@ -270,30 +273,43 @@ public class MainActivity extends Activity {
     private void refreshTapArea() {
         int vehicle = bestVehicleImage();
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tapButton.getLayoutParams();
-        if (state.isBroker()) {
+        if (state.hasContracts()) {
             vehicleImage.setVisibility(View.GONE);
             tapButton.setVisibility(View.VISIBLE);
-            tapButton.setText("🤝");
+            tapButton.setText(state.isBroker() ? "🤝" : "🧯");
             tapButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 52);
             setTapButtonLayout(lp, dp(124), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, dp(22));
             contractPanel.setVisibility(View.VISIBLE);
-            tapHint.setText(state.activeContract >= 0 ? "빠르게 연타!" : "아래에서 계약을 고르세요");
+            tapHint.setText(state.activeContract >= 0 ? "빠르게 연타!"
+                    : state.isBroker() ? "아래에서 계약을 고르세요" : "탭해서 돈 벌기 · 계약은 아래에서");
 
             if (state.activeContract >= 0) {
-                GameData.Contract c = GameData.CONTRACTS[state.activeContract];
-                contractTitle.setText(c.emoji + " " + c.name + " 계약 중 · 보수 " + Money.format(c.reward));
+                GameData.Contract c = state.contracts()[state.activeContract];
+                contractTitle.setText(c.emoji + " " + c.name + (state.isBroker()
+                        ? " 계약 중 · 보수 " + Money.format(c.reward)
+                        : " 중 · 성공 시 " + (int) c.boostSeconds + "초간 ×3"));
                 clickBar.setProgress((int) (1000 * Math.min(1, state.contractClicks / c.clicks)));
                 timeBar.setProgress((int) (1000 * Math.max(0, state.contractTimeLeft / c.seconds)));
                 contractInfo.setText(String.format(Locale.KOREA, "클릭 %d / %d   ·   남은 시간 %.1f초",
                         (int) state.contractClicks, c.clicks, Math.max(0, state.contractTimeLeft)));
             } else {
                 boolean repeating = state.autoOn && state.lastContract >= 0;
-                contractTitle.setText(repeating
-                        ? "🔁 " + GameData.CONTRACTS[state.lastContract].name + " 다음 손님 기다리는 중..."
-                        : "📋 진행 중인 계약 없음");
                 clickBar.setProgress(0);
-                timeBar.setProgress(0);
-                contractInfo.setText("월세 → 전세 → 매매 순으로 큰 계약이 열려요");
+                if (state.isBroker()) {
+                    contractTitle.setText(repeating
+                            ? "🔁 " + state.contracts()[state.lastContract].name + " 다음 손님 기다리는 중..."
+                            : "📋 진행 중인 계약 없음");
+                    timeBar.setProgress(0);
+                    contractInfo.setText("월세 → 전세 → 매매 순으로 큰 계약이 열려요");
+                } else if (state.boostLeft > 0) {
+                    contractTitle.setText(String.format(Locale.KOREA, "🔥 오토 수익 ×3 · %d초 남음", (int) Math.ceil(state.boostLeft)));
+                    timeBar.setProgress((int) (1000 * state.boostLeft / GameData.BOOST_MAX_SECONDS));
+                    contractInfo.setText("계약을 또 성사시키면 시간이 더 쌓여요 (최대 10분)");
+                } else {
+                    contractTitle.setText("📋 계약을 성사시키면 오토 수익 ×3");
+                    timeBar.setProgress(0);
+                    contractInfo.setText("큰 계약일수록 클릭은 많지만 ×3 시간도 길어요");
+                }
             }
         } else {
             contractPanel.setVisibility(View.GONE);
@@ -357,22 +373,26 @@ public class MainActivity extends Activity {
         }
 
         contractContainer.removeAllViews();
-        if (!state.isBroker()) {
+        if (!state.hasContracts()) {
             contractRows = new ContractRow[0];
             return;
         }
-        contractRows = new ContractRow[GameData.CONTRACTS.length];
-        for (int cat = 0; cat < GameData.CONTRACT_CATEGORIES.length; cat++) {
+        GameData.Contract[] cs = state.contracts();
+        contractRows = new ContractRow[cs.length];
+        int categories = state.isBroker() ? GameData.CONTRACT_CATEGORIES.length : 1;
+        for (int cat = 0; cat < categories; cat++) {
             TextView header = new TextView(this);
-            header.setText(CATEGORY_ICONS[cat] + " " + GameData.CONTRACT_CATEGORIES[cat] + " 계약");
+            header.setText(state.isBroker()
+                    ? CATEGORY_ICONS[cat] + " " + GameData.CONTRACT_CATEGORIES[cat] + " 계약"
+                    : "🧯 소방 계약 (성사 시 오토 수익 ×3)");
             header.setTextColor(getColor(R.color.text));
             header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             header.setTypeface(Typeface.DEFAULT_BOLD);
             header.setPadding(0, dp(16), 0, dp(8));
             contractContainer.addView(header);
-            for (int i = 0; i < GameData.CONTRACTS.length; i++) {
-                if (GameData.CONTRACTS[i].category != cat) continue;
-                contractRows[i] = createContractRow(i, GameData.CONTRACTS[i]);
+            for (int i = 0; i < cs.length; i++) {
+                if (cs[i].category != cat) continue;
+                contractRows[i] = createContractRow(i, cs[i]);
                 contractContainer.addView(contractRows[i].root);
             }
         }
@@ -488,7 +508,9 @@ public class MainActivity extends Activity {
 
         TextView[] name = new TextView[1];
         row.info = addTexts(root, name);
-        name[0].setText(c.name + "  " + Money.format(c.reward));
+        name[0].setText(c.boostSeconds > 0
+                ? c.name + "  🔥" + (int) c.boostSeconds + "초"
+                : c.name + "  " + Money.format(c.reward));
 
         row.start = newActionButton();
         row.start.setOnClickListener(v -> {
@@ -613,7 +635,13 @@ public class MainActivity extends Activity {
             tapArea.setBackgroundColor(w == GameData.RAIN ? 0xFFDCE6F0 : w == GameData.SNOW ? 0xFFF2F7FC : 0);
         }
         if (w == GameData.CLEAR) {
-            weatherBanner.setVisibility(View.GONE);
+            if (state.boostMultiplier() > 1) {
+                weatherBanner.setVisibility(View.VISIBLE);
+                weatherBanner.setText(String.format(Locale.KOREA, "🔥 오토 수익 ×3 · %d초 남음",
+                        (int) Math.ceil(state.boostLeft)));
+            } else {
+                weatherBanner.setVisibility(View.GONE);
+            }
             return;
         }
         weatherBanner.setVisibility(View.VISIBLE);
@@ -653,20 +681,21 @@ public class MainActivity extends Activity {
     private void refreshContracts() {
         for (int i = 0; i < contractRows.length; i++) {
             ContractRow row = contractRows[i];
-            GameData.Contract c = GameData.CONTRACTS[i];
+            GameData.Contract c = state.contracts()[i];
             boolean unlocked = state.isContractUnlocked(i);
             row.root.setAlpha(unlocked ? 1f : 0.5f);
             if (!unlocked) {
                 int need = state.unlockRequirement(i);
-                row.info.setText(c.detail + "\n🔒 " + GameData.CONTRACTS[need].name + " "
-                        + Math.min(state.contractDone[need], GameData.CONTRACT_UNLOCK_COUNT) + "/"
+                row.info.setText(c.detail + "\n🔒 " + state.contracts()[need].name + " "
+                        + Math.min(state.done()[need], GameData.CONTRACT_UNLOCK_COUNT) + "/"
                         + GameData.CONTRACT_UNLOCK_COUNT + "회 성사하면 열림");
                 row.start.setText("잠김");
                 row.start.setEnabled(false);
                 continue;
             }
             row.info.setText(c.detail + "\n⏱ " + c.seconds + "초 안에 " + c.clicks + "번 클릭 · 성사 "
-                    + state.contractDone[i] + "회");
+                    + state.done()[i] + "회"
+                    + (c.boostSeconds > 0 ? "\n🔥 성공하면 " + (int) c.boostSeconds + "초간 오토 수익 ×3" : ""));
             if (state.activeContract == i) {
                 row.start.setText("진행 중");
                 row.start.setEnabled(false);
@@ -680,11 +709,14 @@ public class MainActivity extends Activity {
     private void showContractEvent() {
         if (state.eventSeq == shownEventSeq) return;
         shownEventSeq = state.eventSeq;
-        GameData.Contract c = GameData.CONTRACTS[state.eventContract];
+        if (state.eventContract >= state.contracts().length) return;
+        GameData.Contract c = state.contracts()[state.eventContract];
         float x = tapArea.getWidth() / 2f;
         float y = tapArea.getHeight() / 2f;
         if (state.eventSuccess) {
-            spawnFloatingText(x, y, "🎉 계약 성사! +" + Money.format(c.reward), getColor(R.color.primary_dark));
+            spawnFloatingText(x, y, c.boostSeconds > 0
+                    ? "🔥 계약 성사! " + (int) c.boostSeconds + "초간 오토 ×3"
+                    : "🎉 계약 성사! +" + Money.format(c.reward), getColor(R.color.primary_dark));
             pulse();
         } else {
             spawnFloatingText(x, y, "⌛ 시간 초과… 계약 실패", getColor(R.color.text_sub));
