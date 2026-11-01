@@ -3,6 +3,9 @@
     <style name="Theme.Shinchang" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@color/primary_dark</item>
+        <!-- 안드로이드 15 전체 화면: 밝은 배경 위에 어두운 상단바·하단바 아이콘 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:colorAccent">@color/primary</item>
     </style>
 </resources>

@@ -201,6 +201,7 @@ public class RpgActivity extends Activity {
         controls.addView(battlePanel);
         root.addView(controls, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
         setContentView(root);
+        com.shinchang.adventure.SystemBars.avoid(this);
     }
 
     private View buildPad() {
