@@ -121,7 +121,8 @@ public class RpgActivity extends Activity {
         List<String> l = new ArrayList<>();
         l.add("— " + RpgData.CHAPTER_TITLES[0] + " —");
         l.add("도보 배달로 시작해 재벌, 종교계를 거쳐 마침내 대통령이 된 신창.");
-        l.add("어느 밤, 청와대 금고 깊은 곳에서 정체를 알 수 없는 기계가 발견되었다…");
+        l.add("그의 곁에는 언제나 낡은 배달 가방이 있었다. 첫 배달 날, 이름 모를 할머니에게 받은 가방이다.");
+        l.add("어느 밤, 청와대 금고 가장 안쪽 방에서 정체를 알 수 없는 기계가 발견되었다…");
         StringBuilder perks = new StringBuilder("앞선 인생의 경험이 힘이 된다:\n· 배달 경험 – 길을 잘 알아 몬스터를 덜 만난다");
         if (state.perkBroker) perks.append("\n· 협상의 달인 – 상점 10% 할인");
         if (state.perkFire) perks.append("\n· 소방 기술 – 불꽃 주문 +20%");
@@ -610,9 +611,13 @@ public class RpgActivity extends Activity {
 
     private void openMenu() {
         if (busy()) return;
-        String[] items = {"📜 상태", "🎒 도구", "✨ 주문", "🗡️ 장비", "💾 기록하기", "🏛️ 세속으로 돌아가기"};
+        String[] items = {"📜 상태", "🎒 도구", "✨ 주문", "🗡️ 장비", "📖 단서", "💾 기록하기", "🏛️ 세속으로 돌아가기"};
         chooseFrom(state.chapterTitle(), items, i -> {
+            if (i >= 4) i = i == 4 ? 99 : i - 1;
             switch (i) {
+                case 99:
+                    showClues();
+                    return;
                 case 0:
                     showStatus();
                     break;
@@ -635,6 +640,24 @@ public class RpgActivity extends Activity {
                     break;
             }
         });
+    }
+
+    private void showClues() {
+        StringBuilder sb = new StringBuilder();
+        int found = 0;
+        for (int i = 0; i < RpgData.CLUE_NAMES.length; i++) {
+            if (state.hasFlag(1 << i)) {
+                found++;
+                sb.append("◆ ").append(RpgData.CLUE_NAMES[i]).append("\n").append(RpgData.CLUE_TEXTS[i]).append("\n\n");
+            } else {
+                sb.append("◇ ???\n아직 찾지 못한 단서. 마을과 동굴의 책장·벽화·물건을 「조사」해 보자.\n\n");
+            }
+        }
+        sb.append("찾은 단서 ").append(found).append(" / ").append(RpgData.CLUE_NAMES.length);
+        dialogOpen = true;
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("📖 단서").setMessage(sb.toString())
+                .setPositiveButton("닫기", (d, w) -> dialogOpen = false)
+                .setOnCancelListener(d -> dialogOpen = false).show();
     }
 
     private void showStatus() {

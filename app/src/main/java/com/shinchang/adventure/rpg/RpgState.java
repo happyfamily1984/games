@@ -20,7 +20,7 @@ public final class RpgState {
 
     public int step = RpgData.STEP_PROLOGUE;
     public int map = RpgData.OFFICE;
-    public int x = 5, y = 6;
+    public int x = RpgData.START_X, y = RpgData.START_Y;
     public int dir = UP;
     public int gold = 30;
     public final List<Hero> party = new ArrayList<>();
@@ -29,6 +29,8 @@ public final class RpgState {
     public int townMap = RpgData.REBEL, townX = 8, townY = 11;
     public int battlesWon;
     public int stepsWalked;
+    /** 찾아낸 단서 비트 (RpgData.FLAG_*) */
+    public int flags;
 
     // 앞선 인생에서 얻은 특기 (저장하지 않고, 시작할 때 세속 진행에서 읽는다)
     public boolean perkDelivery = true;
@@ -162,6 +164,32 @@ public final class RpgState {
         return r;
     }
 
+    /** 지도가 바뀌어 예전 저장 위치가 벽 속이면, 가장 가까운 걸을 수 있는 칸으로 옮긴다 */
+    void fixPosition() {
+        if (x >= 0 && y >= 0 && x < mapWidth() && y < mapHeight() && walkable(x, y)) return;
+        for (int r = 1; r < 40; r++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    int nx = x + dx, ny = y + dy;
+                    if (nx < 0 || ny < 0 || nx >= mapWidth() || ny >= mapHeight()) continue;
+                    if (walkable(nx, ny) && !isLink(nx, ny)) {
+                        x = nx;
+                        y = ny;
+                        return;
+                    }
+                }
+            }
+        }
+        map = RpgData.OFFICE;
+        x = RpgData.START_X;
+        y = RpgData.START_Y;
+    }
+
+    private boolean isLink(int tx, int ty) {
+        for (int[] l : RpgData.LINKS) if (l[0] == map && l[1] == tx && l[2] == ty) return true;
+        return false;
+    }
+
     public void warp(int toMap, int tx, int ty) {
         map = toMap;
         x = tx;
@@ -206,6 +234,11 @@ public final class RpgState {
             talk(npc, in);
             return in;
         }
+        RpgData.Readable rd = readableAt(map, fx, fy);
+        if (rd != null) {
+            read(rd, in);
+            return in;
+        }
         char t = tile(fx, fy);
         if (t == 'C') {
             openChest(chestAt(map, fx, fy), in);
@@ -217,10 +250,44 @@ public final class RpgState {
                 step = RpgData.STEP_ARRIVED;
                 warp(RpgData.WORLD, 5, 18);
             }
+        } else if (RpgData.examineDefault(t) != null) {
+            in.lines.add(RpgData.examineDefault(t));
         } else {
             in.lines.add("신창은 주위를 둘러보았다. 별다른 것은 없다.");
         }
         return in;
+    }
+
+    public static RpgData.Readable readableAt(int map, int tx, int ty) {
+        for (RpgData.Readable r : RpgData.READABLES) {
+            if (r.map == map && r.x == tx && r.y == ty) return r;
+        }
+        return null;
+    }
+
+    public boolean hasFlag(int f) {
+        return (flags & f) != 0;
+    }
+
+    private void read(RpgData.Readable r, Interaction in) {
+        boolean first = r.item >= 0 ? !hasItem(r.item) : true;
+        for (String l : r.lines) {
+            // 아이템을 받는 줄은 처음 읽을 때만
+            if (!first && l.startsWith("(「") && l.endsWith("손에 넣었다!)")) continue;
+            in.lines.add(l);
+        }
+        if (r.linaLine != null && party.size() > 1) in.lines.add(r.linaLine);
+        if (r.flag != 0) flags |= r.flag;
+        if (r.item >= 0 && first) addItem(r.item, 1);
+    }
+
+    /** 지금까지 찾은 단서 이름들 */
+    public List<String> clues() {
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < RpgData.CLUE_NAMES.length; i++) {
+            if (hasFlag(1 << i)) out.add(RpgData.CLUE_NAMES[i]);
+        }
+        return out;
     }
 
     private void talk(RpgData.Npc npc, Interaction in) {
@@ -265,7 +332,9 @@ public final class RpgState {
                 lines = RpgData.KING_WAITING;
                 break;
             case RpgData.STEP_BOSS_DOWN:
-                lines = RpgData.KING_CHAPTER_CLEAR;
+                lines = concat(RpgData.KING_CLEAR_OPEN,
+                        hasFlag(RpgData.FLAG_DIARY) ? RpgData.KING_CLEAR_DIARY : RpgData.KING_CLEAR_NO_DIARY,
+                        RpgData.KING_CLEAR_CLOSE);
                 step = RpgData.STEP_CHAPTER1_CLEAR;
                 gold += 1000;
                 items[RpgData.HERO_BADGE] = 1;
@@ -279,6 +348,12 @@ public final class RpgState {
                 break;
         }
         for (String l : lines) in.lines.add(l);
+    }
+
+    private static String[] concat(String[]... parts) {
+        List<String> out = new ArrayList<>();
+        for (String[] p : parts) for (String l : p) out.add(l);
+        return out.toArray(new String[0]);
     }
 
     private void openChest(int index, Interaction in) {
@@ -299,6 +374,7 @@ public final class RpgState {
     /** 보스를 쓰러뜨린 뒤 */
     public List<String> onBossDefeated() {
         step = RpgData.STEP_BOSS_DOWN;
+        addItem(RpgData.SEAL_SHARD, 1);
         List<String> out = new ArrayList<>();
         for (String l : RpgData.BOSS_DEFEATED) out.add(l);
         return out;
@@ -450,7 +526,8 @@ public final class RpgState {
         sb.append(';');
         for (boolean b : chestOpened) sb.append(b ? '1' : '0');
         sb.append(';').append(townMap).append(';').append(townX).append(';').append(townY)
-                .append(';').append(battlesWon).append(';').append(stepsWalked);
+                .append(';').append(battlesWon).append(';').append(stepsWalked)
+                .append(';').append(flags);
         return sb.toString();
     }
 
@@ -474,8 +551,16 @@ public final class RpgState {
             s.townMap = Integer.parseInt(p[10]);
             s.townX = Integer.parseInt(p[11]);
             s.townY = Integer.parseInt(p[12]);
+            for (int[] t : RpgData.TOWN_RETURN) {
+                if (t[0] == s.townMap) {
+                    s.townX = t[1];
+                    s.townY = t[2];
+                }
+            }
             s.battlesWon = Integer.parseInt(p[13]);
             s.stepsWalked = Integer.parseInt(p[14]);
+            if (p.length > 15) s.flags = Integer.parseInt(p[15]);
+            s.fixPosition();
             return s;
         } catch (RuntimeException e) {
             return new RpgState();

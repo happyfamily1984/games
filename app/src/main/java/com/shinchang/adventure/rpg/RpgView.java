@@ -104,6 +104,20 @@ public class RpgView extends View {
         return b;
     }
 
+    /** 바탕이 투명한 물건 타일 */
+    private static final String OBJECTS = "btoxFQYPANLZje";
+    /** 물건 밑에 깔 수 있는 바닥 */
+    private static final String GROUNDS = ";,:.f=r";
+    private static final int[][] AROUND = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {1, 1}, {-1, -1}, {1, -1}};
+
+    private char groundAt(int tx, int ty) {
+        for (int[] d : AROUND) {
+            char c = state.tile(tx + d[0], ty + d[1]);
+            if (GROUNDS.indexOf(c) >= 0) return c;
+        }
+        return ',';
+    }
+
     private String tileKey(char t) {
         boolean cave = state.map == RpgData.CAVE1 || state.map == RpgData.CAVE2;
         if (cave && (t == ',' || t == '#' || t == 'X' || t == 'C' || t == 'c')) return "cave" + t;
@@ -146,6 +160,11 @@ public class RpgView extends View {
                 boolean outside = tx < 0 || ty < 0 || tx >= state.mapWidth() || ty >= state.mapHeight();
                 char ch = outside ? (world ? '~' : ' ') : state.tile(tx, ty);
                 if (ch == ' ') continue;
+                if (OBJECTS.indexOf(ch) >= 0) {
+                    // 가구·물건은 바탕이 투명하니 주변 바닥을 먼저 깐다
+                    char g = groundAt(tx, ty);
+                    canvas.drawBitmap(bitmap("t" + tileKey(g), RpgArt.tile(tileKey(g)), ts), tx * ts - camX, ty * ts - camY, pixelPaint);
+                }
                 String[] art = RpgArt.tile(tileKey(ch));
                 if (art == null) art = RpgArt.tile(".");
                 canvas.drawBitmap(bitmap("t" + tileKey(ch), art, ts), tx * ts - camX, ty * ts - camY, pixelPaint);
