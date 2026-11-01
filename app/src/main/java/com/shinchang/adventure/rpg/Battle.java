@@ -46,7 +46,13 @@ public final class Battle {
     private final RpgState state;
     private final Random random;
     private boolean fled;
+    /** 수호의 맹세: 받는 피해 배율 */
     private double guard = 1;
+    /** 보스 격노 (HP 절반 이하) */
+    private boolean enraged;
+    private boolean faltered;
+    /** 이번 라운드에 격노했는지 (화면 연출용) */
+    public boolean enragedThisRound;
     private final boolean[] defending = new boolean[4];
     private int totalExp, totalGold;
 
@@ -66,7 +72,6 @@ public final class Battle {
                 name += " " + (char) ('A' + n);
             }
             enemies.add(new Enemy(m, name));
-            totalExp += m.exp;
             totalGold += m.gold;
         }
     }
@@ -132,8 +137,29 @@ public final class Battle {
      * 한 라운드를 진행한다. actions 는 파티 순서대로 (쓰러진 멤버는 무시).
      * 첫 번째 명령이 FLEE 면 파티 전체가 도망을 시도한다.
      */
+    public boolean enraged() {
+        return enraged;
+    }
+
+    /**
+     * 강적 보너스: 파티 평균 레벨보다 강한 적일수록 경험치가 늘고(레벨 차 1당 +25%, 최대 2.5배),
+     * 너무 약한 적(6레벨 이상 아래)은 절반만 준다.
+     */
+    public static double expFactor(int monsterLevel, double partyLevel) {
+        double diff = monsterLevel - partyLevel;
+        if (diff <= -6) return 0.5;
+        return Math.min(2.5, 1 + 0.25 * Math.max(0, diff));
+    }
+
+    private double partyLevel() {
+        double sum = 0;
+        for (Hero h : state.party) sum += h.level;
+        return sum / state.party.size();
+    }
+
     public List<String> playRound(List<Action> actions) {
         List<String> log = new ArrayList<>();
+        enragedThisRound = false;
         java.util.Arrays.fill(defending, false);
 
         if (!actions.isEmpty() && actions.get(0).cmd == FLEE) {
@@ -173,7 +199,10 @@ public final class Battle {
                 Enemy e = enemies.get(idx);
                 if (!e.alive()) continue;
                 enemyAct(e, log);
-                if (e.m.special == 2 && random.nextDouble() < 0.35 && !lost()) enemyAct(e, log);
+                if (e.m.special == 2 && random.nextDouble() < (enraged ? 0.55 : 0.35) && !lost()) {
+                    log.add(Josa.eun(e.name) + " 쉴 틈도 주지 않는다!");
+                    enemyAct(e, log);
+                }
             }
         }
         finishLog(log);
@@ -190,7 +219,14 @@ public final class Battle {
 
     private void finishLog(List<String> log) {
         if (won()) {
-            log.add("몬스터를 모두 물리쳤다!");
+            double base = 0, bonus = 0, pl = partyLevel();
+            for (Enemy e : enemies) {
+                base += e.m.exp;
+                bonus += e.m.exp * expFactor(e.m.level, pl);
+            }
+            totalExp = (int) Math.round(bonus);
+            log.add(boss ? Josa.eul(enemies.get(0).name) + " 쓰러뜨렸다!" : "몬스터를 모두 물리쳤다!");
+            if (bonus > base * 1.05) log.add("강적을 물리쳤다! 경험치 보너스 ×" + String.format(java.util.Locale.ROOT, "%.1f", bonus / base));
             log.add(totalExp + "의 경험치를 얻었다. " + totalGold + "골드를 손에 넣었다.");
             state.gold += totalGold;
             for (Hero h : state.party) log.addAll(h.gainExp(totalExp));
@@ -271,8 +307,32 @@ public final class Battle {
                 break;
             }
             case RpgData.GUARD:
-                guard = 1.5;
-                log.add("일행의 방어력이 올랐다!");
+                guard = 0.5;
+                log.add("빛의 방패가 일행을 감쌌다! 이번 전투 동안 받는 피해가 절반이 된다!");
+                break;
+            case RpgData.HEAL_ALL:
+                for (Hero t : state.party) {
+                    if (!t.alive()) continue;
+                    int amount = (int) Math.round(rand(s.power * 9 / 10, s.power * 11 / 10) * state.healBonus());
+                    int before = t.hp;
+                    t.hp = Math.min(t.maxHp(), t.hp + amount);
+                    log.add(Josa.i(t.name()) + " HP를 " + (t.hp - before) + " 회복했다.");
+                }
+                break;
+            case RpgData.BIG_HIT: {
+                Enemy t = enemyTarget(a.target);
+                if (t == null) return;
+                log.add("배달 가방의 문장이 눈부시게 빛난다!");
+                // 방어를 무시하는 일격
+                hitEnemy(t, rand(s.power * 9 / 10, s.power * 11 / 10) + h.atk(), log);
+                break;
+            }
+            case RpgData.MULTI_HIT:
+                for (int k = 0; k < s.power; k++) {
+                    Enemy t = k == 0 ? enemyTarget(a.target) : enemyTarget(-1);
+                    if (t == null) break;
+                    hitEnemy(t, (int) Math.round(damage(h.atk(), t.m.def) * 1.1), log);
+                }
                 break;
             default:
                 break;
@@ -286,7 +346,22 @@ public final class Battle {
         }
         t.hp = Math.max(0, t.hp - dmg);
         log.add(t.name + "에게 " + dmg + "의 피해!");
-        if (!t.alive()) log.add(Josa.eul(t.name) + " 물리쳤다!");
+        if (!t.alive()) {
+            if (!boss) log.add(Josa.eul(t.name) + " 물리쳤다!");
+            return;
+        }
+        if (boss && !enraged && t.hp <= t.m.hp / 2) {
+            enraged = true;
+            enragedThisRound = true;
+            log.add("……!");
+            log.add(Josa.i(t.name) + " 몸을 부르르 떤다. 눈이 붉게 타오른다!");
+            log.add(Josa.eun(t.name) + " 격노했다! 공격이 한층 거세진다!");
+            for (String l : RpgData.bossScript(t.m.sprite)[0]) log.add(l);
+        } else if (boss && !faltered && t.hp <= t.m.hp / 5) {
+            faltered = true;
+            log.add(Josa.i(t.name) + " 비틀거린다. 검은 털 사이로 은빛이 언뜻 비친다…");
+            for (String l : RpgData.bossScript(t.m.sprite)[1]) log.add(l);
+        }
     }
 
     private void enemyAct(Enemy e, List<String> log) {
@@ -297,16 +372,17 @@ public final class Battle {
             hurtHero(t, rand(7, 11), log);
             return;
         }
-        if (e.m.special == 2 && random.nextDouble() < 0.3) {
+        if (e.m.special == 2 && random.nextDouble() < (enraged ? 0.4 : 0.25)) {
             log.add(Josa.eun(e.name) + " 어둠의 포효를 내질렀다!");
-            for (Hero t : state.party) if (t.alive()) hurtHero(t, rand(12, 18), log);
+            for (Hero t : state.party) if (t.alive()) hurtHero(t, (int) Math.round(rand(22, 32) * (enraged ? 1.3 : 1) * guard), log);
             return;
         }
         Hero t = randomAliveHero();
         if (t == null) return;
         log.add(Josa.i(e.name) + " 덤벼들었다!");
         int idx = state.party.indexOf(t);
-        int dmg = damage(e.m.atk, (int) Math.round(t.def() * guard));
+        int atk = enraged ? (int) Math.round(e.m.atk * 1.3) : e.m.atk;
+        int dmg = (int) Math.round(damage(atk, t.def()) * guard);
         if (idx >= 0 && defending[idx]) dmg /= 2;
         hurtHero(t, dmg, log);
     }

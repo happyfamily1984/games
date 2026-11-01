@@ -58,6 +58,8 @@ public final class RpgArt {
         CHARS.put("minister", new String[]{"...hhhh...", "..hhhhhh..", "..hssssh..", "..skssks..", "..ssssss..", "...ssss...", "..BBBBBB..", ".sBByyBBs.", ".sBBBBBBs.", "..BBBBBB..", "..BBBBBB..", "..kk..kk.."});
         CHARS.put("soldier", new String[]{"...eeee...", "..eeeeee..", "..esssse..", "..skssks..", "..ssssss..", "...ssss...", "..vvvvvv..", ".svvyyvvs.", ".svvvvvvs.", "..vvvvvv..", "..NN..NN..", "..kk..kk.."});
         CHARS.put("boss", new String[]{"..........", "qq......qq", "qqq....qqq", "qqqqqqqqqq", "qqrqqqqrqq", "qqqqqqqqqq", ".qqwqqwqq.", "..qqqqqq..", ".qqqqqqqq.", "qqqqqqqqqq", "qq.qqqq.qq", "kk.kkkk.kk"});
+        CHARS.put("hunter", new String[]{"...nnnn...", "..nnnnnn..", "..nssssn..", "..skssks..", "..ssssss..", "...ssss...", "..GGGGGG..", ".sGGnnGGs.", ".sGGGGGGs.", "..GGGGGG..", "..NN..NN..", "..kk..kk.."});
+        CHARS.put("pup", new String[]{"..........", "..........", "..........", "..........", ".n......n.", ".nn....nn.", ".nnnnnnnn.", ".nkknnkkn.", "..nnnnnn..", "..nnnnnn..", "..n.nn.n..", ".........."});
     }
 
     static final java.util.Map<String, String[]> MONSTERS = new java.util.HashMap<>();

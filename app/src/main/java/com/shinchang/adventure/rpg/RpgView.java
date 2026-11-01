@@ -31,6 +31,12 @@ public class RpgView extends View {
     private long stepStart;
     private int followX = -1, followY = -1, followFromX, followFromY;
     private int shownMap = -1;
+    // 보스전 연출
+    private long screenFlashUntil, shakeUntil;
+    private int screenFlashColor = 0xFFFFFFFF;
+    private boolean enraged;
+    private final Paint overlayPaint = new Paint();
+
     /** 맞은 적 깜빡임 */
     private int flashEnemy = -1;
     private long flashUntil;
@@ -72,6 +78,40 @@ public class RpgView extends View {
         fromX = state.x;
         fromY = state.y;
         stepStart = 0;
+    }
+
+    /** 보스 등장: 화면이 번쩍이고 흔들린다 */
+    public void bossIntro() {
+        enraged = false;
+        screenFlash(0xFFFFFFFF, 700);
+        shake(600);
+    }
+
+    /** 보스 격노: 붉게 물든다 */
+    public void setEnraged(boolean on) {
+        enraged = on;
+        if (on) {
+            screenFlash(0xFFFF2020, 500);
+            shake(500);
+        }
+        invalidate();
+    }
+
+    /** 보스 격파: 하얗게 번쩍 */
+    public void victoryFlash() {
+        enraged = false;
+        screenFlash(0xFFFFFFFF, 1200);
+    }
+
+    public void screenFlash(int color, long ms) {
+        screenFlashColor = color;
+        screenFlashUntil = SystemClock.uptimeMillis() + ms;
+        invalidate();
+    }
+
+    public void shake(long ms) {
+        shakeUntil = SystemClock.uptimeMillis() + ms;
+        invalidate();
     }
 
     public void flash(int enemyIndex) {
@@ -131,11 +171,32 @@ public class RpgView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (state == null) return;
+        long now = SystemClock.uptimeMillis();
+        boolean shaking = now < shakeUntil;
+        if (shaking) {
+            canvas.save();
+            float d = getWidth() / 60f;
+            canvas.translate((float) Math.sin(now / 18.0) * d, (float) Math.cos(now / 23.0) * d * 0.6f);
+        }
         if (battle != null) {
             drawBattle(canvas);
         } else {
             drawMap(canvas);
         }
+        if (shaking) canvas.restore();
+        if (battle != null && enraged) {
+            // 격노: 붉은 기운이 맥박처럼
+            int a = (int) (40 + 30 * Math.sin(now / 200.0));
+            overlayPaint.setColor((a << 24) | 0xC00000);
+            canvas.drawRect(0, 0, getWidth(), getHeight(), overlayPaint);
+        }
+        if (now < screenFlashUntil) {
+            float left = (screenFlashUntil - now) / 700f;
+            int a = (int) (Math.min(1f, left) * 200);
+            overlayPaint.setColor((a << 24) | (screenFlashColor & 0xFFFFFF));
+            canvas.drawRect(0, 0, getWidth(), getHeight(), overlayPaint);
+        }
+        if (shaking || now < screenFlashUntil || (battle != null && enraged)) postInvalidateDelayed(16);
     }
 
     private void drawMap(Canvas canvas) {

@@ -305,6 +305,14 @@ public final class RpgState {
                 case RpgData.EV_KING:
                     kingEvent(in);
                     return;
+                case RpgData.EV_HUNTER:
+                    if (step >= RpgData.STEP_BOSS_DOWN && !hasItem(RpgData.LUPUS_BELL)) {
+                        for (String l : RpgData.HUNTER_GIVES_BELL) in.lines.add(l);
+                        addItem(RpgData.LUPUS_BELL, 1);
+                        addItem(RpgData.MANA_CANDY, 2);
+                        return;
+                    }
+                    break;
                 case RpgData.EV_BOSS:
                     for (String l : npc.linesFor(step)) in.lines.add("[" + npc.name + "] " + l);
                     in.bossBattle = true;

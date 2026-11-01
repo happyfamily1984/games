@@ -43,20 +43,11 @@ public class RpgPlay {
     }
     static boolean lowHp(){ for(Hero h:s.party) if(h.hp<h.maxHp()*0.35) return true; return false; }
 
+    static int[] levelAt = new int[40];
     static boolean fight(int[] ids, boolean boss){
-        battles++; Battle b=new Battle(s, ids, boss, rnd);
-        while(!b.over()){
-            List<Battle.Action> acts=new ArrayList<>();
-            for(int i=0;i<s.party.size();i++){ Hero h=s.party.get(i);
-                int heal=-1; for(int sp:h.spells()) if(RpgData.SPELLS[sp].kind==RpgData.HEAL_ONE && h.mp>=RpgData.SPELLS[sp].mp) heal=sp;
-                Hero weak=null; for(Hero o:s.party) if(o.alive() && o.hp<o.maxHp()*0.45 && (weak==null||o.hp<weak.hp)) weak=o;
-                if(weak!=null && heal>=0) acts.add(new Battle.Action(Battle.SPELL, s.party.indexOf(weak), heal));
-                else if(weak!=null && s.hasItem(RpgData.HERB)) acts.add(new Battle.Action(Battle.ITEM, s.party.indexOf(weak), RpgData.HERB));
-                else { int atk=-1; for(int sp:h.spells()){ RpgData.Spell x=RpgData.SPELLS[sp]; if((x.kind==RpgData.POWER_HIT||x.kind==RpgData.FIRE_ONE||x.kind==RpgData.FIRE_ALL) && h.mp>=x.mp+(boss?0:4)) atk=sp; }
-                    acts.add(atk>=0 ? new Battle.Action(Battle.SPELL,-1,atk) : new Battle.Action(Battle.ATTACK,-1,0)); }
-            }
-            b.playRound(acts); seconds+=4;
-        }
+        battles++; Battle b=new Battle(s, ids, boss, rnd); int r=0;
+        while(!b.over()){ b.playRound(BossSim.ai(s,b,r++)); seconds+= boss?8:5; }
+        for(Hero h:s.party) if(h.id==0 && levelAt[h.level]==0) { levelAt[h.level]=(int)Math.round(seconds/60); }
         if(b.lost()){ defeats++; s.defeated(); return false; }
         s.battlesWon++; return true;
     }
@@ -81,6 +72,15 @@ public class RpgPlay {
         while(s.party.get(0).level<targetLevel){ if(lowHp()){ rest(); }
             if(s.map!=RpgData.WORLD && s.map!=map) { goToTown(); exitTown(); }
             int bx=ex+rnd.nextInt(5)-2, by=ey+rnd.nextInt(3)-1; if(s.map==RpgData.WORLD && s.walkable(bx,by) && !isLink(bx,by)) walkTo(bx,by,false); } }
+    /** 동굴 2층 계단 근처에서 강한 적을 사냥한다 (지치면 여관에 다녀온다) */
+    static void caveGrind(int targetLevel){
+        while(s.party.get(0).level<targetLevel){
+            if(s.map!=RpgData.CAVE2 || lowHp()){ rest(); exitTown(); walkTo(28,3,false); while(s.map==RpgData.CAVE1) walkTo(4,12,false); }
+            int bx=8+rnd.nextInt(7), by=13; if(s.walkable(bx,by) && !isLink(bx,by)) walkTo(bx,by,false);
+        }
+        rest(); exitTown(); walkTo(28,3,false); while(s.map==RpgData.CAVE1) walkTo(4,12,false);
+    }
+
     static String party(){ StringBuilder b=new StringBuilder(); for(Hero h:s.party) b.append(h.name()).append(" Lv").append(h.level).append(" ");
         return b+"| "+s.gold+"G | 전투 "+battles+", 전멸 "+defeats+", "+String.format("%.0f분",seconds/60); }
 
@@ -115,14 +115,20 @@ public class RpgPlay {
         int attempts=0; while(s.step==RpgData.STEP_LINA && attempts++<6){
             if(s.map!=RpgData.CAVE2 || lowHp()){ rest(); exitTown(); walkTo(28,3,false); while(s.map==RpgData.CAVE1) walkTo(4,12,false); }
             if(s.map==RpgData.CAVE2) talk(RpgData.CAVE2,5,4);
-            if(s.step==RpgData.STEP_LINA) { System.out.println("   보스에게 짐 → 레벨업 후 재도전 "+party()); rest(); exitTown(); grind(RpgData.ERDEN,24,8,s.party.get(0).level+1); }
+            if(s.step==RpgData.STEP_LINA) { System.out.println("   보스에게 짐 → 동굴 2층에서 강적 사냥 후 재도전 "+party()); caveGrind(s.party.get(0).level+1); }
         }
         ok(s.step==RpgData.STEP_BOSS_DOWN && s.hasItem(RpgData.SEAL_SHARD),"그림자 늑대왕 격파 + 깨진 봉인석 (시도 "+attempts+"번) "+party());
         goToTown(); if(s.map!=RpgData.ERDEN){ exitTown(); walkTo(20,8,false);} 
         RpgState.Interaction in=null; walkTo(13,3,true); in=s.interact(); ok(in.chapterClear && s.step==RpgData.STEP_CHAPTER1_CLEAR && s.hasItem(RpgData.HERO_BADGE),"왕에게 보고 → 1장 클리어");
         ok(String.join("\n", in.lines).contains("로웰이 살아 있다니"),"일기를 찾았으면 왕의 대사가 달라짐");
         ok(s.clues().size()==5,"단서 5개 모두: "+s.clues());
+        exitTown(); walkTo(6,18,false); walkTo(9,9,true); RpgState.Interaction bell=s.interact();
+        ok(s.hasItem(RpgData.LUPUS_BELL) && bell.lines.size()>3,"보스 후 사냥꾼 브람에게 「루프스의 방울」");
+        ok(s.npcAt(14,9)!=null && s.npcAt(14,9).name.equals("콩이"),"콩이가 리벨 마을로 돌아옴");
         String save=s.serialize(); RpgState r=RpgState.deserialize(save); ok(r.serialize().equals(save),"저장/불러오기 일치");
         System.out.println("   최종: "+party()+" | 걸음 "+s.stepsWalked+", 휴식 "+rests);
+        StringBuilder lv=new StringBuilder("   레벨 도달 시각(분): "); int prev=0;
+        for(int i=2;i<levelAt.length;i++) if(levelAt[i]>0||i==2){ lv.append("Lv").append(i).append("=").append(levelAt[i]).append(" (+").append(levelAt[i]-prev).append(") "); prev=levelAt[i]; }
+        System.out.println(lv);
     }
 }

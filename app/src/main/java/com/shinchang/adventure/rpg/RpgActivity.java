@@ -424,7 +424,12 @@ public class RpgActivity extends Activity {
         padPanel.setVisibility(View.GONE);
         battlePanel.setVisibility(View.VISIBLE);
         setCommandsEnabled(false);
-        say(battle.intro(), this::beginCommands);
+        if (boss) {
+            view.bossIntro();
+            say(Arrays.asList("⚔️ 결전 ⚔️", battle.intro()), this::beginCommands);
+        } else {
+            say(battle.intro(), this::beginCommands);
+        }
     }
 
     private void setCommandsEnabled(boolean on) {
@@ -564,6 +569,7 @@ public class RpgActivity extends Activity {
     private void playRound() {
         setCommandsEnabled(false);
         List<String> log = battle.playRound(new ArrayList<>(actions));
+        if (battle.enragedThisRound) view.setEnraged(true);
         // 적이 맞으면 깜빡이게: 첫 피해 대상
         for (int i = 0; i < battle.enemies.size(); i++) {
             if (!battle.enemies.get(i).alive() || battle.enemies.get(i).hp < battle.enemies.get(i).m.hp) {
@@ -579,7 +585,10 @@ public class RpgActivity extends Activity {
             boolean boss = battle.boss;
             state.battlesWon++;
             endBattle();
-            if (boss) say(state.onBossDefeated(), this::save);
+            if (boss) {
+                view.victoryFlash();
+                say(state.onBossDefeated(), this::save);
+            }
             return;
         }
         if (battle.lost()) {

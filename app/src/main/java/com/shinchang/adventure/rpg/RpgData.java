@@ -77,7 +77,7 @@ public final class RpgData {
     // ------------------------------------------------------------ 등장인물 (마을 사람)
 
     public static final int ACT_NONE = 0, ACT_SHOP = 1, ACT_INN = 2, ACT_SAVE = 3, ACT_EVENT = 4;
-    public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3;
+    public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3, EV_HUNTER = 4;
 
     public static final class Npc {
         public final int map, x, y;
@@ -149,8 +149,9 @@ public final class RpgData {
                             "가는 길에 성당 벽화도 꼭 보고 가게. 자네 가방의 문양이 거기 있다네."),
                     at(STEP_LINA, "리나… 로웰 단장의 딸이로군. 아버지를 닮아 고집이 세지.",
                             "그림자 동굴은 북동쪽 산속일세. 카이른의 봉인석이 무사하기를…"),
-                    at(STEP_BOSS_DOWN, "봉인석이 깨져 있었다고? …그렇다면 예언의 '다섯 빛'은 다섯 개의 봉인석일세.",
-                            "누군가 일부러 봉인을 풀고 있다는 뜻이야. 대체 무엇을 위해서…"),
+                    at(STEP_BOSS_DOWN, "늑대왕이 루프스였다고…? 300년 동안 봉인을 지킨 수호 늑대가 어둠에 먹히다니.",
+                            "봉인석이 깨져 있었다면, 예언의 '다섯 빛'은 다섯 개의 봉인석일세.",
+                            "누군가 일부러 봉인을 풀고 있어. 루프스마저 어둠에 빠뜨리면서까지. 대체 무엇을 위해서…"),
                     at(STEP_CHAPTER1_CLEAR, "자네 가방이 처음보다 무거워 보이는군. 짐꾼은 원래 그런 법이지.",
                             "하지만 기억하게. 벽화 속 짐꾼은 마지막에 짐을 내려놓고 웃고 있었다네."),
             }),
@@ -164,11 +165,25 @@ public final class RpgData {
                     at(0, "신의 가호가 함께하기를.",
                             "양쪽 벽의 벽화는 300년 전 짐꾼의 이야기랍니다. 마지막 그림의 뜻은 아무도 몰라요.",
                             "지금까지의 모험을 기록해 드리지요.")),
-            npc(REBEL, 14, 10, "child", "마을 아이",
-                    at(0, "아저씨 하늘에서 떨어졌어? 그 가방 문양 멋있다!",
-                            "성당 벽화에도 똑같은 게 있어. 장로 할아버지가 그건 '짐꾼의 문장'이래."),
-                    at(STEP_LINA, "기사 누나다! 우리 아빠가 그러는데 누나네 아빠가 제일 센 기사였대."),
-                    at(STEP_BOSS_DOWN, "이제 밤에 늑대 소리 안 나! 아저씨 최고!")),
+            npc(REBEL, 14, 10, "child", "미나",
+                    at(0, "아저씨 하늘에서 떨어졌어? 그 가방 문양 멋있다! 성당 벽화에도 똑같은 게 있어.",
+                            "…있잖아, 우리 강아지 콩이가 한 달 전에 동굴 쪽으로 뛰어가서 안 돌아와.",
+                            "루프스 할아버지 따라간 것 같아. 콩이는 루프스 할아버지를 엄청 좋아했거든."),
+                    at(STEP_LINA, "기사 누나다! 누나, 동굴에 가면 콩이 좀 찾아 줘. 갈색이고 귀가 하나 접혔어."),
+                    at(STEP_BOSS_DOWN, "콩이!! 콩이가 돌아왔어! 아저씨가 데려다준 거지?",
+                            "루프스 할아버지는…? …그렇구나. 할아버지가 콩이를 지켜 줬구나.",
+                            "(미나는 콩이를 꼭 끌어안고 한참 울었다)"),
+                    at(STEP_CHAPTER1_CLEAR, "콩이랑 매일 성당에 가서 루프스 할아버지한테 인사해. 아저씨도 꼭 다시 와!")),
+            new Npc(REBEL, 14, 9, "pup", "콩이", ACT_NONE, 0, STEP_BOSS_DOWN, 99, new Object[][]{
+                    at(0, "멍! 멍! (꼬리를 마구 흔들며 신창의 배달 가방 냄새를 맡는다)"),
+            }),
+            new Npc(REBEL, 9, 9, "hunter", "사냥꾼 브람", ACT_EVENT, EV_HUNTER, 0, 99, new Object[][]{
+                    at(0, "북동쪽 동굴엔 원래 은빛 늑대 '루프스'가 살았어. 봉인석을 지키는 수호 늑대였지.",
+                            "내가 꼬마였을 때 녀석은 마을까지 내려와 아이들이랑 놀다 가곤 했다네. 목엔 기사단 방울을 달고.",
+                            "그런데 한 달 전부터 루프스가 안 보여. 대신 검은 늑대들이 내려왔지… 설마 그 녀석이."),
+                    at(STEP_LINA, "동굴에 간다고? …혹시 루프스를 보거든, 녀석이 아직 녀석인지 봐 주게."),
+                    at(STEP_CHAPTER1_CLEAR, "루프스 몫까지 잘 싸워 주게. 녀석은 끝까지 수호 늑대였어."),
+            }),
             npc(REBEL, 23, 11, "farmer", "농부",
                     at(0, "한 달 전 새벽이었지. 회색 망토를 뒤집어쓴 사내가 북동쪽 동굴로 올라가는 걸 봤어.",
                             "지팡이 끝이 푸르스름하게 빛났지. 그 뒤로 늑대들이 내려오기 시작했다네.",
@@ -206,8 +221,11 @@ public final class RpgData {
                     at(STEP_BOSS_DOWN, "봉인석이 깨졌다면, 남은 넷도 위험하오. 메르카의 '푸른 돌' 소문… 설마.")),
             npc(ERDEN, 20, 5, "soldier", "기사 하멜",
                     at(0, "리나는 단장님이 사라진 뒤로 매일 성문 앞 분수에서 기다린다네.",
-                            "단장님 방패엔 짐꾼의 문장이 새겨져 있었지. 단장님 집안은 대대로 카이른 기사단이었거든."),
-                    at(STEP_LINA, "리나를 부탁하네, 짐꾼 양반. 저 녀석, 검은 나보다 낫다니까.")),
+                            "단장님 방패엔 짐꾼의 문장이 새겨져 있었지. 단장님 집안은 대대로 카이른 기사단이었거든.",
+                            "단장님은 수호 늑대 루프스와 함께 봉인을 지키셨어. 루프스 목에 기사단 방울을 걸어 준 것도 단장님이지."),
+                    at(STEP_LINA, "리나를 부탁하네, 짐꾼 양반. 저 녀석, 검은 나보다 낫다니까.",
+                            "늑대왕은 보통 놈이 아니야. 다리 북쪽에서 몸을 충분히 단련하고 가게. 동굴 2층 늑대들을 이길 정도는 돼야 해."),
+                    at(STEP_BOSS_DOWN, "늑대왕이… 루프스였다고. 단장님이 아시면 얼마나 마음 아파하실지.")),
             new Npc(ERDEN, 11, 17, "lina", "견습 기사", ACT_NONE, 0, 0, STEP_LETTER, new Object[][]{
                     at(0, "나는 견습 기사 리나. 아버지… 기사단장 로웰이 동굴에 간 지 한 달째 돌아오지 않아요.",
                             "찾으러 가고 싶은데, 견습은 성 밖에 나가면 안 된대요. 아, 답답해!"),
@@ -224,7 +242,8 @@ public final class RpgData {
                     at(0, "♪ 다섯 빛을 진 짐꾼이 문 저편에서 오네~",
                             "♪ 공허의 왕은 욕망을 먹고 자라네~",
                             "♪ 짐꾼은 마지막에 짐을 내려놓으리~ …오래된 노래지요. 끝 구절은 저도 뜻을 몰라요."),
-                    at(STEP_CHAPTER1_CLEAR, "♪ 배달부 용사가 늑대왕을 쓰러뜨렸네~ 새 노래를 지었답니다!",
+                    at(STEP_CHAPTER1_CLEAR, "♪ 어둠에 먹힌 은빛 늑대여, 그래도 작은 생명을 품었네~",
+                            "♪ 짐꾼의 손에 편히 잠드니, 은빛 방울 소리 다시 울리네~ …루프스를 위한 새 노래랍니다.",
                             "그런데 이상하죠. 옛 노래의 끝 구절이 자꾸 떠올라요. '짐을 내려놓으리'…")),
             npc(ERDEN, 21, 18, "villager", "아낙",
                     at(0, "메르카에서 오던 소금배가 끊긴 지 오래예요. 바다도 요즘 이상하대요.",
@@ -232,9 +251,14 @@ public final class RpgData {
 
             // ---- 그림자 동굴
             new Npc(CAVE2, 5, 4, "boss", "그림자 늑대왕", ACT_EVENT, EV_BOSS, STEP_LINA, STEP_LINA, new Object[][]{
-                    at(0, "크르르… 문 저편의 냄새. 그분이 기다리던 자로군.",
-                            "깨진 봉인에서 흘러나온 어둠이 우리를 바꿨다. 이제 우리는 공허의 왕의 이빨이다!",
-                            "짐꾼이든 그릇이든, 여기서 끝이다!"),
+                    at(0, "(동굴 가장 깊은 곳. 깨진 돌 위에 거대한 검은 늑대가 웅크리고 있다)",
+                            "크르르… 문 저편의 냄새. 그분이 기다리던 자로군.",
+                            "(늑대의 목에서 녹슨 방울이 딸랑, 하고 울렸다)",
+                            "[리나] 저 방울… 기사단의 방울이에요! 설마… 수호 늑대 루프스?",
+                            "루프스… 그 이름은 어둠에 먹혔다. 봉인이 깨진 날, 우리는 공허의 왕의 이빨이 되었다!",
+                            "[신창] 리나, 저 녀석 등 뒤를 봐. 뭔가를… 감싸고 있어.",
+                            "짐꾼이든 그릇이든… 이 돌에 다가오는 자는 물어뜯는다!",
+                            "[리나] 신창 씨, 온다!"),
             }),
     };
 
@@ -261,7 +285,7 @@ public final class RpgData {
         }
     }
 
-    public static final int LOWELL_DIARY = 32, SEAL_SHARD = 33;
+    public static final int LOWELL_DIARY = 32, SEAL_SHARD = 33, LUPUS_BELL = 34;
 
     public static final Readable[] READABLES = {
             // 청와대
@@ -370,6 +394,14 @@ public final class RpgData {
             "[리벨 장로] 허허. 성당 벽화를 보고 가게. 예언이 그려져 있지. 다리를 건너 북쪽으로 가면 성이네.",
     };
 
+    public static final String[] HUNTER_GIVES_BELL = {
+            "[사냥꾼 브람] …늑대왕이 마지막에 은빛으로 돌아왔다고? 그래, 역시 루프스였군.",
+            "[사냥꾼 브람] 어둠에 먹히고도 콩이를 지켰다니. 녀석다워.",
+            "[사냥꾼 브람] 이건 루프스가 새끼 때 떨어뜨린 방울이야. 내가 평생 간직했지. 이제 자네가 가져가게.",
+            "(「루프스의 방울」을 받았다! 마나 사탕 2개를 받았다!)",
+            "[사냥꾼 브람] 녀석을 편히 보내 줘서 고맙네, 짐꾼.",
+    };
+
     public static final String[] KING_BEFORE_LETTER = {
             "[에르덴 왕] 낯선 이로군. 리벨 마을의 장로와는 아는 사이인가? 성 밖은 위험하니 조심하게.",
     };
@@ -396,6 +428,8 @@ public final class RpgData {
             "[신창] 동굴 깊은 곳에서 이 돌 조각이 나왔습니다.",
             "[에르덴 왕] (조각을 살피며) …카이른의 봉인석이로군. 누군가 일부러 깨뜨린 흔적이 있어.",
             "[에르덴 왕] 늑대들은 봉인이 깨진 틈으로 새어 나온 어둠에 물든 것일세.",
+            "[리나] 폐하… 늑대왕은 수호 늑대 루프스였어요. 마지막엔 은빛으로 돌아와서, 마을 아이의 강아지를 지키고 있었어요.",
+            "[에르덴 왕] 루프스가…! 로웰과 함께 봉인을 지키던 그 늑대가. 봉인을 깬 자는 수호자마저 어둠에 빠뜨린 것이군.",
     };
 
     public static final String[] KING_CLEAR_DIARY = {
@@ -424,13 +458,30 @@ public final class RpgData {
     };
 
     public static final String[] BOSS_DEFEATED = {
-            "[그림자 늑대왕] 크윽… 문지기님… 짐꾼이… 왔습니다… 그릇이… 왔…",
-            "(그림자 늑대왕은 어둠 속으로 흩어졌다)",
-            "(늑대왕이 있던 자리에 깨진 돌 조각이 떨어져 있다. 「깨진 봉인석」을 손에 넣었다!)",
-            "[리나] 이 돌… 봉인석이에요? 누가 이렇게 깨뜨린 거죠?",
-            "[신창] '그릇'이 왔다고…? 무슨 뜻이지.",
-            "[리나] 일단 폐하께 알려요!",
+            "(그림자 늑대왕의 몸에서 검은 안개가 피어오른다…)",
+            "(안개가 걷히자, 그 자리에 은빛 털의 늙은 늑대가 쓰러져 있었다)",
+            "[리나] 루프스…!",
+            "(은빛 늑대는 신창의 가방 문장을 한참 바라보더니, 꼬리를 한 번 흔들었다)",
+            "[루프스] …짐꾼… 문지기를… 막아… 줘… 그자는… 너를……",
+            "(딸랑. 녹슨 방울이 마지막으로 울리고, 루프스는 편안한 얼굴로 눈을 감았다)",
+            "……",
+            "(루프스가 몸으로 감싸던 자리에서 작은 강아지가 낑낑거리며 기어 나왔다. 목줄에 '콩이'라고 적혀 있다)",
+            "[리나] 리벨 마을 미나의 강아지예요… 어둠에 먹힌 채로도, 이 아이를 지키고 있었던 거야.",
+            "(루프스가 누워 있던 돌 위에서 「깨진 봉인석」을 손에 넣었다!)",
+            "[신창] '그릇'이라… 문지기는 대체 나를 뭐로 보는 거지.",
+            "[리나] 콩이를 미나에게 데려다주고, 폐하께도 알려요. 루프스의 몫까지요.",
     };
+
+    /** 보스 전투 중 연출 대사: {격노할 때, 쓰러지기 직전} */
+    public static String[][] bossScript(String sprite) {
+        if ("wolfking".equals(sprite)) {
+            return new String[][]{
+                    {"[리나] 버텨요! 저 녀석도… 괴로워하고 있어요!"},
+                    {"(딸랑… 어둠 속에서 방울 소리가 희미하게 울린다)", "[신창] 조금만 더…! 돌아와, 루프스!"},
+            };
+        }
+        return new String[][]{{}, {}};
+    }
 
     // ------------------------------------------------------------ 아이템
 
@@ -479,6 +530,7 @@ public final class RpgData {
         put(new Item(HERO_BADGE, "용자의 증표", KEY, 0, 0, "에르덴 왕이 인정한 용자의 증표"));
         put(new Item(LOWELL_DIARY, "로웰의 일기", KEY, 0, 0, "기사단장 로웰이 남긴 일기. 회색 망토 '문지기'를 쫓아 바다로 갔다"));
         put(new Item(SEAL_SHARD, "깨진 봉인석", KEY, 0, 0, "그림자의 봉인석 조각. 누군가 일부러 깨뜨렸다"));
+        put(new Item(LUPUS_BELL, "루프스의 방울", KEY, 0, 0, "수호 늑대 루프스가 달고 다니던 기사단 방울. 흔들면 맑은 소리가 난다"));
     }
 
     private static void put(Item item) {
@@ -499,7 +551,8 @@ public final class RpgData {
 
     // ------------------------------------------------------------ 주문 · 특기
 
-    public static final int HEAL_ONE = 0, FIRE_ONE = 1, FIRE_ALL = 2, POWER_HIT = 3, GUARD = 4;
+    public static final int HEAL_ONE = 0, FIRE_ONE = 1, FIRE_ALL = 2, POWER_HIT = 3, GUARD = 4,
+            HEAL_ALL = 5, BIG_HIT = 6, MULTI_HIT = 7;
 
     public static final class Spell {
         public final String name;
@@ -519,7 +572,7 @@ public final class RpgData {
         }
 
         public boolean targetsEnemy() {
-            return kind == FIRE_ONE || kind == POWER_HIT;
+            return kind == FIRE_ONE || kind == POWER_HIT || kind == BIG_HIT || kind == MULTI_HIT;
         }
 
         public boolean targetsAlly() {
@@ -528,12 +581,17 @@ public final class RpgData {
     }
 
     public static final Spell[] SPELLS = {
-            new Spell("치유의 빛", 0, 3, 3, HEAL_ONE, 30),
-            new Spell("불꽃", 0, 5, 4, FIRE_ONE, 18),
-            new Spell("대치유", 0, 8, 7, HEAL_ONE, 75),
-            new Spell("불꽃의 폭풍", 0, 10, 8, FIRE_ALL, 24),
-            new Spell("강타", 1, 4, 3, POWER_HIT, 18),
+            // 신창: 초반 기술은 소박하지만, Lv9 이후 기술은 판을 바꿀 만큼 강하다
+            new Spell("치유의 빛", 0, 3, 3, HEAL_ONE, 32),
+            new Spell("불꽃", 0, 5, 4, FIRE_ONE, 22),
+            new Spell("대치유", 0, 8, 6, HEAL_ONE, 90),
+            new Spell("불꽃의 폭풍", 0, 9, 7, FIRE_ALL, 44),
+            new Spell("치유의 비", 0, 11, 9, HEAL_ALL, 70),
+            new Spell("짐꾼의 일격", 0, 13, 10, BIG_HIT, 150),
+            // 리나
+            new Spell("강타", 1, 4, 3, POWER_HIT, 20),
             new Spell("수호의 맹세", 1, 7, 4, GUARD, 0),
+            new Spell("기사의 연격", 1, 10, 6, MULTI_HIT, 3),
     };
 
     // ------------------------------------------------------------ 동료
@@ -574,7 +632,7 @@ public final class RpgData {
     /** 다음 레벨까지 필요한 누적 경험치 */
     public static int expForLevel(int level) {
         if (level <= 1) return 0;
-        return (int) Math.round(8 * Math.pow(level - 1, 2.15));
+        return (int) Math.round(7 * Math.pow(level - 1, 2.3));
     }
 
     // ------------------------------------------------------------ 몬스터
@@ -583,11 +641,14 @@ public final class RpgData {
         public final String name;
         public final String sprite;
         public final int hp, atk, def, agi, exp, gold;
-        /** 0 없음, 1 불씨 뱉기, 2 어둠의 포효(전체), 3 두 번 행동 */
+        /** 0 없음, 1 불씨 뱉기, 2 보스(어둠의 포효·두 번 행동·격노) */
         public final int special;
+        /** 강함의 기준 레벨. 파티보다 높으면 경험치 보너스 */
+        public final int level;
 
-        Monster(String name, String sprite, int hp, int atk, int def, int agi, int exp, int gold, int special) {
+        Monster(String name, String sprite, int level, int hp, int atk, int def, int agi, int exp, int gold, int special) {
             this.name = name;
+            this.level = level;
             this.sprite = sprite;
             this.hp = hp;
             this.atk = atk;
@@ -603,16 +664,17 @@ public final class RpgData {
             SPIDER = 6, SKELETON = 7, SHADOW_WOLF = 8, WOLF_KING = 9;
 
     public static final Monster[] MONSTERS = {
-            new Monster("들쥐 도적", "rat", 9, 7, 2, 5, 3, 5, 0),
-            new Monster("독버섯 꼬마", "shroom", 12, 8, 3, 3, 4, 4, 0),
-            new Monster("박쥐날개", "bat", 8, 8, 1, 9, 4, 3, 0),
-            new Monster("가시늑대", "thornwolf", 20, 12, 5, 7, 9, 10, 0),
-            new Monster("장난꾸러기 요정", "pixie", 16, 9, 4, 8, 8, 12, 1),
-            new Monster("돌껍질 거북", "turtle", 28, 11, 12, 2, 12, 14, 0),
-            new Monster("동굴 거미", "spider", 24, 14, 6, 8, 14, 12, 0),
-            new Monster("해골 병사", "skeleton", 34, 16, 9, 5, 20, 20, 0),
-            new Monster("그림자 늑대", "shadowwolf", 40, 18, 9, 9, 26, 25, 0),
-            new Monster("그림자 늑대왕", "wolfking", 320, 23, 12, 10, 300, 300, 2),
+            //          이름, 그림, 레벨, HP, 공격, 방어, 민첩, 경험치, 골드, 특수
+            new Monster("들쥐 도적", "rat", 1, 9, 7, 2, 5, 3, 5, 0),
+            new Monster("독버섯 꼬마", "shroom", 2, 12, 8, 3, 3, 4, 4, 0),
+            new Monster("박쥐날개", "bat", 2, 8, 8, 1, 9, 4, 3, 0),
+            new Monster("가시늑대", "thornwolf", 5, 22, 13, 6, 7, 14, 12, 0),
+            new Monster("장난꾸러기 요정", "pixie", 5, 18, 10, 5, 8, 13, 14, 1),
+            new Monster("돌껍질 거북", "turtle", 6, 32, 12, 14, 2, 20, 18, 0),
+            new Monster("동굴 거미", "spider", 8, 30, 17, 7, 9, 30, 16, 0),
+            new Monster("해골 병사", "skeleton", 9, 44, 20, 10, 5, 44, 24, 0),
+            new Monster("그림자 늑대", "shadowwolf", 11, 58, 23, 11, 10, 68, 32, 0),
+            new Monster("그림자 늑대왕", "wolfking", 15, 1700, 46, 17, 11, 1200, 600, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
