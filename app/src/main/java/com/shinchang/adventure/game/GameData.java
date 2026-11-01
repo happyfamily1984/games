@@ -379,6 +379,56 @@ public final class GameData {
         return RELIGIONS.length - 1;
     }
 
+    // ------------------------------------------------------------ 정계 진출 (종교계 이후)
+
+    /**
+     * 정계 직위 (아래에서 위로). 실제 정당·인물과 무관한 게임 속 설정.
+     * 신천지 마지막 직분에 오르면 정계에 진출할 수 있다.
+     */
+    public static final String[][] POLITICS_RANKS = {
+            {"📋", "정당 당원"},
+            {"🧑‍🤝‍🧑", "지역 당협 청년위원"},
+            {"🏘️", "구의원"},
+            {"🏙️", "시의원"},
+            {"🏢", "구청장"},
+            {"🏛️", "국회의원 (초선)"},
+            {"🎖️", "국회의원 (3선)"},
+            {"⚖️", "국회 상임위원장"},
+            {"🌆", "광역시장"},
+            {"🎙️", "당 대표"},
+            {"🏯", "국무총리"},
+            {"🇰🇷", "대통령"},
+    };
+
+    /** 직위별 유세 1회 정치력 */
+    public static double politicsTapPp(int rank) {
+        return 10 * Math.pow(2.0, rank);
+    }
+
+    /** 직위별 지지자 활동(오토) 초당 정치력 */
+    public static double politicsAutoPp(int rank) {
+        return politicsTapPp(rank) * 0.8;
+    }
+
+    /** 다음 직위로 오르는 데 드는 정치력 (선거·임명) */
+    public static double politicsRankCost(int rank) {
+        return politicsTapPp(rank) * 6000 * Math.pow(1.3, rank);
+    }
+
+    public static int lastPoliticsRank() {
+        return POLITICS_RANKS.length - 1;
+    }
+
+    /** 💰 정치자금: 후원한 돈 10배마다 +25% (= 1 + 0.25 × log10(1 + 후원금/1억)) */
+    public static final double FUND_UNIT = 100_000_000;
+    public static final double FUND_BONUS_PER_DECADE = 0.25;
+    /** 🙏 종교계 인맥: 지금까지 오른 직분 1단계마다 +5%, 종교계 별 1개마다 +2% */
+    public static final double NETWORK_PER_RANK = 0.05;
+    public static final double NETWORK_PER_HOLY_STAR = 0.02;
+    /** ☀️ 명성: 해 1개마다 +1%, 별 100개마다 +1% */
+    public static final double FAME_PER_SUN = 0.01;
+    public static final double FAME_PER_100_STARS = 0.01;
+
     public static int lastJob() {
         return JOBS.length - 1;
     }

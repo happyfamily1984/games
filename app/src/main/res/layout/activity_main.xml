@@ -349,6 +349,14 @@
         android:clickable="true"
         android:visibility="gone" />
 
+    <!-- 정계 화면 (코드에서 채움) -->
+    <FrameLayout
+        android:id="@+id/politicsRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:visibility="gone" />
+
     <!-- 비/눈 효과 (터치는 통과) -->
     <com.shinchang.adventure.WeatherView
         android:id="@+id/weatherView"

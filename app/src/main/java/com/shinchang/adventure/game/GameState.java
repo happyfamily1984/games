@@ -15,7 +15,7 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v7";
+    private static final String SAVE_VERSION = "v8";
 
     public double money;
     /** 이번 회차(교회 기부 이후) 총수입. 별 개수 계산에 쓴다. */
@@ -42,6 +42,17 @@ public final class GameState {
     public double spTotal;
     /** 종교계 별: 세속 별 100개를 교회에 기부할 때마다 1개 */
     public long holyStars;
+
+    // ---- 정계 (회차·완전 리셋과 무관하게 남는다) ----
+    public boolean politicsUnlocked;
+    /** 지금 정계 화면에 있는지 */
+    public boolean inPolitics;
+    public int polRank;
+    /** 정치력 포인트 */
+    public double pp;
+    public double ppTotal;
+    /** 지금까지 후원한 정치자금 (돈) */
+    public double politicalFund;
     public int job;
     /** 지금까지 도달한 가장 높은 직업. 그 아래 직업으로는 언제든 전환할 수 있다. */
     public int highestJob;
@@ -227,6 +238,7 @@ public final class GameState {
         if (!canEnterReligion()) return false;
         religionUnlocked = true;
         inReligion = true;
+        inPolitics = false;
         return true;
     }
 
@@ -319,6 +331,95 @@ public final class GameState {
         return hasNextReligion() && isLastRank() && sp >= convertCost();
     }
 
+    // ---- 정계 ----
+
+    /** 신천지 마지막 직분에 오르면 정계 진출 */
+    public boolean canEnterPolitics() {
+        return politicsUnlocked || religion == GameData.lastReligion() && isLastRank();
+    }
+
+    public boolean enterPolitics() {
+        if (!canEnterPolitics()) return false;
+        politicsUnlocked = true;
+        inPolitics = true;
+        inReligion = false;
+        return true;
+    }
+
+    public void leavePolitics() {
+        inPolitics = false;
+    }
+
+    /** 💰 정치자금 배수 */
+    public double fundMultiplier() {
+        return 1 + GameData.FUND_BONUS_PER_DECADE * Math.log10(1 + politicalFund / GameData.FUND_UNIT);
+    }
+
+    /** 지금까지 종교계에서 오른 직분 단계 수 (지나온 종교의 모든 직분 + 지금 직분) */
+    public int religionRanksClimbed() {
+        int n = rank;
+        for (int r = 0; r < religion; r++) n += GameData.RELIGIONS[r].ranks.length;
+        return n;
+    }
+
+    /** 🙏 종교계 인맥 배수 */
+    public double networkMultiplier() {
+        return 1 + religionRanksClimbed() * GameData.NETWORK_PER_RANK + holyStars * GameData.NETWORK_PER_HOLY_STAR;
+    }
+
+    /** ☀️ 명성 배수 */
+    public double fameMultiplier() {
+        return 1 + suns * GameData.FAME_PER_SUN + (stars / 100) * GameData.FAME_PER_100_STARS;
+    }
+
+    /** 정치력에 곱해지는 전체 배수 */
+    public double ppMultiplier() {
+        return fundMultiplier() * networkMultiplier() * fameMultiplier();
+    }
+
+    public double tapPp() {
+        return GameData.politicsTapPp(polRank) * ppMultiplier();
+    }
+
+    public double autoPp() {
+        return autoOn ? GameData.politicsAutoPp(polRank) * ppMultiplier() : 0;
+    }
+
+    /** 정계에서 한 번 누른다 (유세). 얻은 정치력을 돌려준다. */
+    public double politicsTap() {
+        double v = tapPp();
+        pp += v;
+        ppTotal += v;
+        return v;
+    }
+
+    public boolean isLastPoliticsRank() {
+        return polRank >= GameData.lastPoliticsRank();
+    }
+
+    public double polRankUpCost() {
+        return GameData.politicsRankCost(polRank);
+    }
+
+    public boolean canPolRankUp() {
+        return !isLastPoliticsRank() && pp >= polRankUpCost();
+    }
+
+    public boolean polRankUp() {
+        if (!canPolRankUp()) return false;
+        pp -= polRankUpCost();
+        polRank++;
+        return true;
+    }
+
+    /** 돈을 정치자금으로 후원한다 (가진 돈 안에서) */
+    public double donateFund(double amount) {
+        double a = Math.max(0, Math.min(amount, money));
+        money -= a;
+        politicalFund += a;
+        return a;
+    }
+
     /** 다음 종교로 옮긴다. 신천지로 갈 때는 모든 영성 포인트를 잃고 새로 시작한다. */
     public boolean convert() {
         if (!canConvert()) return false;
@@ -397,6 +498,12 @@ public final class GameState {
         sp = o.sp;
         spTotal = o.spTotal;
         holyStars = o.holyStars;
+        politicsUnlocked = o.politicsUnlocked;
+        inPolitics = false;
+        polRank = o.polRank;
+        pp = o.pp;
+        ppTotal = o.ppTotal;
+        politicalFund = o.politicalFund;
     }
 
     /** 손으로 한 번 누른다. 번 돈을 돌려준다 (계약 중이거나 공인중개사면 계약 진행만 하므로 0). */
@@ -441,10 +548,22 @@ public final class GameState {
 
     /** 종교에 귀의한 뒤에는 세속 화면에 있어도 기도(오토)로 영성 포인트가 쌓인다 */
     private void updateReligion(double seconds) {
+        if (politicsUnlocked) {
+            double p = autoPp() * seconds;
+            pp += p;
+            ppTotal += p;
+        }
         if (!religionUnlocked) return;
         double v = autoSp() * seconds;
         sp += v;
         spTotal += v;
+    }
+
+    /** 앱을 끈 동안 쌓인 정치력 */
+    public double offlinePp(long nowMillis) {
+        if (!politicsUnlocked || lastSavedMillis <= 0 || nowMillis <= lastSavedMillis) return 0;
+        double seconds = Math.min((nowMillis - lastSavedMillis) / 1000.0, OFFLINE_MAX_SECONDS);
+        return autoPp() * seconds * OFFLINE_RATE;
     }
 
     /** 앱을 끈 동안 쌓인 영성 포인트 */
@@ -730,7 +849,13 @@ public final class GameState {
                 .append(';').append(rank)
                 .append(';').append(sp)
                 .append(';').append(spTotal)
-                .append(';').append(holyStars);
+                .append(';').append(holyStars)
+                .append(';').append(politicsUnlocked ? 1 : 0)
+                .append(';').append(inPolitics ? 1 : 0)
+                .append(';').append(polRank)
+                .append(';').append(pp)
+                .append(';').append(ppTotal)
+                .append(';').append(politicalFund);
         return sb.toString();
     }
 
@@ -745,7 +870,8 @@ public final class GameState {
             boolean v4 = "v4".equals(p[0]);
             boolean v5 = "v5".equals(p[0]);
             boolean v6 = "v6".equals(p[0]);
-            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4 && !v5 && !v6) return new GameState();
+            boolean v7 = "v7".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4 && !v5 && !v6 && !v7) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -791,6 +917,15 @@ public final class GameState {
                 s.spTotal = Math.max(0, Double.parseDouble(p[24]));
             }
             if (!v2 && !v3 && !v4 && !v5 && !v6) s.holyStars = Math.max(0, Long.parseLong(p[25]));
+            if (!v2 && !v3 && !v4 && !v5 && !v6 && !v7) {
+                s.politicsUnlocked = "1".equals(p[26]);
+                s.inPolitics = s.politicsUnlocked && "1".equals(p[27]);
+                if (s.inPolitics) s.inReligion = false;
+                s.polRank = Math.max(0, Math.min(GameData.lastPoliticsRank(), Integer.parseInt(p[28])));
+                s.pp = Math.max(0, Double.parseDouble(p[29]));
+                s.ppTotal = Math.max(0, Double.parseDouble(p[30]));
+                s.politicalFund = Math.max(0, Double.parseDouble(p[31]));
+            }
             if (v2) {
                 // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다
                 for (int j = 0; j < s.levels.length; j++) {

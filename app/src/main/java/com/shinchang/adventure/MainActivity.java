@@ -63,6 +63,13 @@ public class MainActivity extends Activity {
     private LinearLayout relRankList;
     private Button[] relRankButtons = new Button[0];
     private int shownReligion = -1;
+    // 정계 화면
+    private static final int NAVY = 0xFF14284B;
+    private FrameLayout politicsRoot, polTapArea;
+    private TextView polRankText, polPpText, polRateText, polTapButton, polMultText;
+    private LinearLayout polRankList;
+    private Button[] polRankButtons = new Button[0];
+    private Button politicsButton, relPoliticsButton;
     private WeatherView weatherView;
     private View header;
     private TextView promoteTitle, promoteInfo;
@@ -153,6 +160,7 @@ public class MainActivity extends Activity {
         sunText = findViewById(R.id.sunText);
         buildMenuBar(findViewById(R.id.menuBar));
         buildReligionScreen();
+        buildPoliticsScreen();
 
         state = GameState.deserialize(prefs().getString(KEY_SAVE, null));
         shownEventSeq = state.eventSeq;
@@ -233,15 +241,19 @@ public class MainActivity extends Activity {
         long now = System.currentTimeMillis();
         double earned = state.offlineEarnings(now);
         double spGain = state.offlineSp(now);
+        double ppGain = state.offlinePp(now);
         save();
-        if (earned < 1 && spGain < 1) return;
+        if (earned < 1 && spGain < 1 && ppGain < 1) return;
         state.receive(earned);
         state.sp += spGain;
         state.spTotal += spGain;
+        state.pp += ppGain;
+        state.ppTotal += ppGain;
         new AlertDialog.Builder(this)
                 .setTitle("🌙 자리를 비운 동안")
                 .setMessage("오토클릭으로 " + Money.format(earned) + "을 벌었어요!"
                         + (spGain >= 1 ? "\n자동 기도로 영성 " + Money.plain(spGain) + "점을 얻었어요!" : "")
+                        + (ppGain >= 1 ? "\n지지자 활동으로 정치력 " + Money.plain(ppGain) + "점을 얻었어요!" : "")
                         + "\n(최대 8시간, 50% 적립)")
                 .setPositiveButton("받기", null)
                 .show();
@@ -282,6 +294,8 @@ public class MainActivity extends Activity {
         starDonateButton.setText(starDonateLabel());
         religionButton.setText(state.religionUnlocked ? "🙏 종교계로 가기" : "🙏 종교에 귀의하기 (해 300개 달성!)");
         refreshReligion();
+        politicsButton.setVisibility(state.politicsUnlocked ? View.VISIBLE : View.GONE);
+        refreshPolitics();
 
         double speed = state.autoSpeed();
         if (state.isBroker()) {
@@ -664,6 +678,13 @@ public class MainActivity extends Activity {
     // ---- 날씨 ----
 
     private void refreshWeather() {
+        if (state.inPolitics) {
+            if (shownWeather != -2) {
+                shownWeather = -2;
+                weatherView.setWeather(GameData.CLEAR);
+            }
+            return;
+        }
         if (state.inReligion) {
             if (shownWeather != WeatherView.HOLY) {
                 shownWeather = WeatherView.HOLY;
@@ -884,6 +905,15 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
         slp.bottomMargin = dp(10);
         parent.addView(starDonateButton, parent.indexOfChild(religionButton) + 1, slp);
+
+        politicsButton = newActionButton();
+        politicsButton.setBackgroundResource(R.drawable.bg_tap_politics);
+        politicsButton.setTextColor(NAVY);
+        politicsButton.setText("🏛️ 정계로 가기");
+        politicsButton.setOnClickListener(v -> enterPolitics());
+        LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        plp.bottomMargin = dp(10);
+        parent.addView(politicsButton, parent.indexOfChild(starDonateButton) + 1, plp);
     }
 
     private String starDonateLabel() {
@@ -1123,6 +1153,14 @@ public class MainActivity extends Activity {
         relRankList.setOrientation(LinearLayout.VERTICAL);
         list.addView(relRankList);
 
+        relPoliticsButton = newActionButton();
+        relPoliticsButton.setBackgroundResource(R.drawable.bg_tap_politics);
+        relPoliticsButton.setTextColor(NAVY);
+        relPoliticsButton.setOnClickListener(v -> enterPolitics());
+        LinearLayout.LayoutParams rpl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        rpl.topMargin = dp(8);
+        list.addView(relPoliticsButton, rpl);
+
         Button back = newActionButton();
         back.setBackgroundResource(R.drawable.bg_button_sub);
         back.setTextColor(getColor(R.color.text));
@@ -1182,6 +1220,9 @@ public class MainActivity extends Activity {
         relStarText.setText("⭐ 종교계 별 " + String.format(Locale.KOREA, "%,d", state.holyStars) + "개 · 영성 속도 +"
                 + Math.round((state.spMultiplier() - 1) * 100) + "%");
         relStarDonateButton.setText(starDonateLabel());
+        relPoliticsButton.setVisibility(state.canEnterPolitics() ? View.VISIBLE : View.GONE);
+        relPoliticsButton.setText(state.politicsUnlocked ? "🏛️ 정계로 가기" : "🏛️ 정계 진출하기 (신천지 " + 
+                GameData.RELIGIONS[GameData.lastReligion()].ranks[GameData.RELIGIONS[GameData.lastReligion()].ranks.length - 1] + " 달성!)");
         GameData.Religion r = state.currentReligion();
         relRankText.setText(r.emoji + " " + r.name + " · " + r.ranks[state.rank]);
         relSpText.setText("✨ 영성 " + Money.plain(state.sp) + "점");
@@ -1244,6 +1285,268 @@ public class MainActivity extends Activity {
                         save();
                         refresh();
                     }
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    // ---- 정계 ----
+
+    private void enterPolitics() {
+        if (state.politicsUnlocked) {
+            state.enterPolitics();
+            save();
+            refresh();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("🏛️ 정계 진출")
+                .setMessage("종교계의 정상에 오른 신창은 이제 나라를 바꾸기로 결심합니다.\n\n"
+                        + "정계에서는 🗳️ 정치력을 법니다. 탭해서 유세하고, 정치력으로 선거에 나가 직위를 올리세요.\n"
+                        + "정당 당원부터 대통령까지 올라갑니다.\n\n"
+                        + "정치력은 세 가지 배수로 빨라져요.\n"
+                        + "💰 정치자금: 세속에서 번 돈을 후원\n"
+                        + "🙏 종교계 인맥: 종교계에서 오른 직분과 종교계 별\n"
+                        + "☀️ 명성: 해와 별")
+                .setPositiveButton("출마하기", (d, w) -> {
+                    state.enterPolitics();
+                    save();
+                    refresh();
+                })
+                .setNegativeButton("아직", null)
+                .show();
+    }
+
+    private TextView coloredText(LinearLayout parent, int sp, boolean bold, int color) {
+        TextView t = new TextView(this);
+        t.setTextColor(color);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
+        parent.addView(t);
+        return t;
+    }
+
+    private void buildPoliticsScreen() {
+        politicsRoot = findViewById(R.id.politicsRoot);
+        politicsRoot.setBackgroundResource(R.drawable.bg_politics);
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        politicsRoot.addView(col, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.VERTICAL);
+        head.setBackgroundResource(R.drawable.bg_header_politics);
+        head.setPadding(dp(20), dp(14), dp(20), dp(16));
+        coloredText(head, 14, true, 0xFFFFFFFF).setText("🏛️ 정계 · 신창의 정치 여정");
+        polRankText = coloredText(head, 20, true, 0xFFFFFFFF);
+        polPpText = coloredText(head, 30, true, 0xFFFFFFFF);
+        polRateText = coloredText(head, 13, false, 0xFFDCE6F7);
+        col.addView(head);
+
+        polTapArea = new FrameLayout(this);
+        polTapArea.setClipChildren(true);
+        col.addView(polTapArea, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
+        polTapButton = new TextView(this);
+        polTapButton.setBackgroundResource(R.drawable.bg_tap_politics);
+        polTapButton.setGravity(Gravity.CENTER);
+        polTapButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 60);
+        polTapArea.addView(polTapButton, new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.CENTER));
+        TextView hint = new TextView(this);
+        hint.setText("탭해서 유세하기");
+        hint.setTextColor(0xFF5A6B88);
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        polTapArea.addView(hint, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        polTapArea.setOnTouchListener((v, e) -> {
+            int action = e.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+                int i = e.getActionIndex();
+                double got = state.politicsTap();
+                spawnFloatingText(polTapArea, e.getX(i), e.getY(i), "+" + Money.plain(got) + " 🗳️", NAVY);
+                polTapButton.animate().cancel();
+                polTapButton.setScaleX(0.92f);
+                polTapButton.setScaleY(0.92f);
+                polTapButton.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                refresh();
+            }
+            return true;
+        });
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(16), dp(4), dp(16), dp(16));
+        scroll.addView(list);
+        col.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        // 정치력 배수 카드
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        coloredText(card, 16, true, NAVY).setText("📊 정치력 배수");
+        polMultText = coloredText(card, 13, false, 0xFF3A4A66);
+        polMultText.setLineSpacing(dp(3), 1f);
+        Button fund = newActionButton();
+        fund.setText("💰 정치자금 후원하기");
+        fund.setOnClickListener(v -> showFundDialog());
+        LinearLayout.LayoutParams flp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+        flp.topMargin = dp(10);
+        card.addView(fund, flp);
+        list.addView(card);
+
+        TextView ranksTitle = coloredText(list, 16, true, NAVY);
+        ranksTitle.setText("직위");
+        ranksTitle.setPadding(0, dp(16), 0, dp(8));
+        polRankList = new LinearLayout(this);
+        polRankList.setOrientation(LinearLayout.VERTICAL);
+        list.addView(polRankList);
+        polRankButtons = new Button[GameData.POLITICS_RANKS.length];
+        for (int i = 0; i < GameData.POLITICS_RANKS.length; i++) {
+            LinearLayout row = newCardRow();
+            TextView emoji = new TextView(this);
+            emoji.setText(GameData.POLITICS_RANKS[i][0]);
+            emoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
+            emoji.setGravity(Gravity.CENTER);
+            row.addView(emoji, new LinearLayout.LayoutParams(dp(40), LinearLayout.LayoutParams.WRAP_CONTENT));
+            TextView[] name = new TextView[1];
+            TextView info = addTexts(row, name);
+            name[0].setText(GameData.POLITICS_RANKS[i][1]);
+            info.setText("유세 1회 " + Money.plain(GameData.politicsTapPp(i)) + "점 (배수 전)");
+            Button b = newActionButton();
+            b.setOnClickListener(v -> {
+                if (state.polRankUp()) {
+                    save();
+                    refresh();
+                    if (state.isLastPoliticsRank()) {
+                        new AlertDialog.Builder(this)
+                                .setTitle("🇰🇷 대통령 신창")
+                                .setMessage("도보 배달부에서 재벌, 종교계를 거쳐 마침내 대통령이 되었습니다!\n\n"
+                                        + "지금까지 모은 정치력 " + Money.plain(state.ppTotal) + "점")
+                                .setPositiveButton("만세!", null)
+                                .show();
+                    }
+                }
+            });
+            row.addView(b, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+            polRankButtons[i] = b;
+            polRankList.addView(row);
+        }
+
+        String[] backLabels = {"🙏 종교계로 가기", "💼 세속으로 돌아가기 (돈 버는 화면)"};
+        for (int i = 0; i < backLabels.length; i++) {
+            Button back = newActionButton();
+            back.setBackgroundResource(R.drawable.bg_button_sub);
+            back.setTextColor(getColor(R.color.text));
+            back.setText(backLabels[i]);
+            final boolean toReligion = i == 0;
+            back.setOnClickListener(v -> {
+                state.leavePolitics();
+                if (toReligion) state.enterReligion();
+                save();
+                refresh();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+            lp.topMargin = dp(8);
+            list.addView(back, lp);
+        }
+
+        TextView note = coloredText(list, 11, false, 0xFF8A94A6);
+        note.setText("※ 게임 속 설정이며 실제 정당·인물과 관계없습니다.");
+        note.setPadding(0, dp(12), 0, 0);
+    }
+
+    private void refreshPolitics() {
+        if (!state.inPolitics) {
+            politicsRoot.setVisibility(View.GONE);
+            return;
+        }
+        politicsRoot.setVisibility(View.VISIBLE);
+        String[] cur = GameData.POLITICS_RANKS[state.polRank];
+        polRankText.setText(cur[0] + " " + cur[1]);
+        polPpText.setText("🗳️ 정치력 " + Money.plain(state.pp) + "점");
+        polRateText.setText("유세 1회 " + Money.plain(state.tapPp()) + "점 · 지지자 활동 초당 " + Money.plain(state.autoPp()) + "점"
+                + (state.autoOn ? "" : " (오토 꺼짐)"));
+        polTapButton.setText(cur[0]);
+        polMultText.setText("전체 ×" + multiplierText(state.ppMultiplier()) + "\n"
+                + "💰 정치자금 ×" + multiplierText(state.fundMultiplier()) + "  (후원 " + Money.format(state.politicalFund) + ", 10배마다 +25%)\n"
+                + "🙏 종교계 인맥 ×" + multiplierText(state.networkMultiplier()) + "  (직분 " + state.religionRanksClimbed()
+                + "단계 ×5% + 종교계 별 " + state.holyStars + "개 ×2%)\n"
+                + "☀️ 명성 ×" + multiplierText(state.fameMultiplier()) + "  (해 " + state.suns + "개 ×1% + 별 100개당 1%)");
+
+        for (int i = 0; i < polRankButtons.length; i++) {
+            Button b = polRankButtons[i];
+            ((View) b.getParent()).setAlpha(i <= state.polRank + 1 ? 1f : 0.5f);
+            if (i < state.polRank) {
+                b.setText("✅ 완료");
+                b.setEnabled(false);
+            } else if (i == state.polRank) {
+                b.setText("현재 직위");
+                b.setEnabled(false);
+            } else if (i == state.polRank + 1) {
+                b.setText("출마\n" + Money.plain(state.polRankUpCost()) + "점");
+                b.setEnabled(state.canPolRankUp());
+            } else {
+                b.setText("🔒");
+                b.setEnabled(false);
+            }
+        }
+    }
+
+    private void showFundDialog() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), 0);
+        TextView guide = new TextView(this);
+        guide.setTextColor(getColor(R.color.text));
+        guide.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        box.addView(guide);
+        TextView preview = new TextView(this);
+        preview.setTextColor(getColor(R.color.text_sub));
+        preview.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        preview.setPadding(0, dp(10), 0, 0);
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        double[] ratios = {0.01, 0.1, 0.5, 1.0};
+        String[] labels = {"1%", "10%", "50%", "전액"};
+        double[] chosen = {0.1};
+        Runnable update = () -> {
+            double amount = state.money * chosen[0];
+            double after = 1 + GameData.FUND_BONUS_PER_DECADE * Math.log10(1 + (state.politicalFund + amount) / GameData.FUND_UNIT);
+            guide.setText("세속에서 번 돈을 정치자금으로 후원합니다.\n후원금이 10배 늘 때마다 정치력 +25%.\n\n"
+                    + "가진 돈: " + Money.format(state.money) + "\n지금까지 후원: " + Money.format(state.politicalFund));
+            preview.setText("후원할 금액: " + Money.format(amount) + " (" + Math.round(chosen[0] * 100) + "%)\n"
+                    + "정치자금 배수: ×" + multiplierText(state.fundMultiplier()) + " → ×" + multiplierText(after));
+        };
+        for (int i = 0; i < ratios.length; i++) {
+            Button b = newActionButton();
+            b.setBackgroundResource(R.drawable.bg_button_sub);
+            b.setTextColor(getColor(R.color.text));
+            b.setMinWidth(0);
+            b.setText(labels[i]);
+            double r = ratios[i];
+            b.setOnClickListener(v -> {
+                chosen[0] = r;
+                update.run();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(38), 1);
+            if (i > 0) lp.leftMargin = dp(6);
+            lp.topMargin = dp(8);
+            row.addView(b, lp);
+        }
+        box.addView(row);
+        box.addView(preview);
+        update.run();
+        new AlertDialog.Builder(this)
+                .setTitle("💰 정치자금 후원하기")
+                .setView(box)
+                .setPositiveButton("후원하기", (d, w) -> {
+                    double given = state.donateFund(state.money * chosen[0]);
+                    save();
+                    refresh();
+                    if (given > 0) Toast.makeText(this, "💰 " + Money.format(given) + " 후원 완료!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("취소", null)
                 .show();
