@@ -897,7 +897,7 @@ public class MainActivity extends Activity {
         box.setPadding(dp(20), dp(8), dp(20), 0);
 
         TextView guide = new TextView(this);
-        guide.setText("세속에서 번 별 100개당 종교계 별 1개가 쌓여요.\n종교계 별 1개당 영성 얻는 속도가 +5% 빨라집니다.\n\n"
+        guide.setText("세속에서 번 별 100개당 종교계 별 1개가 쌓여요.\n종교계 별 1개당 영성 얻는 속도가 +" + Math.round(GameData.HOLY_STAR_BONUS * 100) + "% 빨라집니다.\n\n"
                 + "가진 별: ⭐ " + String.format(Locale.KOREA, "%,d", state.stars) + "개\n기부할 별 개수를 적어 주세요.");
         guide.setTextColor(getColor(R.color.text));
         guide.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);

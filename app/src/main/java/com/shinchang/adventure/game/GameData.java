@@ -313,8 +313,8 @@ public final class GameData {
 
     /** 세속 별 이만큼을 교회에 기부하면 종교계 별 1개 */
     public static final long STARS_PER_HOLY_STAR = 100;
-    /** 종교계 별 1개당 영성 획득 +5% */
-    public static final double HOLY_STAR_BONUS = 0.05;
+    /** 종교계 별 1개당 영성 획득 +10% */
+    public static final double HOLY_STAR_BONUS = 0.10;
 
     /** 해를 이만큼 모으면 종교에 귀의할 수 있다 */
     public static final long RELIGION_SUNS = 300;
