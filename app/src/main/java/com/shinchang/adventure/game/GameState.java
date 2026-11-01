@@ -260,9 +260,20 @@ public final class GameState {
         return holyStarsForDonation() >= 1;
     }
 
-    /** 세속 별을 100개 단위로 교회에 기부한다. 남는 별은 그대로 둔다. */
+    /** 가진 별을 모두 (100개 단위로) 교회에 기부한다 */
     public long donateStars() {
-        long gained = holyStarsForDonation();
+        return donateStars(stars);
+    }
+
+    /** 별 count 개를 기부하겠다고 하면 실제로 기부되는 별 (가진 만큼, 100개 단위로 내림) */
+    public long starsUsedFor(long count) {
+        long c = Math.max(0, Math.min(count, stars));
+        return c / GameData.STARS_PER_HOLY_STAR * GameData.STARS_PER_HOLY_STAR;
+    }
+
+    /** 별 count 개를 100개 단위로 교회에 기부한다. 100개가 안 되는 나머지는 그대로 둔다. 받은 종교계 별을 돌려준다. */
+    public long donateStars(long count) {
+        long gained = starsUsedFor(count) / GameData.STARS_PER_HOLY_STAR;
         if (gained < 1) return 0;
         stars -= gained * GameData.STARS_PER_HOLY_STAR;
         holyStars += gained;

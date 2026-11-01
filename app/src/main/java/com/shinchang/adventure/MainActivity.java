@@ -892,30 +892,111 @@ public class MainActivity extends Activity {
     }
 
     private void confirmStarDonation() {
-        long gain = state.holyStarsForDonation();
-        long used = gain * GameData.STARS_PER_HOLY_STAR;
-        double after = (1 + (state.stars - used) * GameData.STAR_BONUS) * (1 + state.selfBonus()) * state.sunMultiplier();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), 0);
+
+        TextView guide = new TextView(this);
+        guide.setText("세속에서 번 별 100개당 종교계 별 1개가 쌓여요.\n종교계 별 1개당 영성 얻는 속도가 +5% 빨라집니다.\n\n"
+                + "가진 별: ⭐ " + String.format(Locale.KOREA, "%,d", state.stars) + "개\n기부할 별 개수를 적어 주세요.");
+        guide.setTextColor(getColor(R.color.text));
+        guide.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        box.addView(guide);
+
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        input.setHint("예: 100");
+        input.setSingleLine(true);
+        long max = state.starsUsedFor(state.stars);
+        if (max > 0) input.setText(String.valueOf(max));
+        box.addView(input, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        // 빠른 입력: 100 / 1,000 / 최대
+        LinearLayout quick = new LinearLayout(this);
+        quick.setOrientation(LinearLayout.HORIZONTAL);
+        long[] amounts = {100, 1_000, max};
+        String[] labels = {"100개", "1,000개", "최대"};
+        for (int i = 0; i < amounts.length; i++) {
+            Button b = newActionButton();
+            b.setBackgroundResource(R.drawable.bg_button_sub);
+            b.setTextColor(getColor(R.color.text));
+            b.setMinWidth(0);
+            b.setText(labels[i]);
+            long amount = amounts[i];
+            b.setOnClickListener(v -> {
+                input.setText(String.valueOf(amount));
+                input.setSelection(input.getText().length());
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(38), 1);
+            if (i > 0) lp.leftMargin = dp(6);
+            quick.addView(b, lp);
+        }
+        box.addView(quick);
+
+        TextView preview = new TextView(this);
+        preview.setTextColor(getColor(R.color.text_sub));
+        preview.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        preview.setPadding(0, dp(10), 0, 0);
+        box.addView(preview);
+
         AlertDialog d = new AlertDialog.Builder(this)
                 .setTitle("⭐ 교회에 별 기부하기")
-                .setMessage("세속에서 번 별 100개를 기부할 때마다 종교계 별 1개가 쌓여요.\n"
-                        + "종교계 별 1개당 영성 얻는 속도가 +5% 빨라집니다.\n\n"
-                        + "가진 별: ⭐ " + String.format(Locale.KOREA, "%,d", state.stars) + "개\n"
-                        + "기부할 별: " + String.format(Locale.KOREA, "%,d", used) + "개 → 종교계 별 +"
-                        + String.format(Locale.KOREA, "%,d", gain) + "개\n"
-                        + "영성 속도: +" + Math.round((state.spMultiplier() - 1) * 100) + "% → +"
-                        + Math.round((state.holyStars + gain) * GameData.HOLY_STAR_BONUS * 100) + "%\n\n"
-                        + "⚠️ 기부한 별만큼 세속 수입 배수가 줄어요 (×" + multiplierText(state.incomeMultiplier())
-                        + " → ×" + multiplierText(after) + ")"
-                        + (gain < 1 ? "\n\n별이 100개 이상 있어야 기부할 수 있어요." : ""))
+                .setView(box)
                 .setPositiveButton("기부하기", (dialog, w) -> {
-                    long got = state.donateStars();
+                    long got = state.donateStars(parseCount(input.getText().toString()));
                     save();
                     refresh();
-                    Toast.makeText(this, "🙏 종교계 별 " + got + "개가 쌓였어요!", Toast.LENGTH_LONG).show();
+                    if (got > 0) Toast.makeText(this, "🙏 종교계 별 " + got + "개가 쌓였어요!", Toast.LENGTH_LONG).show();
                 })
                 .setNegativeButton("취소", null)
-                .show();
-        d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(gain >= 1);
+                .create();
+
+        Runnable update = () -> {
+            long typed = parseCount(input.getText().toString());
+            long used = state.starsUsedFor(typed);
+            long gain = used / GameData.STARS_PER_HOLY_STAR;
+            double after = (1 + (state.stars - used) * GameData.STAR_BONUS) * (1 + state.selfBonus()) * state.sunMultiplier();
+            String text;
+            if (typed > state.stars) {
+                text = "⚠️ 가진 별(" + String.format(Locale.KOREA, "%,d", state.stars) + "개)보다 많아요.";
+            } else if (gain < 1) {
+                text = "⚠️ 100개 이상 적어야 종교계 별을 받을 수 있어요.";
+            } else {
+                text = "기부: " + String.format(Locale.KOREA, "%,d", used) + "개 → 종교계 별 +" + gain + "개"
+                        + (typed > used ? "\n(100개 단위만 기부되고 " + (typed - used) + "개는 남아요)" : "")
+                        + "\n영성 속도: +" + Math.round((state.spMultiplier() - 1) * 100) + "% → +"
+                        + Math.round((state.holyStars + gain) * GameData.HOLY_STAR_BONUS * 100) + "%"
+                        + "\n세속 수입: ×" + multiplierText(state.incomeMultiplier()) + " → ×" + multiplierText(after);
+            }
+            preview.setText(text);
+            Button ok = d.getButton(AlertDialog.BUTTON_POSITIVE);
+            if (ok != null) ok.setEnabled(typed <= state.stars && gain >= 1);
+        };
+        input.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence c, int a, int b, int e) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence c, int a, int b, int e) {
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable e) {
+                update.run();
+            }
+        });
+        d.show();
+        update.run();
+    }
+
+    private static long parseCount(String text) {
+        try {
+            return text.trim().isEmpty() ? 0 : Long.parseLong(text.trim());
+        } catch (NumberFormatException e) {
+            return Long.MAX_VALUE;
+        }
     }
 
     // ---- 종교계 ----
