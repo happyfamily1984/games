@@ -52,7 +52,9 @@ public class MainActivity extends Activity {
 
     private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint, weatherBanner;
     private TextView starText, multText, sunText;
-    private Button religionButton;
+    private Button religionButton, starDonateButton, relStarDonateButton;
+    private TextView relStarText;
+    private long shownHolyStars = -1;
     // 종교계 화면
     private FrameLayout religionRoot, relTapArea;
     private TextView relRankText, relSpText, relRateText, relTapButton;
@@ -276,6 +278,8 @@ public class MainActivity extends Activity {
         sunText.setText("☀️ 해 " + String.format(Locale.KOREA, "%,d", state.suns) + "개 (+"
                 + String.format(Locale.KOREA, "%,d", Math.round(state.suns * GameData.SUN_BONUS * 100)) + "%)");
         religionButton.setVisibility(state.canEnterReligion() ? View.VISIBLE : View.GONE);
+        starDonateButton.setVisibility(state.religionUnlocked ? View.VISIBLE : View.GONE);
+        starDonateButton.setText(starDonateLabel());
         religionButton.setText(state.religionUnlocked ? "🙏 종교계로 가기" : "🙏 종교에 귀의하기 (해 300개 달성!)");
         refreshReligion();
 
@@ -872,6 +876,46 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
         lp.bottomMargin = dp(10);
         parent.addView(religionButton, parent.indexOfChild(bar) + 1, lp);
+
+        starDonateButton = newActionButton();
+        starDonateButton.setBackgroundResource(R.drawable.bg_tap_holy);
+        starDonateButton.setTextColor(0xFF5B4314);
+        starDonateButton.setOnClickListener(v -> confirmStarDonation());
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        slp.bottomMargin = dp(10);
+        parent.addView(starDonateButton, parent.indexOfChild(religionButton) + 1, slp);
+    }
+
+    private String starDonateLabel() {
+        return "⭐ 교회에 별 기부하기 (별 " + String.format(Locale.KOREA, "%,d", state.stars) + "개 → 종교계 별 "
+                + String.format(Locale.KOREA, "%,d", state.holyStarsForDonation()) + "개)";
+    }
+
+    private void confirmStarDonation() {
+        long gain = state.holyStarsForDonation();
+        long used = gain * GameData.STARS_PER_HOLY_STAR;
+        double after = (1 + (state.stars - used) * GameData.STAR_BONUS) * (1 + state.selfBonus()) * state.sunMultiplier();
+        AlertDialog d = new AlertDialog.Builder(this)
+                .setTitle("⭐ 교회에 별 기부하기")
+                .setMessage("세속에서 번 별 100개를 기부할 때마다 종교계 별 1개가 쌓여요.\n"
+                        + "종교계 별 1개당 영성 얻는 속도가 +5% 빨라집니다.\n\n"
+                        + "가진 별: ⭐ " + String.format(Locale.KOREA, "%,d", state.stars) + "개\n"
+                        + "기부할 별: " + String.format(Locale.KOREA, "%,d", used) + "개 → 종교계 별 +"
+                        + String.format(Locale.KOREA, "%,d", gain) + "개\n"
+                        + "영성 속도: +" + Math.round((state.spMultiplier() - 1) * 100) + "% → +"
+                        + Math.round((state.holyStars + gain) * GameData.HOLY_STAR_BONUS * 100) + "%\n\n"
+                        + "⚠️ 기부한 별만큼 세속 수입 배수가 줄어요 (×" + multiplierText(state.incomeMultiplier())
+                        + " → ×" + multiplierText(after) + ")"
+                        + (gain < 1 ? "\n\n별이 100개 이상 있어야 기부할 수 있어요." : ""))
+                .setPositiveButton("기부하기", (dialog, w) -> {
+                    long got = state.donateStars();
+                    save();
+                    refresh();
+                    Toast.makeText(this, "🙏 종교계 별 " + got + "개가 쌓였어요!", Toast.LENGTH_LONG).show();
+                })
+                .setNegativeButton("취소", null)
+                .show();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(gain >= 1);
     }
 
     // ---- 종교계 ----
@@ -924,6 +968,7 @@ public class MainActivity extends Activity {
         relRankText = holyText(head, 20, true);
         relSpText = holyText(head, 30, true);
         relRateText = holyText(head, 13, false);
+        relStarText = holyText(head, 13, true);
         col.addView(head);
 
         relTapArea = new FrameLayout(this);
@@ -961,6 +1006,15 @@ public class MainActivity extends Activity {
         list.setPadding(dp(16), dp(4), dp(16), dp(16));
         scroll.addView(list);
         col.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        relStarDonateButton = newActionButton();
+        relStarDonateButton.setBackgroundResource(R.drawable.bg_tap_holy);
+        relStarDonateButton.setTextColor(0xFF5B4314);
+        relStarDonateButton.setOnClickListener(v -> confirmStarDonation());
+        LinearLayout.LayoutParams sdl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        sdl.topMargin = dp(8);
+        sdl.bottomMargin = dp(10);
+        list.addView(relStarDonateButton, sdl);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -1012,6 +1066,8 @@ public class MainActivity extends Activity {
 
     private void buildRankRows() {
         shownReligion = state.religion;
+        shownHolyStars = state.holyStars;
+        double m = state.spMultiplier();
         relRankList.removeAllViews();
         GameData.Religion r = state.currentReligion();
         relRankButtons = new Button[r.ranks.length];
@@ -1020,8 +1076,8 @@ public class MainActivity extends Activity {
             TextView[] name = new TextView[1];
             TextView info = addTexts(row, name);
             name[0].setText((i + 1) + ". " + r.ranks[i]);
-            info.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion, i)) + "점 · 자동 기도 초당 "
-                    + Money.plain(GameData.religionAutoSp(state.religion, i)) + "점");
+            info.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion, i) * m) + "점 · 자동 기도 초당 "
+                    + Money.plain(GameData.religionAutoSp(state.religion, i) * m) + "점");
             Button b = newActionButton();
             b.setOnClickListener(v -> {
                 if (state.rankUp()) {
@@ -1041,7 +1097,10 @@ public class MainActivity extends Activity {
             return;
         }
         religionRoot.setVisibility(View.VISIBLE);
-        if (shownReligion != state.religion) buildRankRows();
+        if (shownReligion != state.religion || shownHolyStars != state.holyStars) buildRankRows();
+        relStarText.setText("⭐ 종교계 별 " + String.format(Locale.KOREA, "%,d", state.holyStars) + "개 · 영성 속도 +"
+                + Math.round((state.spMultiplier() - 1) * 100) + "%");
+        relStarDonateButton.setText(starDonateLabel());
         GameData.Religion r = state.currentReligion();
         relRankText.setText(r.emoji + " " + r.name + " · " + r.ranks[state.rank]);
         relSpText.setText("✨ 영성 " + Money.plain(state.sp) + "점");
@@ -1073,7 +1132,7 @@ public class MainActivity extends Activity {
             GameData.Religion next = GameData.RELIGIONS[state.religion + 1];
             boolean toLast = state.religion + 1 == GameData.lastReligion();
             relConvertTitle.setText("다음 종교: " + next.emoji + " " + next.name);
-            relConvertInfo.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion + 1, 0)) + "점부터 시작"
+            relConvertInfo.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion + 1, 0) * state.spMultiplier()) + "점부터 시작"
                     + "\n" + (state.isLastRank() ? "✅ " : "⬜ ") + lastRank + " 직분 도달"
                     + "\n" + (state.sp >= state.convertCost() ? "✅ " : "⬜ ") + "영성 " + Money.plain(state.convertCost()) + "점"
                     + (toLast ? "\n⚠️ 옮기면 모든 영성 포인트를 잃고 새로 시작합니다.\n대신 영성 획득이 극도로 높아져요." : ""));

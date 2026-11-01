@@ -15,7 +15,7 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v6";
+    private static final String SAVE_VERSION = "v7";
 
     public double money;
     /** 이번 회차(교회 기부 이후) 총수입. 별 개수 계산에 쓴다. */
@@ -40,6 +40,8 @@ public final class GameState {
     /** 영성 포인트 */
     public double sp;
     public double spTotal;
+    /** 종교계 별: 세속 별 100개를 교회에 기부할 때마다 1개 */
+    public long holyStars;
     public int job;
     /** 지금까지 도달한 가장 높은 직업. 그 아래 직업으로는 언제든 전환할 수 있다. */
     public int highestJob;
@@ -236,12 +238,35 @@ public final class GameState {
         return GameData.RELIGIONS[religion];
     }
 
+    /** 종교계 별 배수: 1개당 영성 획득 +5% */
+    public double spMultiplier() {
+        return 1 + holyStars * GameData.HOLY_STAR_BONUS;
+    }
+
     public double tapSp() {
-        return GameData.religionTapSp(religion, rank);
+        return GameData.religionTapSp(religion, rank) * spMultiplier();
     }
 
     public double autoSp() {
-        return autoOn ? GameData.religionAutoSp(religion, rank) : 0;
+        return autoOn ? GameData.religionAutoSp(religion, rank) * spMultiplier() : 0;
+    }
+
+    /** 지금 교회에 별을 기부하면 받을 종교계 별 */
+    public long holyStarsForDonation() {
+        return stars / GameData.STARS_PER_HOLY_STAR;
+    }
+
+    public boolean canDonateStars() {
+        return holyStarsForDonation() >= 1;
+    }
+
+    /** 세속 별을 100개 단위로 교회에 기부한다. 남는 별은 그대로 둔다. */
+    public long donateStars() {
+        long gained = holyStarsForDonation();
+        if (gained < 1) return 0;
+        stars -= gained * GameData.STARS_PER_HOLY_STAR;
+        holyStars += gained;
+        return gained;
     }
 
     /** 종교계에서 한 번 누른다 (기도). 얻은 영성 포인트를 돌려준다. */
@@ -360,6 +385,7 @@ public final class GameState {
         rank = o.rank;
         sp = o.sp;
         spTotal = o.spTotal;
+        holyStars = o.holyStars;
     }
 
     /** 손으로 한 번 누른다. 번 돈을 돌려준다 (계약 중이거나 공인중개사면 계약 진행만 하므로 0). */
@@ -692,7 +718,8 @@ public final class GameState {
                 .append(';').append(religion)
                 .append(';').append(rank)
                 .append(';').append(sp)
-                .append(';').append(spTotal);
+                .append(';').append(spTotal)
+                .append(';').append(holyStars);
         return sb.toString();
     }
 
@@ -706,7 +733,8 @@ public final class GameState {
             boolean v3 = "v3".equals(p[0]);
             boolean v4 = "v4".equals(p[0]);
             boolean v5 = "v5".equals(p[0]);
-            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4 && !v5) return new GameState();
+            boolean v6 = "v6".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4 && !v5 && !v6) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -751,6 +779,7 @@ public final class GameState {
                 s.sp = Math.max(0, Double.parseDouble(p[23]));
                 s.spTotal = Math.max(0, Double.parseDouble(p[24]));
             }
+            if (!v2 && !v3 && !v4 && !v5 && !v6) s.holyStars = Math.max(0, Long.parseLong(p[25]));
             if (v2) {
                 // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다
                 for (int j = 0; j < s.levels.length; j++) {
