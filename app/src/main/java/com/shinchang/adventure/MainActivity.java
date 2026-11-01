@@ -69,7 +69,7 @@ public class MainActivity extends Activity {
     private TextView polRankText, polPpText, polRateText, polTapButton, polMultText;
     private LinearLayout polRankList;
     private Button[] polRankButtons = new Button[0];
-    private Button politicsButton, relPoliticsButton;
+    private Button politicsButton, relPoliticsButton, rpgButton, polRpgButton;
     private WeatherView weatherView;
     private View header;
     private TextView promoteTitle, promoteInfo;
@@ -295,6 +295,9 @@ public class MainActivity extends Activity {
         religionButton.setText(state.religionUnlocked ? "🙏 종교계로 가기" : "🙏 종교에 귀의하기 (해 300개 달성!)");
         refreshReligion();
         politicsButton.setVisibility(state.politicsUnlocked ? View.VISIBLE : View.GONE);
+        boolean president = state.politicsUnlocked && state.isLastPoliticsRank();
+        rpgButton.setVisibility(president ? View.VISIBLE : View.GONE);
+        polRpgButton.setVisibility(president ? View.VISIBLE : View.GONE);
         refreshPolitics();
 
         double speed = state.autoSpeed();
@@ -914,6 +917,21 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
         plp.bottomMargin = dp(10);
         parent.addView(politicsButton, parent.indexOfChild(starDonateButton) + 1, plp);
+
+        rpgButton = newActionButton();
+        rpgButton.setBackgroundResource(R.drawable.bg_dq_button);
+        rpgButton.setTextColor(0xFFFFFFFF);
+        rpgButton.setText("🌀 차원 이동 장치 · 환상의 세계 아르카디아");
+        rpgButton.setOnClickListener(v -> openRpg());
+        LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52));
+        rlp.bottomMargin = dp(10);
+        parent.addView(rpgButton, parent.indexOfChild(politicsButton) + 1, rlp);
+    }
+
+    /** 대통령이 되면 열리는 RPG */
+    private void openRpg() {
+        save();
+        startActivity(new android.content.Intent(this, com.shinchang.adventure.rpg.RpgActivity.class));
     }
 
     private String starDonateLabel() {
@@ -1423,7 +1441,9 @@ public class MainActivity extends Activity {
                         new AlertDialog.Builder(this)
                                 .setTitle("🇰🇷 대통령 신창")
                                 .setMessage("도보 배달부에서 재벌, 종교계를 거쳐 마침내 대통령이 되었습니다!\n\n"
-                                        + "지금까지 모은 정치력 " + Money.plain(state.ppTotal) + "점")
+                                        + "지금까지 모은 정치력 " + Money.plain(state.ppTotal) + "점\n\n"
+                                        + "…그런데 청와대 금고 깊은 곳에서 정체를 알 수 없는 기계가 발견되었다는 보고가 들어왔습니다.\n"
+                                        + "(「🌀 차원 이동 장치」 버튼이 생겼어요!)")
                                 .setPositiveButton("만세!", null)
                                 .show();
                     }
@@ -1433,6 +1453,15 @@ public class MainActivity extends Activity {
             polRankButtons[i] = b;
             polRankList.addView(row);
         }
+
+        polRpgButton = newActionButton();
+        polRpgButton.setBackgroundResource(R.drawable.bg_dq_button);
+        polRpgButton.setTextColor(0xFFFFFFFF);
+        polRpgButton.setText("🌀 차원 이동 장치 · 환상의 세계로");
+        polRpgButton.setOnClickListener(v -> openRpg());
+        LinearLayout.LayoutParams prl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52));
+        prl.topMargin = dp(12);
+        list.addView(polRpgButton, prl);
 
         String[] backLabels = {"🙏 종교계로 가기", "💼 세속으로 돌아가기 (돈 버는 화면)"};
         for (int i = 0; i < backLabels.length; i++) {
