@@ -15,7 +15,7 @@ public final class GameState {
     /** 오토 모드에서 계약이 끝난 뒤 같은 계약을 다시 시작하기까지의 대기 시간 */
     public static final double CONTRACT_RESTART_SECONDS = 1.0;
 
-    private static final String SAVE_VERSION = "v5";
+    private static final String SAVE_VERSION = "v6";
 
     public double money;
     /** 이번 회차(교회 기부 이후) 총수입. 별 개수 계산에 쓴다. */
@@ -29,6 +29,17 @@ public final class GameState {
     public int donations;
     /** 신창에게 투자한 항목. 교회 기부로 리셋해도 남는다. */
     public final boolean[] selfOwned = new boolean[GameData.SELF_INVESTMENTS.length];
+
+    // ---- 종교계 (회차·완전 리셋과 무관하게 남는다) ----
+    /** 한 번이라도 종교에 귀의했는지 */
+    public boolean religionUnlocked;
+    /** 지금 종교계 화면에 있는지 */
+    public boolean inReligion;
+    public int religion;
+    public int rank;
+    /** 영성 포인트 */
+    public double sp;
+    public double spTotal;
     public int job;
     /** 지금까지 도달한 가장 높은 직업. 그 아래 직업으로는 언제든 전환할 수 있다. */
     public int highestJob;
@@ -194,9 +205,95 @@ public final class GameState {
         return b;
     }
 
+    /** 해 배수: 해 1개당 +2% (영구) */
+    public double sunMultiplier() {
+        return 1 + suns * GameData.SUN_BONUS;
+    }
+
     /** 모든 수입에 곱해지는 배수 */
     public double incomeMultiplier() {
-        return starMultiplier() * (1 + selfBonus());
+        return starMultiplier() * (1 + selfBonus()) * sunMultiplier();
+    }
+
+    // ---- 종교계 ----
+
+    public boolean canEnterReligion() {
+        return religionUnlocked || suns >= GameData.RELIGION_SUNS;
+    }
+
+    public boolean enterReligion() {
+        if (!canEnterReligion()) return false;
+        religionUnlocked = true;
+        inReligion = true;
+        return true;
+    }
+
+    public void leaveReligion() {
+        inReligion = false;
+    }
+
+    public GameData.Religion currentReligion() {
+        return GameData.RELIGIONS[religion];
+    }
+
+    public double tapSp() {
+        return GameData.religionTapSp(religion, rank);
+    }
+
+    public double autoSp() {
+        return autoOn ? GameData.religionAutoSp(religion, rank) : 0;
+    }
+
+    /** 종교계에서 한 번 누른다 (기도). 얻은 영성 포인트를 돌려준다. */
+    public double religionTap() {
+        double v = tapSp();
+        sp += v;
+        spTotal += v;
+        return v;
+    }
+
+    public boolean isLastRank() {
+        return rank >= currentReligion().ranks.length - 1;
+    }
+
+    public double rankUpCost() {
+        return GameData.religionRankCost(religion, rank);
+    }
+
+    public boolean canRankUp() {
+        return !isLastRank() && sp >= rankUpCost();
+    }
+
+    public boolean rankUp() {
+        if (!canRankUp()) return false;
+        sp -= rankUpCost();
+        rank++;
+        return true;
+    }
+
+    public boolean hasNextReligion() {
+        return religion < GameData.lastReligion();
+    }
+
+    public double convertCost() {
+        return GameData.religionConvertCost(religion);
+    }
+
+    public boolean canConvert() {
+        return hasNextReligion() && isLastRank() && sp >= convertCost();
+    }
+
+    /** 다음 종교로 옮긴다. 신천지로 갈 때는 모든 영성 포인트를 잃고 새로 시작한다. */
+    public boolean convert() {
+        if (!canConvert()) return false;
+        religion++;
+        rank = 0;
+        if (religion == GameData.lastReligion()) {
+            sp = 0;
+        } else {
+            sp -= GameData.religionConvertCost(religion - 1);
+        }
+        return true;
     }
 
     // ---- 신창에게 투자 ----
@@ -236,6 +333,7 @@ public final class GameState {
         n.donations = donations + 1;
         System.arraycopy(selfOwned, 0, n.selfOwned, 0, selfOwned.length);
         n.autoOn = autoOn;
+        n.copyReligion(this);
         return n;
     }
 
@@ -251,7 +349,17 @@ public final class GameState {
         GameState n = new GameState();
         n.suns = suns + sunsForFullReset();
         n.autoOn = autoOn;
+        n.copyReligion(this);
         return n;
+    }
+
+    private void copyReligion(GameState o) {
+        religionUnlocked = o.religionUnlocked;
+        inReligion = false;
+        religion = o.religion;
+        rank = o.rank;
+        sp = o.sp;
+        spTotal = o.spTotal;
     }
 
     /** 손으로 한 번 누른다. 번 돈을 돌려준다 (계약 중이거나 공인중개사면 계약 진행만 하므로 0). */
@@ -272,6 +380,7 @@ public final class GameState {
         if (!isBroker()) {
             if (isDelivery()) updateWeather(seconds);
             receive(incomePerSecond() * seconds);
+            updateReligion(seconds);
             if (isBoostJob()) {
                 boostLeft = Math.max(0, boostLeft - seconds);
                 // 소방 계약은 손으로만 클릭한다
@@ -282,6 +391,7 @@ public final class GameState {
             }
             return;
         }
+        updateReligion(seconds);
         if (activeContract >= 0) {
             if (autoOn) contractClicks += autoSpeed() * seconds;
             contractTimeLeft -= seconds;
@@ -290,6 +400,21 @@ public final class GameState {
             restartWait -= seconds;
             if (restartWait <= 0) startContract(lastContract);
         }
+    }
+
+    /** 종교에 귀의한 뒤에는 세속 화면에 있어도 기도(오토)로 영성 포인트가 쌓인다 */
+    private void updateReligion(double seconds) {
+        if (!religionUnlocked) return;
+        double v = autoSp() * seconds;
+        sp += v;
+        spTotal += v;
+    }
+
+    /** 앱을 끈 동안 쌓인 영성 포인트 */
+    public double offlineSp(long nowMillis) {
+        if (!religionUnlocked || lastSavedMillis <= 0 || nowMillis <= lastSavedMillis) return 0;
+        double seconds = Math.min((nowMillis - lastSavedMillis) / 1000.0, OFFLINE_MAX_SECONDS);
+        return autoSp() * seconds * OFFLINE_RATE;
     }
 
     // ---- 날씨 ----
@@ -562,6 +687,12 @@ public final class GameState {
                 .append(';').append(suns)
                 .append(';').append(donations).append(';');
         for (boolean b : selfOwned) sb.append(b ? '1' : '0');
+        sb.append(';').append(religionUnlocked ? 1 : 0)
+                .append(';').append(inReligion ? 1 : 0)
+                .append(';').append(religion)
+                .append(';').append(rank)
+                .append(';').append(sp)
+                .append(';').append(spTotal);
         return sb.toString();
     }
 
@@ -574,7 +705,8 @@ public final class GameState {
             boolean v2 = "v2".equals(p[0]);
             boolean v3 = "v3".equals(p[0]);
             boolean v4 = "v4".equals(p[0]);
-            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4) return new GameState();
+            boolean v5 = "v5".equals(p[0]);
+            if (!SAVE_VERSION.equals(p[0]) && !v2 && !v3 && !v4 && !v5) return new GameState();
             s.money = Double.parseDouble(p[1]);
             s.totalEarned = Double.parseDouble(p[2]);
             s.job = Math.max(0, Math.min(GameData.lastJob(), Integer.parseInt(p[3])));
@@ -610,6 +742,14 @@ public final class GameState {
                 for (int i = 0; i < p[18].length() && i < s.selfOwned.length; i++) {
                     s.selfOwned[i] = p[18].charAt(i) == '1';
                 }
+            }
+            if (!v2 && !v3 && !v4 && !v5) {
+                s.religionUnlocked = "1".equals(p[19]);
+                s.inReligion = s.religionUnlocked && "1".equals(p[20]);
+                s.religion = Math.max(0, Math.min(GameData.lastReligion(), Integer.parseInt(p[21])));
+                s.rank = Math.max(0, Math.min(s.currentReligion().ranks.length - 1, Integer.parseInt(p[22])));
+                s.sp = Math.max(0, Double.parseDouble(p[23]));
+                s.spTotal = Math.max(0, Double.parseDouble(p[24]));
             }
             if (v2) {
                 // v2 저장에는 탈것 선택/해금 기록이 없으니 가진 아이템으로 채운다

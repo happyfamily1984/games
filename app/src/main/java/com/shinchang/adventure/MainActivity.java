@@ -52,6 +52,15 @@ public class MainActivity extends Activity {
 
     private TextView jobText, moneyText, rateText, autoText, tapButton, tapHint, weatherBanner;
     private TextView starText, multText, sunText;
+    private Button religionButton;
+    // 종교계 화면
+    private FrameLayout religionRoot, relTapArea;
+    private TextView relRankText, relSpText, relRateText, relTapButton;
+    private TextView relConvertTitle, relConvertInfo;
+    private Button relConvertButton;
+    private LinearLayout relRankList;
+    private Button[] relRankButtons = new Button[0];
+    private int shownReligion = -1;
     private WeatherView weatherView;
     private View header;
     private TextView promoteTitle, promoteInfo;
@@ -141,6 +150,7 @@ public class MainActivity extends Activity {
         multText = findViewById(R.id.multText);
         sunText = findViewById(R.id.sunText);
         buildMenuBar(findViewById(R.id.menuBar));
+        buildReligionScreen();
 
         state = GameState.deserialize(prefs().getString(KEY_SAVE, null));
         shownEventSeq = state.eventSeq;
@@ -163,6 +173,10 @@ public class MainActivity extends Activity {
         });
 
         promoteButton.setOnClickListener(v -> {
+            if (state.job == GameData.lastJob()) {
+                if (state.isEnding()) showEndingGallery();
+                return;
+            }
             if (state.promote()) {
                 save();
                 refresh();
@@ -214,13 +228,19 @@ public class MainActivity extends Activity {
     }
 
     private void applyOfflineEarnings() {
-        double earned = state.offlineEarnings(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        double earned = state.offlineEarnings(now);
+        double spGain = state.offlineSp(now);
         save();
-        if (earned < 1) return;
+        if (earned < 1 && spGain < 1) return;
         state.receive(earned);
+        state.sp += spGain;
+        state.spTotal += spGain;
         new AlertDialog.Builder(this)
                 .setTitle("🌙 자리를 비운 동안")
-                .setMessage("오토클릭으로 " + Money.format(earned) + "을 벌었어요!\n(최대 8시간, 50% 적립)")
+                .setMessage("오토클릭으로 " + Money.format(earned) + "을 벌었어요!"
+                        + (spGain >= 1 ? "\n자동 기도로 영성 " + Money.plain(spGain) + "점을 얻었어요!" : "")
+                        + "\n(최대 8시간, 50% 적립)")
                 .setPositiveButton("받기", null)
                 .show();
     }
@@ -253,7 +273,11 @@ public class MainActivity extends Activity {
         starText.setText("⭐ 별 " + String.format(Locale.KOREA, "%,d", state.stars) + "개");
         multText.setText("🙏 수입 ×" + multiplierText(state.incomeMultiplier()));
         sunText.setVisibility(state.suns > 0 ? View.VISIBLE : View.GONE);
-        sunText.setText("☀️ 해 " + String.format(Locale.KOREA, "%,d", state.suns) + "개");
+        sunText.setText("☀️ 해 " + String.format(Locale.KOREA, "%,d", state.suns) + "개 (+"
+                + String.format(Locale.KOREA, "%,d", Math.round(state.suns * GameData.SUN_BONUS * 100)) + "%)");
+        religionButton.setVisibility(state.canEnterReligion() ? View.VISIBLE : View.GONE);
+        religionButton.setText(state.religionUnlocked ? "🙏 종교계로 가기" : "🙏 종교에 귀의하기 (해 300개 달성!)");
+        refreshReligion();
 
         double speed = state.autoSpeed();
         if (state.isBroker()) {
@@ -636,6 +660,13 @@ public class MainActivity extends Activity {
     // ---- 날씨 ----
 
     private void refreshWeather() {
+        if (state.inReligion) {
+            if (shownWeather != WeatherView.HOLY) {
+                shownWeather = WeatherView.HOLY;
+                weatherView.setWeather(WeatherView.HOLY);
+            }
+            return;
+        }
         int w = state.isDelivery() ? state.weather : GameData.CLEAR;
         if (w != shownWeather) {
             shownWeather = w;
@@ -772,7 +803,9 @@ public class MainActivity extends Activity {
             promoteInfo.setText(state.isEnding()
                     ? "🎉 신창은 대한민국 최고의 재벌이 되었다!\n총 수익 " + Money.format(state.totalEarned)
                     : items[items.length - 1].emoji + " " + items[items.length - 1].name + "를 세우면 엔딩!");
-            promoteButton.setVisibility(View.GONE);
+            promoteButton.setVisibility(state.isEnding() ? View.VISIBLE : View.GONE);
+            promoteButton.setText("🏆 엔딩 다시 보기");
+            promoteButton.setEnabled(true);
             return;
         }
         if (!state.hasNextJob()) {
@@ -803,14 +836,7 @@ public class MainActivity extends Activity {
         if (!state.isEnding() || state.endingSeen) return;
         state.endingSeen = true;
         save();
-        new AlertDialog.Builder(this)
-                .setTitle("👑 엔딩: 신창 그룹 회장")
-                .setMessage("도보 배달로 시작한 신창은 마침내 대한민국 최고의 재벌이 되었습니다!\n\n"
-                        + "총 수익: " + Money.format(state.totalEarned) + "\n"
-                        + "손으로 누른 횟수: " + String.format(Locale.KOREA, "%,d", state.manualTaps) + "번\n\n"
-                        + "계속 플레이하며 아이템을 모두 MAX로 만들어 보세요.")
-                .setPositiveButton("최고야!", null)
-                .show();
+        showEndingGallery();
     }
 
     // ---- 신창에게 투자 / 교회 기부 / 완전 리셋 ----
@@ -837,6 +863,302 @@ public class MainActivity extends Activity {
             if (i > 0) lp.leftMargin = dp(6);
             bar.addView(b, lp);
         }
+
+        religionButton = newActionButton();
+        religionButton.setBackgroundResource(R.drawable.bg_tap_holy);
+        religionButton.setTextColor(0xFF5B4314);
+        religionButton.setOnClickListener(v -> enterReligion());
+        LinearLayout parent = (LinearLayout) bar.getParent();
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        lp.bottomMargin = dp(10);
+        parent.addView(religionButton, parent.indexOfChild(bar) + 1, lp);
+    }
+
+    // ---- 종교계 ----
+
+    private void enterReligion() {
+        if (state.religionUnlocked) {
+            state.enterReligion();
+            save();
+            refresh();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("🙏 종교에 귀의")
+                .setMessage("경제적 자유를 이룬 신창은 종교에 귀의하기로 합니다.\n\n"
+                        + "종교계에서는 돈이 아니라 ✨ 영성 포인트를 법니다.\n"
+                        + "탭해서 기도하고, 영성 포인트로 직분을 올리세요.\n"
+                        + "마지막 직분에 오르면 다음 종교로 옮길 수 있어요.\n\n"
+                        + "세속(돈 버는 화면)으로는 언제든 돌아갈 수 있고, 그동안에도 자동 기도로 영성이 쌓여요.")
+                .setPositiveButton("귀의하기", (d, w) -> {
+                    state.enterReligion();
+                    save();
+                    refresh();
+                })
+                .setNegativeButton("아직", null)
+                .show();
+    }
+
+    private TextView holyText(LinearLayout parent, int sp, boolean bold) {
+        TextView t = new TextView(this);
+        t.setTextColor(0xFF5B4314);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
+        parent.addView(t);
+        return t;
+    }
+
+    private void buildReligionScreen() {
+        religionRoot = findViewById(R.id.religionRoot);
+        religionRoot.setBackgroundResource(R.drawable.bg_holy);
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        religionRoot.addView(col, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.VERTICAL);
+        head.setBackgroundResource(R.drawable.bg_header_holy);
+        head.setPadding(dp(20), dp(14), dp(20), dp(16));
+        holyText(head, 14, true).setText("🙏 종교계 · 신창의 영적 여정");
+        relRankText = holyText(head, 20, true);
+        relSpText = holyText(head, 30, true);
+        relRateText = holyText(head, 13, false);
+        col.addView(head);
+
+        relTapArea = new FrameLayout(this);
+        relTapArea.setClipChildren(true);
+        col.addView(relTapArea, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(210)));
+        relTapButton = new TextView(this);
+        relTapButton.setBackgroundResource(R.drawable.bg_tap_holy);
+        relTapButton.setGravity(Gravity.CENTER);
+        relTapButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 64);
+        relTapArea.addView(relTapButton, new FrameLayout.LayoutParams(dp(160), dp(160), Gravity.CENTER));
+        TextView hint = new TextView(this);
+        hint.setText("탭해서 기도하기");
+        hint.setTextColor(0xFF8A7650);
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        relTapArea.addView(hint, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        relTapArea.setOnTouchListener((v, e) -> {
+            int action = e.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+                int i = e.getActionIndex();
+                double got = state.religionTap();
+                spawnFloatingText(relTapArea, e.getX(i), e.getY(i), "+" + Money.plain(got) + " ✨", 0xFFC9962A);
+                relTapButton.animate().cancel();
+                relTapButton.setScaleX(0.92f);
+                relTapButton.setScaleY(0.92f);
+                relTapButton.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                refresh();
+            }
+            return true;
+        });
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(16), dp(4), dp(16), dp(16));
+        scroll.addView(list);
+        col.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        relConvertTitle = holyText(card, 16, true);
+        relConvertInfo = holyText(card, 13, false);
+        relConvertInfo.setLineSpacing(dp(2), 1f);
+        relConvertButton = newActionButton();
+        relConvertButton.setText("개종하기");
+        relConvertButton.setOnClickListener(v -> confirmConvert());
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+        blp.topMargin = dp(10);
+        card.addView(relConvertButton, blp);
+        list.addView(card);
+
+        TextView ranksTitle = new TextView(this);
+        ranksTitle.setText("직분");
+        ranksTitle.setTextColor(0xFF5B4314);
+        ranksTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        ranksTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        ranksTitle.setPadding(0, dp(16), 0, dp(8));
+        list.addView(ranksTitle);
+        relRankList = new LinearLayout(this);
+        relRankList.setOrientation(LinearLayout.VERTICAL);
+        list.addView(relRankList);
+
+        Button back = newActionButton();
+        back.setBackgroundResource(R.drawable.bg_button_sub);
+        back.setTextColor(getColor(R.color.text));
+        back.setText("💼 세속으로 돌아가기 (돈 버는 화면)");
+        back.setOnClickListener(v -> {
+            state.leaveReligion();
+            save();
+            refresh();
+        });
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+        backLp.topMargin = dp(8);
+        list.addView(back, backLp);
+
+        TextView note = new TextView(this);
+        note.setText("※ 게임 속 설정입니다. 직분 이름은 공개된 보도와 일반적인 교회 직제를 참고했으며, "
+                + "특정 종교나 단체를 평가하거나 홍보하지 않습니다.");
+        note.setTextColor(0xFF9A8E7A);
+        note.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        note.setPadding(0, dp(12), 0, 0);
+        list.addView(note);
+    }
+
+    private void buildRankRows() {
+        shownReligion = state.religion;
+        relRankList.removeAllViews();
+        GameData.Religion r = state.currentReligion();
+        relRankButtons = new Button[r.ranks.length];
+        for (int i = 0; i < r.ranks.length; i++) {
+            LinearLayout row = newCardRow();
+            TextView[] name = new TextView[1];
+            TextView info = addTexts(row, name);
+            name[0].setText((i + 1) + ". " + r.ranks[i]);
+            info.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion, i)) + "점 · 자동 기도 초당 "
+                    + Money.plain(GameData.religionAutoSp(state.religion, i)) + "점");
+            Button b = newActionButton();
+            b.setOnClickListener(v -> {
+                if (state.rankUp()) {
+                    save();
+                    refresh();
+                }
+            });
+            row.addView(b, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(48)));
+            relRankButtons[i] = b;
+            relRankList.addView(row);
+        }
+    }
+
+    private void refreshReligion() {
+        if (!state.inReligion) {
+            religionRoot.setVisibility(View.GONE);
+            return;
+        }
+        religionRoot.setVisibility(View.VISIBLE);
+        if (shownReligion != state.religion) buildRankRows();
+        GameData.Religion r = state.currentReligion();
+        relRankText.setText(r.emoji + " " + r.name + " · " + r.ranks[state.rank]);
+        relSpText.setText("✨ 영성 " + Money.plain(state.sp) + "점");
+        relRateText.setText("기도 1회 " + Money.plain(state.tapSp()) + "점 · 자동 기도 초당 " + Money.plain(state.autoSp()) + "점"
+                + (state.autoOn ? "" : " (오토 꺼짐)"));
+        relTapButton.setText(r.emoji);
+
+        for (int i = 0; i < relRankButtons.length; i++) {
+            Button b = relRankButtons[i];
+            View row = (View) b.getParent();
+            row.setAlpha(i <= state.rank + 1 ? 1f : 0.5f);
+            if (i < state.rank) {
+                b.setText("✅ 완료");
+                b.setEnabled(false);
+            } else if (i == state.rank) {
+                b.setText("현재 직분");
+                b.setEnabled(false);
+            } else if (i == state.rank + 1) {
+                b.setText("승급\n" + Money.plain(state.rankUpCost()) + "점");
+                b.setEnabled(state.canRankUp());
+            } else {
+                b.setText("🔒");
+                b.setEnabled(false);
+            }
+        }
+
+        String lastRank = r.ranks[r.ranks.length - 1];
+        if (state.hasNextReligion()) {
+            GameData.Religion next = GameData.RELIGIONS[state.religion + 1];
+            boolean toLast = state.religion + 1 == GameData.lastReligion();
+            relConvertTitle.setText("다음 종교: " + next.emoji + " " + next.name);
+            relConvertInfo.setText("기도 1회 " + Money.plain(GameData.religionTapSp(state.religion + 1, 0)) + "점부터 시작"
+                    + "\n" + (state.isLastRank() ? "✅ " : "⬜ ") + lastRank + " 직분 도달"
+                    + "\n" + (state.sp >= state.convertCost() ? "✅ " : "⬜ ") + "영성 " + Money.plain(state.convertCost()) + "점"
+                    + (toLast ? "\n⚠️ 옮기면 모든 영성 포인트를 잃고 새로 시작합니다.\n대신 영성 획득이 극도로 높아져요." : ""));
+            relConvertButton.setVisibility(View.VISIBLE);
+            relConvertButton.setEnabled(state.canConvert());
+        } else {
+            relConvertTitle.setText(r.emoji + " 마지막 종교");
+            relConvertInfo.setText(state.isLastRank()
+                    ? lastRank + " 직분에 올랐습니다!\n지금까지 쌓은 영성 " + Money.plain(state.spTotal) + "점"
+                    : lastRank + " 직분까지 올라가 보세요.");
+            relConvertButton.setVisibility(View.GONE);
+        }
+    }
+
+    private void confirmConvert() {
+        if (!state.canConvert()) return;
+        GameData.Religion next = GameData.RELIGIONS[state.religion + 1];
+        boolean toLast = state.religion + 1 == GameData.lastReligion();
+        new AlertDialog.Builder(this)
+                .setTitle(next.emoji + " " + next.name + "(으)로 옮기기")
+                .setMessage(toLast
+                        ? "지금까지 모은 영성 포인트 " + Money.plain(state.sp) + "점을 모두 잃고 " + next.ranks[0] + "부터 새로 시작합니다.\n\n"
+                        + "대신 기도 1회에 " + Money.plain(GameData.religionTapSp(state.religion + 1, 0)) + "점, 영성 획득이 극도로 높아져요."
+                        : "영성 " + Money.plain(state.convertCost()) + "점을 쓰고 " + next.ranks[0] + "부터 시작합니다.\n"
+                        + "기도 1회 " + Money.plain(GameData.religionTapSp(state.religion + 1, 0)) + "점으로 시작해요.")
+                .setPositiveButton("옮기기", (d, w) -> {
+                    if (state.convert()) {
+                        save();
+                        refresh();
+                    }
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    // ---- 엔딩 그림 ----
+
+    private static final int[] ENDING_IMAGES = {R.drawable.ending_emperor, R.drawable.ending_praise, R.drawable.ending_freedom};
+    private static final String[] ENDING_CAPTIONS = {
+            "👑 황제가 된 신창\n도보 배달로 시작한 신창은 신창 그룹의 황제가 되었습니다.",
+            "🙌 칭송받는 신창\n수많은 사람들이 신창의 이름을 외치며 칭송합니다.",
+            "🏖️ 경제적 자유를 이룬 신창\n이제 신창은 일하지 않아도 되는 경제적 자유를 이루었습니다.",
+    };
+
+    private void showEndingGallery() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(8), dp(16), 0);
+        ImageView image = new ImageView(this);
+        image.setAdjustViewBounds(true);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        box.addView(image, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
+        TextView caption = new TextView(this);
+        caption.setTextColor(getColor(R.color.text));
+        caption.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        caption.setPadding(0, dp(10), 0, 0);
+        box.addView(caption);
+
+        int[] page = {0};
+        Runnable show = () -> {
+            image.setImageResource(ENDING_IMAGES[page[0]]);
+            String text = ENDING_CAPTIONS[page[0]];
+            if (page[0] == 0) {
+                text += "\n\n총 수익: " + Money.format(state.totalEarned)
+                        + "\n손으로 누른 횟수: " + String.format(Locale.KOREA, "%,d", state.manualTaps) + "번";
+            }
+            caption.setText(text);
+        };
+        show.run();
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("🎉 엔딩")
+                .setView(box)
+                .setPositiveButton("다음 ▶", null)
+                .setNegativeButton("닫기", null)
+                .show();
+        Button next = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        next.setOnClickListener(v -> {
+            page[0]++;
+            if (page[0] >= ENDING_IMAGES.length) {
+                dialog.dismiss();
+                return;
+            }
+            show.run();
+            if (page[0] == ENDING_IMAGES.length - 1) next.setText("완료");
+        });
     }
 
     private void showSelfInvest() {
@@ -994,23 +1316,27 @@ public class MainActivity extends Activity {
     }
 
     private void spawnFloatingText(float x, float y, String text, int color) {
-        if (tapArea.getChildCount() > MAX_FLOATING_TEXTS) return;
+        spawnFloatingText(tapArea, x, y, text, color);
+    }
+
+    private void spawnFloatingText(FrameLayout area, float x, float y, String text, int color) {
+        if (area.getChildCount() > MAX_FLOATING_TEXTS) return;
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextColor(color);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         tv.setTypeface(Typeface.DEFAULT_BOLD);
         tv.setShadowLayer(4, 0, 2, 0x55000000);
-        tapArea.addView(tv, new FrameLayout.LayoutParams(
+        area.addView(tv, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
         tv.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        tv.setX(Math.max(0, Math.min(tapArea.getWidth() - tv.getMeasuredWidth(), x - tv.getMeasuredWidth() / 2f)));
+        tv.setX(Math.max(0, Math.min(area.getWidth() - tv.getMeasuredWidth(), x - tv.getMeasuredWidth() / 2f)));
         tv.setY(y - tv.getMeasuredHeight());
         tv.animate()
                 .translationYBy(-dp(80))
                 .alpha(0f)
                 .setDuration(900)
-                .withEndAction(() -> tapArea.removeView(tv))
+                .withEndAction(() -> area.removeView(tv))
                 .start();
     }
 

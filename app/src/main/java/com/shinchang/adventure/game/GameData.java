@@ -306,6 +306,74 @@ public final class GameData {
     /** 해 = (소지금 / 1조)의 세제곱근 */
     public static final double SUN_UNIT = 1e12;
 
+    /** 해 1개당 수입 +2% (영구) */
+    public static final double SUN_BONUS = 0.02;
+
+    // ------------------------------------------------------------ 종교계 (해 300개 이상)
+
+    /** 해를 이만큼 모으면 종교에 귀의할 수 있다 */
+    public static final long RELIGION_SUNS = 300;
+
+    public static final class Religion {
+        public final String emoji;
+        public final String name;
+        /** 영성 포인트 배수 */
+        public final double multiplier;
+        /** 직분 (아래에서 위로) */
+        public final String[] ranks;
+
+        Religion(String emoji, String name, double multiplier, String... ranks) {
+            this.emoji = emoji;
+            this.name = name;
+            this.multiplier = multiplier;
+            this.ranks = ranks;
+        }
+    }
+
+    /**
+     * 게임 속 설정. 직분 이름은 공개된 보도·일반적인 교회 직제를 참고했으며
+     * 특정 종교나 단체를 평가하거나 홍보하지 않는다.
+     */
+    public static final Religion[] RELIGIONS = {
+            new Religion("⛪", "일반 교회", 1,
+                    "주일예배", "세례교인", "성가대", "구역장", "청년회장", "전도사", "강도사", "목사"),
+            new Religion("✝️", "구원파", 8,
+                    "새신자", "형제·자매", "성경공부반", "수련회 봉사", "구역 모임 인도", "전도인", "전도집회 강사", "목사"),
+            new Religion("📖", "안식일교회", 60,
+                    "구도자", "침례교인", "안식일학교 교사", "집사", "장로", "전도사", "목사", "합회장", "연합회장"),
+            new Religion("🗼", "여호와의 증인", 450,
+                    "성서 연구생", "전도인", "침례받은 전도인", "보조 파이오니아", "정규 파이오니아",
+                    "봉사의 종", "장로", "여행하는 감독자", "지부 위원", "통치체 성원"),
+            new Religion("🕊️", "하나님의 교회", 3_500,
+                    "성도", "집사", "권사", "장로", "전도사", "목사", "당회장", "총회장"),
+            new Religion("🌟", "신천지", 10_000_000,
+                    "교육생", "성도", "구역장", "청년회장", "교리 강사", "전도사", "교육장", "지파장", "총회 총무"),
+    };
+
+    /** 직분별 탭 1회 영성 포인트 */
+    public static double religionTapSp(int religion, int rank) {
+        return RELIGIONS[religion].multiplier * 10 * Math.pow(1.9, rank);
+    }
+
+    /** 직분별 기도(오토) 초당 영성 포인트 */
+    public static double religionAutoSp(int religion, int rank) {
+        return religionTapSp(religion, rank) * 0.8;
+    }
+
+    /** 다음 직분으로 오르는 데 드는 영성 포인트 */
+    public static double religionRankCost(int religion, int rank) {
+        return religionTapSp(religion, rank) * 300 * Math.pow(1.25, rank);
+    }
+
+    /** 다음 종교로 옮기는 데 드는 영성 포인트 (마지막 직분 승급 비용의 3배) */
+    public static double religionConvertCost(int religion) {
+        return religionRankCost(religion, RELIGIONS[religion].ranks.length - 1) * 3;
+    }
+
+    public static int lastReligion() {
+        return RELIGIONS.length - 1;
+    }
+
     public static int lastJob() {
         return JOBS.length - 1;
     }

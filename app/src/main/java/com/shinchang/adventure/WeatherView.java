@@ -16,11 +16,15 @@ public class WeatherView extends View {
 
     private static final int DROPS = 90;
     private static final int FLAKES = 70;
+    /** 종교계: 금빛 반짝임이 천천히 떠오른다 */
+    public static final int HOLY = 3;
+    private static final int SPARKS = 45;
 
     private final Random random = new Random();
     private final Paint rainPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint snowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint tintPaint = new Paint();
+    private final Paint holyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float[] x = new float[Math.max(DROPS, FLAKES)];
     private final float[] y = new float[x.length];
     private final float[] speed = new float[x.length];
@@ -35,6 +39,7 @@ public class WeatherView extends View {
         rainPaint.setStrokeWidth(2 * d);
         rainPaint.setStrokeCap(Paint.Cap.ROUND);
         snowPaint.setColor(0xEEFFFFFF);
+        holyPaint.setColor(0xCCF5C242);
         setClickable(false);
         setFocusable(false);
     }
@@ -44,7 +49,8 @@ public class WeatherView extends View {
         weather = w;
         for (int i = 0; i < x.length; i++) respawn(i, true);
         lastFrame = SystemClock.uptimeMillis();
-        tintPaint.setColor(w == GameData.RAIN ? 0x2A1E3A5F : w == GameData.SNOW ? 0x22B8D4F0 : 0);
+        tintPaint.setColor(w == GameData.RAIN ? 0x2A1E3A5F : w == GameData.SNOW ? 0x22B8D4F0
+                : w == HOLY ? 0x14FFF3C4 : 0);
         invalidate();
     }
 
@@ -54,7 +60,12 @@ public class WeatherView extends View {
         int h = Math.max(1, getHeight());
         x[i] = random.nextFloat() * w;
         y[i] = anywhere ? random.nextFloat() * h : -random.nextFloat() * 40 * d;
-        if (weather == GameData.RAIN) {
+        if (weather == HOLY) {
+            // 아래에서 위로
+            y[i] = anywhere ? random.nextFloat() * h : h + random.nextFloat() * 40 * d;
+            speed[i] = -(15 + random.nextFloat() * 30) * d;
+            size[i] = (1.5f + random.nextFloat() * 3) * d;
+        } else if (weather == GameData.RAIN) {
             speed[i] = (900 + random.nextFloat() * 600) * d / 3;
             size[i] = (14 + random.nextFloat() * 12) * d;
         } else {
@@ -80,9 +91,20 @@ public class WeatherView extends View {
         canvas.drawRect(0, 0, getWidth(), getHeight(), tintPaint);
 
         float t = now / 1000f;
-        int count = weather == GameData.RAIN ? DROPS : FLAKES;
+        int count = weather == GameData.RAIN ? DROPS : weather == HOLY ? SPARKS : FLAKES;
         for (int i = 0; i < count; i++) {
             y[i] += speed[i] * dt;
+            if (weather == HOLY) {
+                float twinkle = 0.5f + 0.5f * (float) Math.sin(t * 3 + i * 1.7f);
+                holyPaint.setAlpha((int) (80 + 150 * twinkle));
+                float r = size[i] * (0.6f + 0.6f * twinkle);
+                // 십자 반짝임
+                canvas.drawCircle(x[i], y[i], r * 0.6f, holyPaint);
+                canvas.drawRect(x[i] - r * 2, y[i] - r * 0.2f, x[i] + r * 2, y[i] + r * 0.2f, holyPaint);
+                canvas.drawRect(x[i] - r * 0.2f, y[i] - r * 2, x[i] + r * 0.2f, y[i] + r * 2, holyPaint);
+                if (y[i] < -size[i] * 3) respawn(i, false);
+                continue;
+            }
             if (weather == GameData.RAIN) {
                 x[i] -= speed[i] * 0.2f * dt;
                 canvas.drawLine(x[i], y[i], x[i] + size[i] * 0.2f, y[i] - size[i], rainPaint);
