@@ -99,6 +99,39 @@ CHARS = {
     ]),
 }
 
+# 3장 인물
+CHARS.update({
+    "jiheon": mirror([
+        "...hh", "..hhh", ".hhss", ".hsks", ".hsss", ".h.ss",
+        "..ooo", ".soow", ".sooo", "..xxx", "..xxx", "..kk.",
+    ]),
+    "hero2": mirror([
+        "...yy", "..yyy", ".ryyy", "..yss", "..sks", "..sss",
+        "r..ss", "rrlll", "rsllY", "rrlll", "r.lll", "..kk.",
+    ]),
+    "baby": mirror([
+        ".....", ".....", ".....", ".....", "...ww", "..wss",
+        "..wks", "..wss", "..www", ".wwPw", "..www", ".....",
+    ]),
+    "giant": mirror([
+        ".xxxx", "xxxxx", "xxyxx", "xxxxx", "..xxx", "xxooo",
+        "xxook", "x.ooo", "..xxx", "..xxx", ".xx.x", ".xx.x",
+    ]),
+    "ignis": subst(SOLDIER, {"e": "h", "E": "h", "C": "R", "D": "o", "N": "k"}),
+    "witch": mirror([
+        "....q", "...qq", "..qqq", ".qqqq", "..Pss", "..sks",
+        "..sss", "..qqq", ".sqqq", "..qqq", ".qqqq", "..kk.",
+    ]),
+    "lavadragon": mirror([
+        ".....", "...oo", "..ooo", "..oyo", "..ooo", "...oo",
+        "..xoo", ".xxoo", "xxooo", "xooxx", "xxxxx", ".....",
+    ]),
+    "vargas": mirror([
+        "..h..", "..hhh", ".hhhh", ".hhrh", ".hhhh", "..hhh",
+        "xhhhh", "xhkhr", "xxhhh", "xxhhh", "x.hhh", "..kk.",
+    ]),
+})
+
 # ---------------------------------------------------------------- 몬스터 (왼쪽 절반 8칸)
 MONSTERS = {
     "rat": mirror([
@@ -184,6 +217,30 @@ MONSTERS.update({
                        "..ycbcbc", ".cccbcbc", "cccccccc", ".ccrrrrr", "..c.c.c.", ".c..c..c", "........", "........"]),
 })
 
+# 3장 몬스터
+MONSTERS.update({
+    "ashbat": subst(MONSTERS["bat"], {"p": "E", "k": "r", "w": "o", "P": "x"}),
+    "flamewolf": subst(MONSTERS["shadowwolf"], {"p": "o", "q": "x", "r": "y", "w": "y"}),
+    "hellhound": subst(MONSTERS["thornwolf"], {"G": "k", "g": "h", "r": "o", "w": "y"}),
+    "lavaturtle": subst(MONSTERS["turtle"], {"e": "o", "E": "x", "g": "N", "s": "r"}),
+    "ember": subst(MONSTERS["saltspirit"], {"w": "y", "l": "o", "k": "r"}),
+    "magma": subst(MONSTERS["jelly"], {"P": "o", "p": "x", "w": "y"}),
+    "imp": subst(MONSTERS["pixie"], {"c": "x", "u": "o", "y": "r", "s": "x", "P": "R", "k": "y"}),
+    "blackknight": subst(MONSTERS["merknight"], {"e": "h", "c": "k", "v": "x", "y": "o", "s": "h", "k": "r"}),
+    "blackgolem": subst(MONSTERS["golem"], {"x": "h", "P": "k", "k": "r"}),
+    "ruby": subst(MONSTERS["stardust"], {"y": "r", "w": "P"}),
+    "lavatoad": subst(MONSTERS["goldtoad"], {"Y": "o"}),
+    "voidmage": subst(MONSTERS["skelsailor"], {"w": "q", "b": "q", "l": "p", "k": "y"}),
+    "lizard": mirror(["........", "........", "........", "........", "........", "......hh", ".....hhy", "....hhhh",
+                      "..hhhhhh", ".hhEhhhh", "hh.hhhhh", "h..hh.hh", "...h...h", "........", "........", "........"]),
+    "boar": mirror(["........", "........", "........", "....N...", "...NNN..", "..nnnnnn", ".nnnnkkn", ".nnnnnnn",
+                    "wnnnnnnn", ".wnnnPPP", "..nnnPkP", "..nnnnnn", "...nn.nn", "...NN.NN", "........", "........"]),
+    "flamebeast": mirror(["........", "..o.....", ".ooo..o.", ".oxoooo.", "..xxxxxx", ".xxxxxxx", "xxxyxxxx", "xxxxxxxx",
+                          "xxxxxooo", ".xxxoooo", "..xxxxxx", "..xxxxxx", "..xx..xx", "..xx..xx", "..kk..kk", "........"]),
+    "wyvern": mirror(["........", "x.......", "xx......", "xxx...xx", "xxxx.xxx", "xxxxxxyx", ".xxxxxxx", "..xxxxoo",
+                      "...xxooo", "....xxoo", ".....xxx", "....xx.x", "....k..k", "........", "........", "........"]),
+})
+
 # 보스: 24x20 (왼쪽 절반 12칸)
 MONSTERS["wolfking"] = mirror([
     "............", "...y........", "...yy.......", "..ypyy......", "..ppppy.....", ".ppppppp....",
@@ -202,6 +259,37 @@ MONSTERS["serpent"] = mirror([
     "........cccc", ".........ccc", "....vvvv.ccc", "...vvvvvvccc", "..vvccvvvvcc", ".vvccccvvvvv",
     "vvcc..ccvvvv", "vcc....ccvvv", "vcc....ccvvv", "vvcc..ccvvvv", ".vvccccvvvvv", "..vvvvvvvvvv",
     "....vvvvvvvv", "............",
+])
+
+MONSTERS["giant"] = mirror([
+    "............", ".......xxxxx", "......xxxxxx", "......xxyxxx", "......xxxxxx", "...xxxxxxxxx",
+    "..xxxxxxxooo", ".xxxx.xxoooo", ".xxx..xxkooo", ".xxx..xxxooo", ".ooo..xxxxxx", ".ooo...xxxxx",
+    "........xxxx", ".......xxxxx", "......xxxx..", "......xxxx..", ".....xxxxx..", ".....xxxxx..",
+    "....xxxxxx..", "............",
+])
+MONSTERS["ignis"] = mirror([
+    "............", "........hhhh", ".......hhhhh", ".......hhrrh", ".......hhhhh", "........hhhh",
+    "..o...hhhhhh", "..oo.hhhRRhh", "..ooohhhRRRh", "..ohhhhhRRRR", "..o.hhhhhRRR", "..o..hhhhhhh",
+    "..y...hhhhhh", "..y....hhhhh", ".......hhh.h", ".......hhh.h", "......hhhh.h", "......hhh..h",
+    "......kkk..k", "............",
+])
+MONSTERS["witch"] = mirror([
+    "............", "...........q", "..........qq", ".........qqq", "........qqqq", "......qqqqqq",
+    "....qqqqqqqq", "........ssss", "........skss", "........ssss", "......pppppp", ".....ppppppp",
+    "....sppqpppp", "...s.ppqqppp", "....pppqqqpp", "...ppppqqqqp", "..pppppqqqqq", "..pppppppppp",
+    "..qqqqqqqqqq", "............",
+])
+MONSTERS["lavadragon"] = mirror([
+    "............", "....x.......", "....xx......", "...xxxx...xx", "...xxxxx.xxx", "....xxxxxxxx",
+    ".......xxxyx", "......xxxxxx", "......xxxxoo", ".....xxxoooo", "....xxxxxooo", "...xxxxxxxxx",
+    "..xxxxxxxxxx", ".xxxxooooxxx", "xxxxoooooxxx", "xxxooooooxxx", ".xxxooooxxxx", "..xxxxxxxxxx",
+    "....xxxx..xx", "............",
+])
+MONSTERS["vargas"] = mirror([
+    "............", "......h.....", "......hh....", ".......hhhhh", "......hhhhhh", "......hhhrrh",
+    "......hhhhhh", "..xx...hhhhh", ".xxxx.hhhhhh", "xxhhhhhhhxhh", "xhhhhhhhhxxh", "xhhhhhhhhxxx",
+    "xhhkhhhhhhhh", "x.hhhhhhhhhh", "..hhhhhhhhhh", "..zhhhhhhhhh", "...zzhhhhzzh", "....hhhh..hh",
+    "....kkkk..kk", "............",
 ])
 
 # ---------------------------------------------------------------- 타일 (8x8)
@@ -274,6 +362,27 @@ TILES = {
     "tmpC": ["llllllll", "lNNNNNNl", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "llllllll"],
     "tmpc": ["llllllll", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "llllllll"],
     "tmpi": ["llllllll", "lllyylll", "llyYYyll", "lllyylll", "lllcclll", "lllcclll", "llcccclll"[:8], "llllllll"],
+    # 3장: 이그나 섬
+    "a": ["MMMMMMMM", "MmMMMMEM", "MMMMMMMM", "MMMEMMMM", "MMMMMmMM", "MEMMMMMM", "MMMMMMEM", "MMmMMMMM"],
+    "n": ["hhhhhhhh", "hEhhhhhh", "hhhhhEhh", "hhhhhhhh", "hhEhhhhh", "hhhhhhhE", "hhhhEhhh", "hEhhhhhh"],
+    "l": ["oooxoooo", "oyoooxoo", "ooooyooo", "xoooooyo", "ooyooooo", "oooooxoo", "oxooyooo", "ooooooox"],
+    "l1": ["ooooxooo", "ooyoooox", "xoooyooo", "oooooooy", "oxooyooo", "ooooooxo", "ooxoooyo", "yooooooo"],
+    "J": ["hhhhhhhh", "hxhhhhxh", "hhkkkkhh", "hkxxxxkh", "hkxoyxkh", "hkxxxxkh", "hkkkkkkh", "MMMMMMMM"],
+    "J1": ["hhhhhhhh", "hEhhhhEh", "hhkkkkhh", "hkkkkkkh", "hkkkkkkh", "hkkkkkkh", "hkkkkkkh", "MMMMMMMM"],
+    # 용암 동굴
+    "lava,": ["DDDDDDDD", "DxDDDDDD", "DDDDDDxD", "DDDDDDDD", "DDDxDDDD", "DDDDDDDD", "DDDDDxDD", "DxDDDDDD"],
+    "lava#": ["NNNNNNNN", "NdNNNoNN", "NNNNNNdN", "dNNNNNNN", "NNNoNNNN", "NdNNNNdN", "NNNNdNNN", "NNNNNNNN"],
+    "lavaX": ["oooooooo", "oDDDDDDo", "oDDDDDDo", "oDDDDDDo", "oDDDDDDo", "oDDDDDDo", "oDDDDDDo", "oDDDDDDo"],
+    "lavaC": ["DDDDDDDD", "DNNNNNND", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "DDDDDDDD"],
+    "lavac": ["DDDDDDDD", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "DDDDDDDD"],
+    "lavai": ["NNNNNNNN", "NdNyyNNN", "NNyoyNNN", "NNNoNNNN", "NdNnNNdN", "NNNnNNNN", "NNNNNNNN", "NdNNNNNN"],
+    # 흑염의 요새
+    "fort,": ["zzzzzzzz", "zqzzzzqz", "zzzzzzzz", "zzzqqzzz", "zzzqqzzz", "zzzzzzzz", "zqzzzzqz", "zzzzzzzz"],
+    "fort#": ["hhhhhhhh", "EhhhEhhh", "EhhhEhhh", "hhhhhhhh", "hhEhhhEh", "hhEhhhEh", "hhhhhhhh", "EhhhEhhh"],
+    "fortX": ["qqqqqqqq", "qzzzzzzq", "qzzzzzzq", "qzzzzzzq", "qzzzzzzq", "qzzzzzzq", "qzzzzzzq", "qzzzzzzq"],
+    "fortC": ["zzzzzzzz", "zNNNNNNz", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "zzzzzzzz"],
+    "fortc": ["zzzzzzzz", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "zzzzzzzz"],
+    "forti": ["hhhhhhhh", "hEhppEhh", "hhpqphhh", "hhhqhhhh", "hEhEhhEh", "hhhEhhhh", "hhhhhhhh", "hEhhhhhh"],
     # 동굴용
     "cave,": ["mmmmmmmm", "mMmmmmmm", "mmmmmmMm", "mmmmmmmm", "mmmmmmmm", "mmMmmmmm", "mmmmmmmm", "mmmmmMmm"],
     "cave#": ["dddddddd", "dDddDddd", "ddddddDd", "DddddDdd", "dddDdddd", "dDddddDd", "ddddDddd", "dDdddddd"],
@@ -287,7 +396,7 @@ def check():
     for name, rows in CHARS.items():
         assert len(rows) == 12 and all(len(r) == 10 for r in rows), name
     for name, rows in MONSTERS.items():
-        big = name in ("wolfking", "galleon", "serpent")
+        big = name in ("wolfking", "galleon", "serpent", "giant", "ignis", "witch", "lavadragon", "vargas")
         w = 24 if big else 16
         h = 20 if big else 16
         assert len(rows) == h and all(len(r) == w for r in rows), (name, [len(r) for r in rows])

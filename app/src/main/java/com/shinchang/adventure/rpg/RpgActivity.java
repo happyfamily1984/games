@@ -56,6 +56,16 @@ public class RpgActivity extends Activity {
     private Battle battle;
     private final List<Battle.Action> actions = new ArrayList<>();
     private int commandHero;
+    private boolean commandsOn;
+    /** 자동 전투 켜짐/꺼짐 (기억해 둔다) */
+    private boolean autoBattle;
+    private Button autoButton;
+    private static final String KEY_AUTO = "rpg_auto";
+
+    /** 자동 전투 중에는 대사가 저절로 넘어간다 */
+    private final Runnable autoNext = () -> {
+        if (battle != null && autoBattle && messageOpen) advanceMessage();
+    };
 
     private final Runnable typer = new Runnable() {
         @Override
@@ -64,6 +74,8 @@ public class RpgActivity extends Activity {
                 typed = Math.min(typingText.length(), typed + 2);
                 messageBox.setText(typingText.substring(0, typed) + (typed >= typingText.length() ? "  ▼" : ""));
                 handler.postDelayed(this, 18);
+            } else {
+                scheduleAutoNext();
             }
         }
     };
@@ -81,6 +93,7 @@ public class RpgActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         state = RpgState.deserialize(prefs().getString(KEY_RPG, null));
+        autoBattle = prefs().getBoolean(KEY_AUTO, false);
         applyPerks();
         buildUi();
         view.setState(state);
@@ -168,6 +181,10 @@ public class RpgActivity extends Activity {
         FrameLayout game = new FrameLayout(this);
         view = new RpgView(this);
         game.addView(view, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        // 대사창이 열려 있으면 화면 아무 곳이나 눌러도 넘어간다
+        view.setOnClickListener(v -> {
+            if (messageOpen) advanceMessage();
+        });
 
         statusBox = windowText(12);
         FrameLayout.LayoutParams slp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -260,11 +277,12 @@ public class RpgActivity extends Activity {
     private View buildBattlePanel() {
         GridLayout grid = new GridLayout(this);
         grid.setColumnCount(3);
-        String[] labels = {"⚔️ 싸운다", "✨ 주문", "🎒 도구", "🛡️ 방어", "🏃 도망", "확인 ▶"};
+        String[] labels = {"⚔️ 싸운다", "✨ 주문", "🎒 도구", "🛡️ 방어", "🏃 도망", autoLabel()};
         for (int i = 0; i < labels.length; i++) {
             Button b = dqButton(labels[i], 16);
             final int cmd = i;
             b.setOnClickListener(v -> onBattleCommand(cmd));
+            if (i == 5) autoButton = b;
             GridLayout.LayoutParams lp = new GridLayout.LayoutParams(GridLayout.spec(i / 3, 1f), GridLayout.spec(i % 3, 1f));
             lp.width = 0;
             lp.height = dp(84);
@@ -272,6 +290,26 @@ public class RpgActivity extends Activity {
             grid.addView(b, lp);
         }
         return grid;
+    }
+
+    private String autoLabel() {
+        return autoBattle ? "🤖 자동 켬" : "🤖 자동 끔";
+    }
+
+    private void toggleAuto() {
+        autoBattle = !autoBattle;
+        prefs().edit().putBoolean(KEY_AUTO, autoBattle).apply();
+        autoButton.setText(autoLabel());
+        Toast.makeText(this, autoBattle ? "자동 전투를 켰습니다. 명령과 대사가 저절로 진행됩니다." : "자동 전투를 껐습니다.",
+                Toast.LENGTH_SHORT).show();
+        if (!autoBattle || battle == null) return;
+        if (messageOpen) scheduleAutoNext();
+        else if (commandsOn) autoCommands();
+    }
+
+    private void scheduleAutoNext() {
+        handler.removeCallbacks(autoNext);
+        if (battle != null && autoBattle && messageOpen) handler.postDelayed(autoNext, 550);
     }
 
     private void refreshStatus() {
@@ -320,6 +358,7 @@ public class RpgActivity extends Activity {
             if (d != null) d.run();
             return;
         }
+        handler.removeCallbacks(autoNext);
         typingText = messages.poll();
         typed = 0;
         handler.removeCallbacks(typer);
@@ -396,10 +435,13 @@ public class RpgActivity extends Activity {
             startBattle(new int[]{in.bossMonster}, true);
             return;
         }
+        if (in.awakened) {
+            view.victoryFlash();
+            Toast.makeText(this, "✨ 신창이 용사로 전직했습니다! ✨", Toast.LENGTH_LONG).show();
+        }
         if (in.chapterClear) {
             save();
-            Toast.makeText(this, RpgData.chapterOf(state.step) == 1 ? "1장 클리어! 진행이 기록되었습니다."
-                    : "2장 클리어! 진행이 기록되었습니다.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, RpgData.chapterOf(state.step) + "장 클리어! 진행이 기록되었습니다.", Toast.LENGTH_LONG).show();
         }
         switch (in.action) {
             case RpgData.ACT_SHOP:
@@ -437,7 +479,21 @@ public class RpgActivity extends Activity {
 
     private void setCommandsEnabled(boolean on) {
         GridLayout g = (GridLayout) battlePanel;
-        for (int i = 0; i < g.getChildCount(); i++) g.getChildAt(i).setEnabled(on || i == 5);
+        commandsOn = on;
+        // 버튼은 눌리게 두고(대사 넘기기용) 흐리게만 한다
+        for (int i = 0; i < g.getChildCount(); i++) g.getChildAt(i).setAlpha(on || i == 5 ? 1f : 0.5f);
+    }
+
+    /** 자동 전투: 남은 동료 명령을 모두 AI 가 정한다 */
+    private void autoCommands() {
+        if (battle == null || messageOpen) return;
+        setCommandsEnabled(false);
+        actions.clear();
+        actions.addAll(BattleAi.choose(state, battle));
+        commandHero = state.party.size();
+        handler.postDelayed(() -> {
+            if (battle != null) playRound();
+        }, 250);
     }
 
     private void beginCommands() {
@@ -455,6 +511,10 @@ public class RpgActivity extends Activity {
             playRound();
             return;
         }
+        if (autoBattle) {
+            autoCommands();
+            return;
+        }
         setCommandsEnabled(true);
         Hero h = state.party.get(commandHero);
         prompt(Josa.eun(h.name()) + " 어떻게 할까?");
@@ -469,10 +529,14 @@ public class RpgActivity extends Activity {
     private void onBattleCommand(int cmd) {
         if (battle == null) return;
         if (cmd == 5) {
-            onConfirm();
+            toggleAuto();
             return;
         }
-        if (messageOpen) return;
+        if (messageOpen) {
+            advanceMessage();
+            return;
+        }
+        if (!commandsOn || dialogOpen) return;
         Hero h = state.party.get(commandHero);
         switch (cmd) {
             case 0:
@@ -559,7 +623,7 @@ public class RpgActivity extends Activity {
 
     private void chooseBattleItem() {
         List<Integer> usable = new ArrayList<>();
-        for (int id : new int[]{RpgData.HERB, RpgData.HI_HERB, RpgData.MANA_CANDY, RpgData.PHOENIX}) if (state.hasItem(id)) usable.add(id);
+        for (int id : new int[]{RpgData.HERB, RpgData.HI_HERB, RpgData.MANA_CANDY, RpgData.PHOENIX, RpgData.ELIXIR}) if (state.hasItem(id)) usable.add(id);
         if (usable.isEmpty()) {
             Toast.makeText(this, "전투에서 쓸 도구가 없다.", Toast.LENGTH_SHORT).show();
             return;
@@ -593,6 +657,18 @@ public class RpgActivity extends Activity {
                 view.victoryFlash();
                 say(state.onBossDefeated(bossId), this::save);
             }
+            return;
+        }
+        if (battle.lost() && battle.firstMonster == RpgData.VARGAS0) {
+            // 3장의 시작: 바다 위에서 모든 것을 잃는다
+            endBattle();
+            List<String> lines = state.onAmbush();
+            view.setState(state);
+            showMapLabel(RpgData.MAP_NAMES[state.map]);
+            say(lines, () -> {
+                save();
+                refreshStatus();
+            });
             return;
         }
         if (battle.lost()) {
@@ -676,9 +752,13 @@ public class RpgActivity extends Activity {
     private void showStatus() {
         StringBuilder sb = new StringBuilder();
         for (Hero h : state.party) {
-            sb.append(String.format(Locale.KOREA, "【%s】 Lv %d\nHP %d/%d  MP %d/%d\n공격 %d  방어 %d  민첩 %d\n무기: %s\n갑옷: %s\n다음 레벨까지 %d\n\n",
-                    h.name(), h.level, h.hp, h.maxHp(), h.mp, h.maxMp(), h.atk(), h.def(), h.agi(),
-                    RpgData.ITEMS[h.weapon].name, RpgData.ITEMS[h.armor].name, h.expToNext()));
+            sb.append(String.format(Locale.KOREA, "【%s】 Lv %d · %s\nHP %d/%d  MP %d/%d\n공격 %d  방어 %d  민첩 %d\n",
+                    h.name(), h.level, h.job(), h.hp, h.maxHp(), h.mp, h.maxMp(), h.atk(), h.def(), h.agi()));
+            if (h.isHero()) sb.append("✨ 회심의 일격 30% · 슬레이어(주는 피해 ×1.5)\n");
+            if (h.mpRegen() > 0) sb.append("💍 매 턴 MP ").append(h.mpRegen()).append("% 회복\n");
+            sb.append(String.format(Locale.KOREA, "무기: %s\n갑옷: %s\n장신구: %s\n다음 레벨까지 %d\n\n",
+                    RpgData.ITEMS[h.weapon].name, RpgData.ITEMS[h.armor].name,
+                    h.accessory >= 0 ? RpgData.ITEMS[h.accessory].name : "없음", h.expToNext()));
         }
         sb.append(String.format(Locale.KOREA, "골드 %,d · 승리한 전투 %d번 · 걸음 %,d", state.gold, state.battlesWon, state.stepsWalked));
         dialogOpen = true;
@@ -746,14 +826,15 @@ public class RpgActivity extends Activity {
         String[] heroes = new String[state.party.size()];
         for (int i = 0; i < heroes.length; i++) {
             Hero h = state.party.get(i);
-            heroes[i] = h.name() + " – " + RpgData.ITEMS[h.weapon].name + " / " + RpgData.ITEMS[h.armor].name;
+            heroes[i] = h.name() + " – " + RpgData.ITEMS[h.weapon].name + " / " + RpgData.ITEMS[h.armor].name
+                    + (h.accessory >= 0 ? " / " + RpgData.ITEMS[h.accessory].name : "");
         }
         chooseFrom("🗡️ 누구의 장비?", heroes, hi -> {
             Hero h = state.party.get(hi);
             List<Integer> gear = new ArrayList<>();
             for (int id : state.bagItems()) {
                 int type = RpgData.ITEMS[id].type;
-                if (type == RpgData.WEAPON || type == RpgData.ARMOR) gear.add(id);
+                if (type == RpgData.WEAPON || type == RpgData.ARMOR || type == RpgData.ACCESSORY) gear.add(id);
             }
             if (gear.isEmpty()) {
                 say("가방에 바꿀 장비가 없다. 상점에서 사 보자.", null);
@@ -762,6 +843,10 @@ public class RpgActivity extends Activity {
             String[] names = new String[gear.size()];
             for (int i = 0; i < names.length; i++) {
                 RpgData.Item it = RpgData.ITEMS[gear.get(i)];
+                if (it.type == RpgData.ACCESSORY) {
+                    names[i] = it.name + " (" + it.desc + ")";
+                    continue;
+                }
                 int cur = it.type == RpgData.WEAPON ? RpgData.ITEMS[h.weapon].power : RpgData.ITEMS[h.armor].power;
                 int diff = it.power - cur;
                 names[i] = it.name + " (" + it.desc + ", " + (diff >= 0 ? "+" : "") + diff + ")";

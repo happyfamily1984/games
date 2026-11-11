@@ -9,36 +9,42 @@ public final class RpgData {
     // ------------------------------------------------------------ 지도
 
     public static final int OFFICE = 0, WORLD = 1, REBEL = 2, ERDEN = 3, CAVE1 = 4, CAVE2 = 5,
-            WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13;
+            WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13,
+            WORLD3 = 14, IGNA = 15, LAVA1 = 16, LAVA2 = 17, FORT1 = 18, FORT2 = 19, FORT3 = 20;
     public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층",
-            "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층"};
+            "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층",
+            "이그나 섬", "화산섬 마을 이그나", "용암 동굴 1층", "용암 동굴 2층", "흑염의 요새 1층", "흑염의 요새 2층", "흑염의 요새 옥좌"};
 
     /** 지도 그림은 tools/rpg_maps.py 가 만든 RpgMaps 에 있다 */
     public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2,
-            RpgMaps.WORLD2, RpgMaps.MERCA, RpgMaps.SALT, RpgMaps.LIGHTHOUSE, RpgMaps.SPRAY1, RpgMaps.SPRAY2, RpgMaps.TEMPLE1, RpgMaps.TEMPLE2};
+            RpgMaps.WORLD2, RpgMaps.MERCA, RpgMaps.SALT, RpgMaps.LIGHTHOUSE, RpgMaps.SPRAY1, RpgMaps.SPRAY2, RpgMaps.TEMPLE1, RpgMaps.TEMPLE2,
+            RpgMaps.WORLD3, RpgMaps.IGNA, RpgMaps.LAVA1, RpgMaps.LAVA2, RpgMaps.FORT1, RpgMaps.FORT2, RpgMaps.FORT3};
 
     /** 지도 분위기: 동굴(갈색), 바다 동굴(푸른색), 신전(청록 돌) */
     public static String theme(int map) {
         if (map == CAVE1 || map == CAVE2) return "cave";
         if (map == SPRAY1 || map == SPRAY2) return "sea";
         if (map == TEMPLE1 || map == TEMPLE2) return "tmp";
+        if (map == LAVA1 || map == LAVA2) return "lava";
+        if (map == FORT1 || map == FORT2 || map == FORT3) return "fort";
         return null;
     }
 
     /** 바깥이 바다인 지도 */
     public static boolean isOverworld(int map) {
-        return map == WORLD || map == WORLD2;
+        return map == WORLD || map == WORLD2 || map == WORLD3;
     }
 
     /** 지나갈 수 없는 타일 */
     public static boolean blocks(char t) {
-        return "#~^H|WCbtkoxFQYPAMgNLZijevq".indexOf(t) >= 0;
+        return "#~^H|WCbtkoxFQYPAMgNLZijevql".indexOf(t) >= 0;
     }
 
     /** 몬스터가 나오는 지도 */
     public static boolean hasEncounters(int map) {
         return map == WORLD || map == CAVE1 || map == CAVE2 || map == WORLD2
-                || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2;
+                || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2
+                || map == WORLD3 || map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3;
     }
 
     /** 지도 이동: (지도, x, y) 에 들어가면 (도착 지도, x, y) 로 */
@@ -76,6 +82,22 @@ public final class RpgData {
             {TEMPLE1, 12, 14, WORLD2, 32, 3},
             {TEMPLE1, 6, 8, TEMPLE2, 12, 12},
             {TEMPLE2, 12, 13, TEMPLE1, 7, 8},
+            // 3장: 이그나 섬
+            {WORLD3, 8, 17, IGNA, 12, 18},
+            {WORLD3, 24, 12, LAVA1, 11, 13},
+            {WORLD3, 14, 7, FORT1, 11, 13},
+            {IGNA, 12, 19, WORLD3, 8, 18},
+            {IGNA, 13, 19, WORLD3, 8, 18},
+            {LAVA1, 11, 14, WORLD3, 24, 13},
+            {LAVA1, 12, 14, WORLD3, 24, 13},
+            {LAVA1, 4, 11, LAVA2, 11, 12},
+            {LAVA2, 11, 13, LAVA1, 3, 11},
+            {FORT1, 11, 14, WORLD3, 14, 8},
+            {FORT1, 12, 14, WORLD3, 14, 8},
+            {FORT1, 18, 5, FORT2, 16, 12},
+            {FORT2, 16, 13, FORT1, 18, 6},
+            {FORT2, 3, 12, FORT3, 12, 11},
+            {FORT3, 12, 12, FORT2, 3, 11},
     };
 
     /** 마을에 들어가면 그 마을이 "마지막으로 들른 마을"이 된다 (전멸·날개깃 귀환 위치) */
@@ -84,6 +106,7 @@ public final class RpgData {
             {ERDEN, 13, 25},
             {MERCA, 3, 12},
             {SALT, 11, 7},
+            {IGNA, 12, 17},
     };
 
     /** 배를 타고 내리는 곳 */
@@ -109,19 +132,33 @@ public final class RpgData {
     public static final int STEP_LAMP = 10;
     public static final int STEP_SERPENT_DOWN = 11;
     public static final int STEP_CHAPTER2_CLEAR = 12;
+    // 3장
+    public static final int STEP_ALONE = 13;
+    public static final int STEP_JIHEON = 14;
+    public static final int STEP_GIANT_DOWN = 15;
+    public static final int STEP_WEDDING = 16;
+    public static final int STEP_GEN1 = 17;
+    public static final int STEP_GEN2 = 18;
+    public static final int STEP_GEN3 = 19;
+    public static final int STEP_REVENGE = 20;
+    public static final int STEP_HOME = 21;
+    public static final int STEP_CHAPTER3_CLEAR = 22;
 
-    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」"};
+    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」", "3장 「용사의 탄생」"};
 
     public static int chapterOf(int step) {
         if (step == STEP_PROLOGUE) return 0;
-        return step < STEP_SAILED ? 1 : 2;
+        if (step < STEP_SAILED) return 1;
+        return step < STEP_ALONE ? 2 : 3;
     }
 
     /** 찾아낸 단서 (비트) */
     public static final int FLAG_RECORD = 1, FLAG_CHRONICLE = 2, FLAG_MURAL = 4, FLAG_LIBRARY = 8, FLAG_DIARY = 16,
-            FLAG_LEDGER = 32, FLAG_SHIPLOG = 64, FLAG_LIGHTLOG = 128, FLAG_TEMPLE = 256, FLAG_PROPHECY = 512, FLAG_COMPASS = 1024;
+            FLAG_LEDGER = 32, FLAG_SHIPLOG = 64, FLAG_LIGHTLOG = 128, FLAG_TEMPLE = 256, FLAG_PROPHECY = 512, FLAG_COMPASS = 1024,
+            FLAG_SMITHLOG = 2048, FLAG_ORDER = 4096, FLAG_FIRESEAL = 8192;
     public static final String[] CLUE_NAMES = {"금고의 경고문", "리벨 연대기", "성당 벽화", "에르덴 서고의 기록", "로웰의 일기",
-            "길드 장부", "선박 기록", "등대 일지", "해저 신전 벽화", "문지기의 각인", "바로스의 나침반"};
+            "길드 장부", "선박 기록", "등대 일지", "해저 신전 벽화", "문지기의 각인", "바로스의 나침반",
+            "도건의 작업 일지", "요새의 명령서", "불의 봉인 제단"};
     /** 단서 메뉴에 보여 줄 요약 */
     public static final String[] CLUE_TEXTS = {
             "청와대 금고: '문 저편에서 오는 자는 짐꾼이 아니다' — 서명 E. 가방과 같은 문양.",
@@ -135,13 +172,18 @@ public final class RpgData {
             "카이른이 바다의 봉인석을 내려놓을 때, 다섯 점 문양 망토를 두른 여인이 등불을 들고 있었다.",
             "'그릇이 오는 날, 다섯 봉인은 하나씩 열린다.' 문지기는 신창이 오기를 기다려 봉인을 열고 있다.",
             "'바론에게. 돈보다 무거운 걸 잊지 마.' 바로스가 남긴 말.",
+            "회색 망토가 대장장이 도건에게 '그릇을 묶을 족쇄'를 주문했다. 그릇은 다 잃고 빈 몸으로 이 섬에 온다고 했다.",
+            "모르칸이 바르가스에게: 바다에서 동료를 떼어 내고, 짐꾼은 '비워서' 살려 두라. 배신은 처음부터였다.",
+            "불의 봉인은 나누는 손으로만 지켜진다. 문지기: '그릇을 비워라. 잃게 하라. 빈 그릇에 왕이 깃든다.'",
     };
 
     // ------------------------------------------------------------ 등장인물 (마을 사람)
 
     public static final int ACT_NONE = 0, ACT_SHOP = 1, ACT_INN = 2, ACT_SAVE = 3, ACT_EVENT = 4;
     public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3, EV_HUNTER = 4,
-            EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11;
+            EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11,
+            EV_SHIP_TO_IGNA = 12, EV_JIHEON = 13, EV_GIANT = 14, EV_IGNA_ELDER = 15, EV_GEN1 = 16, EV_GEN2 = 17, EV_GEN3 = 18,
+            EV_VARGAS = 19, EV_BIRTH = 20;
 
     public static final class Npc {
         public final int map, x, y;
@@ -450,6 +492,107 @@ public final class RpgData {
                             "[신창] 둘 다 데려가자. 바로스 씨도, 이 바다의 수호자도.",
                             "쉬이이이익——!!"),
             }),
+
+            // ---- 3장: 메르카 부두의 길드 배
+            new Npc(MERCA, 15, 23, "sailor", "길드의 선장", ACT_EVENT, EV_SHIP_TO_IGNA, STEP_CHAPTER2_CLEAR, STEP_CHAPTER2_CLEAR, new Object[][]{
+                    at(0, "바론 님의 명으로 이그나까지 모시겠습니다."),
+            }),
+
+            // ---- 3장: 이그나 마을
+            new Npc(IGNA, 6, 4, "jiheon", "지헌", ACT_EVENT, EV_JIHEON, STEP_ALONE, STEP_ALONE, new Object[][]{
+                    at(0, "아, 깼어요?"),
+            }),
+            new Npc(IGNA, 8, 6, "villager", "지헌 어머니 해련", ACT_EVENT, EV_BIRTH, STEP_ALONE, 99, new Object[][]{
+                    at(0, "딸애가 바다에서 사람을 주워 왔지 뭐요. 제 아비를 닮아서 다친 건 못 지나쳐요.",
+                            "푹 쉬시오. 여기 침대는 원래 그 애 아비 거였소."),
+                    at(STEP_JIHEON, "지헌이를 부탁하오. 겉으론 씩씩해도 제 아비 일로 밤마다 운다오.",
+                            "용암 동굴엔 그이가 만든 화염 거인이 있소. 원래는 순한 녀석이었는데…"),
+                    at(STEP_GIANT_DOWN, "원석을 찾았다고? …그이가 그 원석으로 마지막에 벼리고 싶어 하던 게 뭔지 아시오?",
+                            "딸의 혼인 반지였다오. 촌장님께 화덕을 빌리러 가 보시오."),
+                    at(STEP_WEDDING, "우리 사위! 몸조심하시오. 지헌이도. 둘 다 꼭 살아서 돌아와야 하오."),
+                    at(STEP_REVENGE, "돌아왔구려… 그이의 원수를 갚아 줘서 고맙소. 이제 어디 가지 말고 여기서 사시오."),
+                    at(STEP_CHAPTER3_CLEAR, "민한이가 아빠를 닮아 손이 커요. 언젠가 큰 짐도 번쩍 들겠지.",
+                            "…무거운 짐 말고, 좋은 것만 들고 살았으면 좋겠소."),
+            }),
+            new Npc(IGNA, 4, 4, "baby", "아기 민한", ACT_NONE, 0, STEP_CHAPTER3_CLEAR, 99, new Object[][]{
+                    at(0, "(아기 민한이 꼬물꼬물 손을 뻗는다) 아부… 아부부……",
+                            "(작은 손이 신창의 손가락을 꼭 쥐었다. 생각보다 힘이 세다)"),
+            }),
+            new Npc(IGNA, 21, 4, "elder", "이그나 촌장", ACT_EVENT, EV_IGNA_ELDER, STEP_ALONE, 99, new Object[][]{
+                    at(0, "한 달 전 화산에서 검은 요새가 솟은 뒤로, 마을 남자들이 하나둘 끌려갔소.",
+                            "남은 건 늙은이와 아녀자와 아이들뿐이오. 요새로 가는 길은 검은 불길이 막고 있지.",
+                            "동쪽 용암 동굴엔 대장장이 도건이 만든 '화염 거인'이 사오. 광맥을 지키던 순한 놈인데, 요즘은 미쳐 날뛴다오."),
+                    at(STEP_WEDDING, "요새로 가는 길의 검은 불길이 걷혔소. 화산 기슭, 북쪽 길 끝이오.",
+                            "용사여, 끌려간 마을 사람들을 부탁하오. 그리고… 신부를 울리지 마시오."),
+                    at(STEP_HOME, "아기 울음소리가 곧 들리겠군. 이그나에 십 년 만의 경사요.",
+                            "해련 할멈에게 가 보시오. 산파 노릇은 그 할멈이 이 섬에서 제일이오."),
+                    at(STEP_CHAPTER3_CLEAR, "민한이가 첫 울음을 터뜨린 날, 화산이 조용해졌소. 섬 전체가 그 애를 반긴 게요."),
+            }),
+            npc(IGNA, 4, 10, "apprentice", "견습 대장장이 단",
+                    at(0, "도건 스승님은 '쇠는 불을 견뎌야 단단해진다'고 하셨어요. 사람도 그렇대요.",
+                            "스승님 망치는 용암 동굴에서 사라졌어요. 원석을 캐러 가셨다가……"),
+                    at(STEP_WEDDING, "지헌 누나가 벼린 검이라니! 스승님보다 낫다고는 말 못 하지만… 아니, 나을지도요."),
+                    at(STEP_HOME, "대장간을 다시 세우는 거, 저도 도울게요! 이번엔 요람도 만들어야겠네요.")),
+            npc(IGNA, 16, 9, "child", "꼬마 솔",
+                    at(0, "우리 아빠도 요새로 끌려갔어. 검은 갑옷 아저씨가 '쓸모 있는 몸'이래.",
+                            "아저씨가 데려와 줄 거지? …근데 아저씨 맨손이잖아."),
+                    at(STEP_WEDDING, "와, 반짝반짝 갑옷! 이제 진짜 용사 같아! 우리 아빠 꼭 데려와 줘!"),
+                    at(STEP_REVENGE, "아빠가 돌아왔어! 용사 아저씨 최고! 나도 커서 용사 할 거야!")),
+            npc(IGNA, 21, 10, "villager", "이웃 할머니",
+                    at(0, "지헌이가 사내를 업고 오던 날, 온 마을이 다 들썩였지. 그 애가 누굴 저렇게 챙기는 건 처음이야."),
+                    at(STEP_GIANT_DOWN, "둘이 동굴에서 돌아오는 걸 봤는데, 지헌이 귀가 빨갛더라. 호호."),
+                    at(STEP_WEDDING, "혼례 잔치 국수 맛있었지? 지헌이 웃는 걸 한 달 만에 봤어."),
+                    at(STEP_HOME, "배가 불러 오는구먼. 봄이면 셋이 되겠어.")),
+            npc(IGNA, 9, 17, "sailor", "이그나 어부",
+                    at(0, "검은 모래 해변엔 바다에서 떠밀려 온 게 많소. 부서진 배 잔해도 거기 있지.",
+                            "요새가 솟은 뒤로 섬 몬스터가 사나워졌소. 맨몸으로 나가면 큰일 나오."),
+                    at(STEP_REVENGE, "요새의 검은 불이 꺼졌소! 바다도 다시 잠잠해졌고.")),
+            new Npc(IGNA, 18, 9, "farmer", "돌아온 사내", ACT_NONE, 0, STEP_REVENGE, 99, new Object[][]{
+                    at(0, "요새 감옥에서 한 달을 갇혀 있었소. 그런 우리를 용사 부부가 꺼내 줬지!",
+                            "감옥에서 들었는데, 바르가스가 '로웰이라는 기사는 문지기님이 직접 데려갔다'고 하더군."),
+            }),
+            act(IGNA, 4, 12, "merchant", "이그나 도구점", ACT_SHOP, 5,
+                    at(0, "화산섬이라 뭐든 비싸요. 흑요석 검은 우리 섬 명물이에요."),
+                    at(STEP_WEDDING, "용사님! 신혼 선물로 깎아 드리고 싶지만… 장사는 장사라서요.")),
+            act(IGNA, 8, 12, "innkeeper", "화산 여관", ACT_INN, 30,
+                    at(0, "온천이 딸린 여관이오. 화산 덕분에 물은 늘 따뜻하지.")),
+            act(IGNA, 17, 14, "priest", "불의 사당 무녀", ACT_SAVE, 0,
+                    at(0, "불꽃은 쌓아 두면 꺼지고, 나누면 번진답니다. 모험을 기록해 드리지요."),
+                    at(STEP_WEDDING, "두 분의 맹세를 불꽃이 기억하고 있어요. 모험을 기록해 드리지요.")),
+
+            // ---- 3장: 용암 동굴 보스
+            new Npc(LAVA2, 5, 4, "giant", "화염 거인", ACT_EVENT, EV_GIANT, STEP_JIHEON, STEP_JIHEON, new Object[][]{
+                    at(0, "(용암 웅덩이 사이로, 바위와 쇠를 이어 붙인 거인이 몸을 일으킨다. 가슴에서 검은 불꽃이 새어 나온다)",
+                            "[지헌] 화염 거인…! 아버지가 광맥을 지키라고 만든 아이예요. 저 검은 불꽃… 바르가스 짓이야.",
+                            "(거인의 발치에 낡은 망치 하나가 박혀 있다. 손잡이에 '도건'이라는 글씨)",
+                            "[지헌] 아버지 망치…! 아버지는 여기까지 와서……",
+                            "[신창] 지헌 씨, 물러서지 마요. 이번엔… 아무도 안 잃어.",
+                            "쿠오오오오——!!"),
+            }),
+
+            // ---- 3장: 흑염의 요새 (결혼 뒤)
+            new Npc(FORT1, 18, 7, "ignis", "화염 기사단장 이그론", ACT_EVENT, EV_GEN1, STEP_WEDDING, STEP_WEDDING, new Object[][]{
+                    at(0, "하찮은 배달부가 용사 흉내라. 바르가스 님의 검을 받기 전에 내가 먼저 재로 만들어 주마!",
+                            "[지헌] 마을 사람들을 끌고 간 게 당신들이죠? 하나도 빠짐없이 돌려받을 거예요.",
+                            "[신창] 비켜. 오늘은 한 명도 안 놓쳐."),
+            }),
+            new Npc(FORT2, 1, 8, "witch", "독안개 마녀 모르가", ACT_EVENT, EV_GEN2, STEP_GEN1, STEP_GEN1, new Object[][]{
+                    at(0, "후후, 신혼부부? 사랑 놀음이 그렇게 좋아? 둘이 같이 죽으면 더 낭만적이겠지?",
+                            "[신창] 미안하지만 우리 둘은 같이 살기로 정했어.",
+                            "[지헌] 그것도 아주 오래오래요."),
+            }),
+            new Npc(FORT3, 11, 5, "lavadragon", "용암룡 볼카", ACT_EVENT, EV_GEN3, STEP_GEN2, STEP_GEN2, new Object[][]{
+                    at(0, "(용암 속에서 거대한 용이 머리를 들어 올린다. 옥좌로 가는 문을 막아선 채 불길을 뿜는다)",
+                            "크르르… 이 문 너머는 바르가스 님의 옥좌. 지나가려면 나를 넘어라!"),
+            }),
+            new Npc(FORT3, 11, 2, "vargas", "흑염의 마장군 바르가스", ACT_EVENT, EV_VARGAS, STEP_GEN3, STEP_GEN3, new Object[][]{
+                    at(0, "(검은 불꽃의 옥좌 앞. 바르가스가 천천히 일어선다)",
+                            "왔군, 짐꾼. 아니… 그 빛은 뭐지? 너는 비어야 했다. 다 잃고 텅 비어서 그릇이 되어야 했단 말이다!",
+                            "[신창] 다 잃었지. 그런데 비지 않았어. 잃은 자리에 다른 게 들어왔거든.",
+                            "[지헌] 당신이 우리 아버지를 죽였어요. 대장간을 태우고, 마을 사람들을 끌고 갔어요.",
+                            "[신창] 그리고 내 동료들을 데려갔지. 리나와 피피는 어디 있어!",
+                            "크하하! 알고 싶으면 나를 꺾어 봐라! 문지기님께 받은 공허의 불꽃으로, 이번엔 너도 재로 만들어 주마!"),
+            }),
     };
 
     // ------------------------------------------------------------ 살펴볼 수 있는 것 (단서)
@@ -569,6 +712,36 @@ public final class RpgData {
                     "바닷물에 삭은 가방이 떨어져 있다. 안에 녹슨 나침반이 있다.",
                     "뒷면에 새겨진 글씨: '바론에게. 돈보다 무거운 걸 잊지 마. — 바로스'",
                     "(「바로스의 나침반」을 손에 넣었다!)"),
+            // ---- 3장
+            new Readable(WORLD3, 16, 20, 0, -1, null,
+                    "부서진 배의 잔해다. 바론의 길드 깃발이 반쯤 타 있다.",
+                    "(모래 속에 동전 하나가 박혀 있다. 피피의 동전 주머니에서 나온 것이다)",
+                    "[신창] ……피피."),
+            new Readable(WORLD3, 17, 21, 0, -1, null,
+                    "부러진 돛대다. 리나의 방패에 있던 다섯 점 문양 조각이 걸려 있다.",
+                    "[신창] 리나… 기다려. 반드시 찾으러 갈게."),
+            new Readable(IGNA, 9, 3, FLAG_SMITHLOG, -1, "[지헌] 아버지… 끝까지 거절하셨구나. 그래서……",
+                    "「도건의 작업 일지」를 펼쳤다.",
+                    "'한 달 전. 회색 망토의 사내가 찾아와 「그릇을 묶을 족쇄」를 벼려 달라 했다. 금화를 산더미처럼 내밀었지만 거절했다.'",
+                    "'사내가 웃으며 말했다. 그릇은 곧 이 섬에 온다. 다 잃고 빈 몸으로.'",
+                    "'오늘 화산에서 검은 요새가 솟았다. …지헌이 혼례 올리는 날, 반지만은 내 손으로 벼려 주고 싶은데.'"),
+            new Readable(IGNA, 11, 17, 0, -1, null, "「이그나 마을」 북쪽 화산 기슭: 흑염의 요새 (출입 금지) / 동쪽: 용암 동굴"),
+            new Readable(IGNA, 16, 11, 0, -1, "[지헌] …서로의 짐을 나눈다. 왠지 우리 얘기 같네요. 아, 아니에요!",
+                    "벽화: 불꽃 앞에서 두 사람이 손을 맞잡고 있다. 한 사람의 등에는 다섯 점 문장의 가방.",
+                    "글귀: '서로의 짐을 나누기로 불꽃 앞에 맹세한 자, 짐꾼에서 용사로 깨어나리라.'"),
+            new Readable(IGNA, 22, 11, 0, -1, null,
+                    "벽화: 용사가 된 짐꾼이 수많은 마물 사이를 빛처럼 가른다.",
+                    "그 뒤에서 한 여인이 불꽃으로 길을 밝힌다."),
+            new Readable(IGNA, 8, 4, 0, -1, "[지헌] 아버지 모루예요. 어릴 때 여기 올라가서 혼나곤 했어요.",
+                    "대장간 모루다. 망치 자국이 수천 개 패어 있다."),
+            new Readable(FORT2, 12, 8, FLAG_ORDER, -1, "[지헌] 이 사람… 당신을 일부러 이 섬으로 보낸 거예요.",
+                    "탁자 위에 봉인된 편지가 놓여 있다.",
+                    "'바르가스 장군께. 짐꾼 일행을 이그나행 배에 태웠소. 바다 위에서 동료를 떼어 내고, 짐꾼은 비워서 살려 두시오. 그릇이 깨지면 안 되니. — M'",
+                    "[신창] M… 모르칸. 에르덴의 대신이 처음부터……"),
+            new Readable(FORT3, 5, 2, FLAG_FIRESEAL, -1, null,
+                    "제단에 오래된 글귀가 있다.",
+                    "'불의 봉인은 나누는 손으로만 지켜진다. 쌓는 손이 닿으면 불은 검게 타오르리라. — 카이른'",
+                    "(그 아래 누군가 새로 새긴 글씨) '그릇을 비워라. 잃게 하라. 빈 그릇에 왕이 깃든다. — 문지기'"),
     };
 
     /** 단서가 아닌 물건을 살폈을 때 */
@@ -591,6 +764,7 @@ public final class RpgData {
             case 'j': return "덤불이 바스락거린다.";
             case 'M': return "오래된 벽화다.";
             case 'Y': return "표지판이다.";
+            case 'l': return "부글부글 끓는 용암이다. 가까이 가면 눈썹이 탈 것 같다.";
             default: return null;
         }
     }
@@ -816,11 +990,171 @@ public final class RpgData {
             "[신창] 다섯 봉인석 중 둘에 금이 갔어. 문지기는 다음 봉인을 노릴 거야.",
             "[리나] 불의 봉인석… 그리고 아버지가 있는 이그나로 가요.",
             "— 2장 「상인의 길」 끝 —",
-            "(3장 「불의 탑」은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 2장의 단서도 확인해 보세요.)",
+            "[길드장 바론] 부두에 이그나로 가는 길드의 배를 대 두겠소. 형의 나침반이 북쪽을 가리키더군.",
     };
 
     public static final String[] GUILD_AFTER_CLEAR = {
-            "[길드장 바론] 이그나로 가는 배를 준비하고 있소. …형의 나침반이 북쪽을 가리키더군.",
+            "[길드장 바론] 이그나로 가는 배는 부두에 있소. 길드의 선장에게 말을 거시오.",
+    };
+
+    // ---- 3장 이벤트 대사
+
+    public static final String[] SAIL_TO_IGNA = {
+            "[길드의 선장] 바론 님의 명입니다. 이그나까지 모시겠습니다. 형님의 나침반이 북쪽을 가리킨다고 하셨지요.",
+            "[리나] 아버지가 계신 섬… 이번엔 꼭 만날 거예요.",
+            "[피피] 화산섬이라니, 내 날개 그을리면 신창이 책임져!",
+            "(배는 북쪽으로 나흘을 달렸다. 닷새째 밤, 하늘이 검붉게 물들었다)",
+            "(갑판 위로 검은 불꽃이 솟구친다. 불꽃 속에서 흑철 갑옷의 거한이 걸어 나왔다)",
+            "[???] 짐꾼. 모르칸 대신이 길을 아주 잘 닦아 주었군.",
+            "[신창] 모르칸…? 너는 누구냐!",
+            "[흑염의 마장군] 문지기님의 검, 흑염의 마장군 바르가스. 그릇을 모시러 왔다. 곁가지는 치우고.",
+            "[리나] 신창 씨, 뒤로! 기사의 이름으로, 한 발짝도 못 지나가!",
+            "[피피] 저울이 부러질 것 같아… 저 녀석, 무게가 없어. 텅 비었어!",
+    };
+
+    public static final String[] AMBUSH_AFTER = {
+            "……",
+            "(검은 불꽃이 배를 삼켰다. 쓰러진 신창의 눈앞에서, 바르가스가 리나와 피피를 움켜쥔다)",
+            "[바르가스] 짐꾼은 아직 덜 찼다. 더 잃고, 더 비어야 그릇이 된다.",
+            "[리나] 신창 씨……! 살아요! 반드시……!",
+            "[피피] 신창! 이거… 가져가……! (피피가 던진 동전 하나가 신창의 손에 떨어졌다)",
+            "(공허의 균열이 열리고, 두 사람은 바르가스와 함께 어둠 속으로 사라졌다)",
+            "(배는 두 동강이 났고, 신창은 검은 바다로 떨어졌다……)",
+            "……",
+            "(모든 것을 잃었다. 골드도, 도구도, 장비도. 그리고 동료도.)",
+    };
+
+    public static final String[] WAKE_UP = {
+            "(타닥, 타닥. 장작 타는 소리와 쇠 냄새에 눈을 떴다)",
+            "(낯선 천장. 몸은 붕대투성이다. 손안에는 피피의 동전 하나만 남아 있다)",
+            "[신창] 리나… 피피……",
+            "(대답은 없다. 옆에서 누군가 꾸벅꾸벅 졸고 있다)",
+    };
+
+    public static final String[] JIHEON_JOINS = {
+            "[???] 아, 깼어요? 사흘이나 못 일어나서 걱정했어요.",
+            "[지헌] 저는 지헌이에요. 이그나 대장장이 도건의 딸. 검은 모래 해변에 쓰러져 있는 걸 제가 업어 왔어요.",
+            "[신창] 같이 있던 사람들은… 기사 한 명이랑, 작은 요정은요?",
+            "[지헌] ……해변엔 당신뿐이었어요. 부서진 배 조각이랑, 이 머리끈 하나.",
+            "(지헌이 내민 것은 리나의 붉은 머리끈이었다)",
+            "[신창] (말없이 머리끈을 쥐었다. 주먹이 떨린다)",
+            "[지헌] …검은 불꽃의 갑옷 사내였죠? 한 달 전 화산에서 요새가 솟던 날, 그자가 마을에 왔어요.",
+            "[지헌] 아버지가 그자의 주문을 거절하셨어요. 그날 밤 대장간이 불탔고, 아버지는… 돌아오지 못하셨어요.",
+            "[지헌] 당신 눈을 보니 알겠어요. 혼자 그자에게 가려는 거죠? 그 몸으로, 맨손으로.",
+            "[신창] ……",
+            "[지헌] 그럼 저도 갈게요. 혼자 가면 죽어요. 둘이 가면… 조금 덜 죽겠죠.",
+            "[지헌] 먼저 동쪽 용암 동굴부터요. 아버지가 마지막으로 캐러 가신 '불꽃 원석'과 아버지 망치가 거기 있을 거예요.",
+            "[지헌] 그 원석이면 검은 불꽃도 벨 수 있다고, 아버지가 그러셨어요.",
+            "(지헌이 동료가 되었다!)",
+            "[지헌] …그리고 그 차림으로 나갈 건 아니죠? 이거 받아요. 제 비상금이에요. (300골드를 받았다)",
+            "[지헌] 나머지는 몬스터를 잡아서 벌어요. 이 섬에선 다들 그렇게 살아요.",
+    };
+
+    public static final String[] GIANT_DEFEATED = {
+            "(거인의 가슴에서 검은 불꽃이 빠져나가고, 붉은 원석의 빛이 돌아온다)",
+            "[화염 거인] …지…헌… 아가씨……",
+            "[지헌] 기억하는구나… 아버지가 너를 만들 때 내가 이름 지어 줬잖아. '불똥이'.",
+            "[화염 거인] 도건… 님이… 마지막으로… 원석을… 아가씨… 혼례에… 쓰라고……",
+            "(거인은 가슴에서 빛나는 원석을 꺼내 지헌의 손에 쥐여 주고, 조용히 바위로 돌아갔다)",
+            "(「불꽃 원석」을 손에 넣었다! 「도건의 망치」를 손에 넣었다!)",
+            "[지헌] 혼, 혼례…? 아, 아니에요! 그런 뜻 아니에요! 가요, 빨리!",
+            "[신창] (지헌 씨 귀가 새빨개졌다)",
+            "[지헌] 마을로 돌아가요. 촌장님께 화덕을 빌려야 해요.",
+    };
+
+    public static final String[] WEDDING = {
+            "[이그나 촌장] 불꽃 원석을 찾아왔다고? 도건의 망치까지!",
+            "[지헌] 촌장님, 마을 화덕을 하룻밤만 빌려 주세요. 아버지가 못다 한 일을 제가 할게요.",
+            "(그날 밤, 이그나의 화덕은 밤새 꺼지지 않았다. 도건의 망치 소리가 새벽까지 이어졌다)",
+            "(새벽. 땀범벅이 된 지헌이 검 한 자루와 작은 상자 하나를 들고 나왔다)",
+            "[지헌] 검은… 당신 거예요. 그리고 이건……",
+            "(상자 안에는 붉게 빛나는 반지 두 개가 들어 있었다)",
+            "[지헌] 아버지가 원석으로 만들고 싶어 하셨던 거래요. 제 혼인 반지. …엄마가 그러더라고요.",
+            "[지헌] 그래서, 그게… 하나는 제 거고, 하나는……",
+            "[신창] (고개를 끄덕이며 반지 하나를 집었다)",
+            "[신창] 나는 평생 남의 짐만 날랐어요. 돈도, 표도, 믿음도 끝없이 쌓기만 했고요.",
+            "[신창] 그런데 다 잃고 나서야 알았어요. 내가 정말 지고 싶은 건 그런 게 아니었다는 걸.",
+            "[신창] 지헌 씨. 당신의 짐을 나도 같이 지게 해 줄래요? 평생.",
+            "[지헌] ……바보. 그건 제가 먼저 하려던 말이에요.",
+            "(그날 오후, 불의 사당에서 온 마을 사람이 지켜보는 가운데 두 사람은 혼인의 맹세를 했다)",
+            "[불의 사당 무녀] 불꽃 앞에서 서로의 짐을 나누기로 맹세한 두 사람에게, 불의 축복을!",
+            "(맹세의 반지가 타오르듯 빛난다. 그 순간, 신창의 배달 가방 문장이 하얗게 불타올랐다!)",
+            "(가방 깊은 곳에서 오래된 목소리가 울린다. 첫 배달 날 가방을 건네던 할머니의 목소리다)",
+            "[???] '이제야 됐구나. 가진 것을 쌓기만 하는 자는 그릇이 되고, 나누는 자는 용사가 된단다.'",
+            "(빛이 신창의 몸을 감싼다. 잠들어 있던 힘이 하나씩 깨어난다)",
+            "✨ 신창은 「배달부」에서 「용사」로 전직했다! ✨",
+            "✨ 새 능력치가 깨어났다: 회심의 일격 30% · 슬레이어(주는 피해 1.5배) · HP·MP·공격·방어·민첩 대폭 상승 ✨",
+            "✨ 용사의 기술: 섬광 베기 · 용사의 일격 · 기가 슬래시 · 천벌의 뇌격 · 용사의 연격 · 생명의 빛 · 부활의 기적 · 용기의 함성 ✨",
+            "✨ 지헌에게 불의 축복이 깃들었다: 용광로 · 사랑의 기도 · 불사조의 날개 ✨",
+            "(「용사의 검」「불사조 갑옷」「불꽃 드레스」, 「맹세의 반지」 2개를 받아 장비했다!)",
+            "[지헌] 반지가… 따뜻해요. 싸우는 동안에도 마력이 끝없이 차오를 것 같아요.",
+            "[이그나 촌장] 요새로 가는 길을 막던 검은 불길이 걷혔소! 북쪽 화산 기슭으로 가시오, 용사여!",
+            "[신창] 리나, 피피. 조금만 기다려. 그리고 도건 어르신의 몫까지… 이번엔 내가 되찾으러 간다.",
+    };
+
+    public static final String[] GEN1_DEFEATED = {
+            "[이그론] 이, 이 힘은…! 바르가스 님이 말씀하신 '빈 그릇'이 아니다… 이건……",
+            "(이그론은 재가 되어 흩어졌다. 허리춤에서 감옥 열쇠가 떨어졌다)",
+            "(쇠창살 너머에서 끌려온 이그나 사람들의 환호성이 들린다!)",
+            "[지헌] 다들 무사해요! 아래층으로 가요. 아직 끝나지 않았어요.",
+    };
+
+    public static final String[] GEN2_DEFEATED = {
+            "[모르가] 말도 안 돼… 내 독안개가 반지의 불꽃에 타 버리다니……",
+            "(마녀는 연기처럼 흩어졌다)",
+            "[지헌] 같이 살기로 정했다는 말, 진심이었죠?",
+            "[신창] 응. 그러니까 여기서 안 죽어.",
+    };
+
+    public static final String[] GEN3_DEFEATED = {
+            "(용암룡은 비명을 지르며 용암 속으로 가라앉았다. 옥좌로 가는 문이 열렸다)",
+            "[지헌] 저 위에… 그자가 있어요.",
+    };
+
+    public static final String[] VARGAS_DEFEATED = {
+            "(바르가스의 흑철 갑옷에 금이 가고, 검은 불꽃이 하늘로 흩어진다)",
+            "[바르가스] 이럴 수가… 빈 그릇이… 용사가 되다니… 문지기님의 계획이……",
+            "[신창] 리나와 피피는 어디 있지.",
+            "[바르가스] …크크. 살아는 있다. 공허의 성 깊은 곳에… 문지기님의 제물로……",
+            "[바르가스] 기사 로웰도 이미 문지기님 손에 있다… 그리고 너를 이 섬으로 보낸 건… 모르칸… 네 편인 척하는 그 대신이지……",
+            "(바르가스는 검은 재가 되어 무너졌다. 옥좌 뒤에서 붉은 빛이 새어 나온다)",
+            "(옥좌 뒤에 숨겨져 있던 불의 봉인석. 금이 갔지만 아직 깨지지 않았다)",
+            "(「불의 봉인석 조각」을 손에 넣었다!)",
+            "[지헌] …아버지. 끝났어요. 원수를… 갚았어요.",
+            "(지헌은 도건의 망치를 가슴에 안고 오래 울었다. 신창은 말없이 그 어깨를 감쌌다)",
+            "[신창] 살아 있대. 리나도, 피피도. …다행이다. 정말 다행이다.",
+            "[지헌] 그럼 데리러 가요. 하지만 그 전에… 집에 가요. 우리 집에.",
+    };
+
+    public static final String[] HOME = {
+            "[이그나 촌장] 돌아왔구려! 끌려갔던 마을 사람들이 모두 내려왔소! 용사 부부 만세!",
+            "(마을 어귀에서 해련이 지헌을 끌어안고 엉엉 울었다)",
+            "[지헌] 다녀왔어요, 가 아니라… '다녀왔어'라고 해 줘요. 이제 여기가 당신 집이니까.",
+            "[신창] …다녀왔어.",
+            "(마을 사람들이 모여 불탄 대장간을 다시 세웠다. 신창은 생전 처음 '배달'이 아닌 '집'을 지었다)",
+            "(지붕을 올리던 날, 지헌이 신창의 귀에 무언가를 속삭였다)",
+            "[신창] …정말? 정말로?",
+            "[지헌] 응. 봄이 오면, 셋이 돼요.",
+            "(신창은 그 자리에 주저앉아 한참을 웃었다. 그리고 조금 울었다)",
+            "[이그나 촌장] 하하! 경사로다! 해련 할멈에게 가 보시오. 산파 노릇은 그 할멈이 이 섬에서 제일이오.",
+    };
+
+    public static final String[] BIRTH = {
+            "[해련] 사위! 오늘이오! 지헌이 진통이 시작됐소! 밖에서 기다리시오!",
+            "(긴 밤이었다. 화산도, 바다도, 마을도 숨을 죽였다)",
+            "(신창은 대장간 앞을 밤새 서성였다. 어떤 보스 앞에서도 떨리지 않던 손이 떨렸다)",
+            "(새벽녘, 첫 햇살과 함께 우렁찬 울음소리가 이그나에 울려 퍼졌다)",
+            "[해련] 아들이오! 손이 아주 큼직한 사내아이요!",
+            "(지헌의 품에 안긴 작은 아기가 신창의 손가락을 꼭 쥐었다)",
+            "[지헌] 이름… 정했어요?",
+            "[신창] 민한. 우리 아들, 민한.",
+            "[지헌] 민한아, 아빠야. 세상에서 제일 무거운 짐을 지던 사람이었는데… 이제는 너를 안고 있어.",
+            "(아기 민한이 방긋 웃었다. 배달 가방의 문장이 그 웃음에 맞춰 따스하게 빛났다)",
+            "[신창] (리나, 피피, 그리고 아직 만나지 못한 로웰 단장님. 꼭 데리러 갈게.)",
+            "[신창] (이번엔 지켜야 할 집이 있으니까.)",
+            "(마을 사람들이 축하금을 모아 주었다. 5000골드를 받았다!)",
+            "— 3장 「용사의 탄생」 끝 —",
+            "(4장은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 3장의 단서도 확인해 보세요.)",
     };
 
     /** 보스 전투 중 연출 대사: {격노할 때, 쓰러지기 직전} */
@@ -843,12 +1177,30 @@ public final class RpgData {
                     {"(비늘 사이로 푸른 빛이 새어 나온다. 어둠이 걷히고 있다)", "[신창] 지금이야! 마지막 한 번만 더!"},
             };
         }
+        if ("giant".equals(sprite)) {
+            return new String[][]{
+                    {"[지헌] 불똥아! 정신 차려! 나야, 지헌이야!"},
+                    {"(거인의 가슴 속 원석이 붉게 깜빡인다. 검은 불꽃이 흔들린다)", "[신창] 조금만 더…! 지헌 씨, 같이!"},
+            };
+        }
+        if ("vargas".equals(sprite)) {
+            return new String[][]{
+                    {"[바르가스] 크하하! 좋다, 짐꾼! 이 불꽃은 문지기님께 받은 공허의 불이다!", "[지헌] 반지가 뜨거워요… 우리 불이 더 세요!"},
+                    {"(흑철 갑옷에 금이 간다. 그 틈으로 텅 빈 어둠이 보인다)", "[신창] 이걸로 끝이다. 도건 어르신, 리나, 피피의 몫이다!"},
+            };
+        }
+        if ("ignis".equals(sprite) || "witch".equals(sprite) || "lavadragon".equals(sprite)) {
+            return new String[][]{
+                    {"(검은 불꽃이 거세게 일렁인다!)"},
+                    {"[지헌] 거의 다 됐어요!"},
+            };
+        }
         return new String[][]{{}, {}};
     }
 
     // ------------------------------------------------------------ 아이템
 
-    public static final int CONSUMABLE = 0, WEAPON = 1, ARMOR = 2, KEY = 3;
+    public static final int CONSUMABLE = 0, WEAPON = 1, ARMOR = 2, KEY = 3, ACCESSORY = 4;
 
     public static final class Item {
         public final int id;
@@ -868,14 +1220,16 @@ public final class RpgData {
         }
     }
 
-    public static final int HERB = 0, MANA_CANDY = 1, WING = 2, HI_HERB = 3, PHOENIX = 4;
+    public static final int HERB = 0, MANA_CANDY = 1, WING = 2, HI_HERB = 3, PHOENIX = 4, ELIXIR = 5;
     public static final int STICK = 10, COPPER_SWORD = 11, SQUIRE_SWORD = 12, IRON_SWORD = 13, KNIGHT_SPEAR = 14,
-            STEEL_SWORD = 15, DRAGON_SPEAR = 16, COIN_POUCH = 17;
+            STEEL_SWORD = 15, DRAGON_SPEAR = 16, COIN_POUCH = 17, OBSIDIAN_SWORD = 18, SMITH_HAMMER = 19;
     public static final int CLOTHES = 20, LEATHER = 21, CHAIN_MAIL = 22, SILVER_ARMOR = 23,
-            STEEL_ARMOR = 24, CORAL_ARMOR = 25, FAIRY_CLOAK = 26, SEA_ARMOR = 27;
+            STEEL_ARMOR = 24, CORAL_ARMOR = 25, FAIRY_CLOAK = 26, SEA_ARMOR = 27, VOLCANO_ARMOR = 28, SMITH_APRON = 29;
     public static final int LETTER = 30, HERO_BADGE = 31;
     public static final int PIPI_SCALE = 35, LIGHTHOUSE_LAMP = 36, BAROS_COMPASS = 37, SEA_SHARD = 38;
-    public static final int ITEM_SLOTS = 40;
+    public static final int HERO_SWORD = 40, PHOENIX_ARMOR = 41, BRIDE_DRESS = 42, VOW_RING = 43,
+            FLAME_ORE = 44, DOGEON_HAMMER = 45, FIRE_SHARD = 46, ASH_ROBE = 47;
+    public static final int ITEM_SLOTS = 64;
 
     public static final Item[] ITEMS = new Item[ITEM_SLOTS];
 
@@ -896,6 +1250,19 @@ public final class RpgData {
         put(new Item(LIGHTHOUSE_LAMP, "등대의 등불", KEY, 0, 0, "곶 끝 바다에 비추면 해저 신전으로 가는 계단이 떠오른다"));
         put(new Item(BAROS_COMPASS, "바로스의 나침반", KEY, 0, 0, "'바론에게. 돈보다 무거운 걸 잊지 마.'"));
         put(new Item(SEA_SHARD, "바다의 봉인석 조각", KEY, 0, 0, "금 간 바다의 봉인석에서 떨어진 조각"));
+        put(new Item(ELIXIR, "엘릭서", CONSUMABLE, 9999, 0, "HP와 MP를 모두 회복"));
+        put(new Item(OBSIDIAN_SWORD, "흑요석 검", WEAPON, 40, 3200, "공격 +40"));
+        put(new Item(SMITH_HAMMER, "대장장이 망치", WEAPON, 22, 600, "공격 +22"));
+        put(new Item(VOLCANO_ARMOR, "화산석 갑옷", ARMOR, 32, 2800, "방어 +32"));
+        put(new Item(SMITH_APRON, "대장장이 앞치마", ARMOR, 12, 400, "방어 +12"));
+        put(new Item(ASH_ROBE, "화산재 로브", ARMOR, 26, 2200, "방어 +26"));
+        put(new Item(HERO_SWORD, "용사의 검", WEAPON, 110, 0, "지헌이 불꽃 원석으로 벼린 검. 공격 +110"));
+        put(new Item(PHOENIX_ARMOR, "불사조 갑옷", ARMOR, 70, 0, "방어 +70"));
+        put(new Item(BRIDE_DRESS, "불꽃 드레스", ARMOR, 60, 0, "혼례 날 마을이 지어 준 옷. 방어 +60"));
+        put(new Item(VOW_RING, "맹세의 반지", ACCESSORY, 30, 0, "매 턴 MP를 30% 회복, 걸을 때도 조금씩 회복"));
+        put(new Item(FLAME_ORE, "불꽃 원석", KEY, 0, 0, "도건이 마지막으로 캐려던 원석. 손에 쥐면 따뜻하다"));
+        put(new Item(DOGEON_HAMMER, "도건의 망치", KEY, 0, 0, "이그나의 대장장이 도건의 망치. 손잡이가 반질반질하다"));
+        put(new Item(FIRE_SHARD, "불의 봉인석 조각", KEY, 0, 0, "바르가스의 옥좌 뒤에서 찾은 불의 봉인석 조각"));
         put(new Item(STICK, "나무 막대", WEAPON, 2, 10, "공격 +2"));
         put(new Item(COPPER_SWORD, "구리 검", WEAPON, 6, 100, "공격 +6"));
         put(new Item(SQUIRE_SWORD, "견습 기사의 검", WEAPON, 8, 160, "공격 +8"));
@@ -922,6 +1289,7 @@ public final class RpgData {
             {HI_HERB, MANA_CANDY, PHOENIX, WING},
             {STEEL_SWORD, DRAGON_SPEAR, STEEL_ARMOR, CORAL_ARMOR},
             {HERB, HI_HERB, MANA_CANDY, WING},
+            {HI_HERB, MANA_CANDY, PHOENIX, WING, OBSIDIAN_SWORD, VOLCANO_ARMOR, ASH_ROBE},
     };
 
     /** 보물상자: {지도, x, y, 아이템(-1 이면 골드), 개수 또는 골드} */
@@ -934,13 +1302,20 @@ public final class RpgData {
             {SPRAY2, 20, 3, STEEL_ARMOR, 1},
             {TEMPLE1, 22, 5, PHOENIX, 2},
             {TEMPLE2, 21, 6, SEA_ARMOR, 1},
+            {LAVA1, 22, 1, HI_HERB, 4},
+            {LAVA1, 13, 5, -1, 2000},
+            {LAVA2, 21, 3, VOLCANO_ARMOR, 1},
+            {FORT1, 6, 5, ELIXIR, 3},
+            {FORT2, 21, 6, -1, 20000},
+            {FORT3, 22, 6, ELIXIR, 5},
     };
 
     // ------------------------------------------------------------ 주문 · 특기
 
     public static final int HEAL_ONE = 0, FIRE_ONE = 1, FIRE_ALL = 2, POWER_HIT = 3, GUARD = 4,
             HEAL_ALL = 5, BIG_HIT = 6, MULTI_HIT = 7, REVIVE = 8, PHYS_ALL = 9, STEAL_GOLD = 10,
-            WATER_ONE = 11, WATER_ALL = 12, EVADE_UP = 13;
+            WATER_ONE = 11, WATER_ALL = 12, EVADE_UP = 13,
+            HERO_ALL = 14, HERO_ONE = 15, HOLY_ALL = 16;
 
     public static final class Spell {
         public final String name;
@@ -961,7 +1336,7 @@ public final class RpgData {
 
         public boolean targetsEnemy() {
             return kind == FIRE_ONE || kind == POWER_HIT || kind == BIG_HIT || kind == MULTI_HIT
-                    || kind == STEAL_GOLD || kind == WATER_ONE;
+                    || kind == STEAL_GOLD || kind == WATER_ONE || kind == HERO_ONE;
         }
 
         public boolean targetsAlly() {
@@ -996,6 +1371,27 @@ public final class RpgData {
             new Spell("흥정", 2, 1, 2, STEAL_GOLD, 0),
             new Spell("해일", 2, 18, 9, WATER_ALL, 75),
             new Spell("행운의 저울", 2, 22, 10, EVADE_UP, 0),
+            // 지헌
+            new Spell("따스한 손길", 3, 1, 4, HEAL_ONE, 110),
+            new Spell("대장간 불꽃", 3, 1, 7, FIRE_ALL, 60),
+            new Spell("담금질의 맹세", 3, 1, 6, GUARD, 0),
+            new Spell("치유의 노래", 3, 1, 10, HEAL_ALL, 90),
+            new Spell("되살림의 불씨", 3, 28, 14, REVIVE, 60),
+            // 용사로 깨어난 신창 (주인 번호 10 = 각성한 0번)
+            new Spell("섬광 베기", 10, 1, 10, HERO_ALL, 160),
+            new Spell("용사의 일격", 10, 1, 12, HERO_ONE, 500),
+            new Spell("기가 슬래시", 10, 1, 24, HERO_ALL, 320),
+            new Spell("천벌의 뇌격", 10, 1, 30, HOLY_ALL, 900),
+            new Spell("용사의 연격", 10, 1, 18, MULTI_HIT, 7),
+            new Spell("생명의 빛", 10, 1, 20, HEAL_ALL, 400),
+            new Spell("부활의 기적", 10, 1, 20, REVIVE, 100),
+            new Spell("용기의 함성", 10, 1, 10, GUARD, 0),
+            new Spell("슬레이어 일섬", 10, 40, 36, HERO_ONE, 1000),
+            new Spell("성광 폭풍", 10, 45, 48, HERO_ALL, 600),
+            // 불의 축복을 받은 지헌 (13 = 각성한 3번)
+            new Spell("용광로", 13, 1, 20, FIRE_ALL, 300),
+            new Spell("사랑의 기도", 13, 1, 24, HEAL_ALL, 500),
+            new Spell("불사조의 날개", 13, 1, 20, REVIVE, 100),
     };
 
     // ------------------------------------------------------------ 동료
@@ -1030,9 +1426,10 @@ public final class RpgData {
             new HeroBase("신창", "hero", 30, 8, 8, 5, 6, 7, 3, 3, 2, 2, STICK, CLOTHES),
             new HeroBase("리나", "lina", 40, 4, 11, 7, 5, 9, 1, 4, 3, 1, SQUIRE_SWORD, LEATHER),
             new HeroBase("피피", "pipi", 26, 14, 9, 5, 12, 6, 3, 3, 2, 3, COIN_POUCH, FAIRY_CLOAK),
+            new HeroBase("지헌", "jiheon", 44, 22, 10, 7, 8, 9, 4, 3, 3, 2, SMITH_HAMMER, SMITH_APRON),
     };
 
-    public static final int MAX_LEVEL = 40;
+    public static final int MAX_LEVEL = 60;
 
     /** 다음 레벨까지 필요한 누적 경험치 */
     public static int expForLevel(int level) {
@@ -1083,7 +1480,10 @@ public final class RpgData {
             SPIDER = 6, SKELETON = 7, SHADOW_WOLF = 8, WOLF_KING = 9,
             CRAB = 10, GULL = 11, SALT_SPIRIT = 12, JELLY = 13, PIRATE = 14, OCTOPUS = 15, URCHIN = 16, CORAL_GOLEM = 17,
             MER_KNIGHT = 18, SKEL_SAILOR = 19, STATUE = 20, EEL = 21,
-            STARDUST = 22, GOLD_TOAD = 23, PEARL = 24, GEM_CRAB = 25, GALLEON = 26, SERPENT = 27;
+            STARDUST = 22, GOLD_TOAD = 23, PEARL = 24, GEM_CRAB = 25, GALLEON = 26, SERPENT = 27,
+            ASH_BAT = 28, LIZARD = 29, BOAR = 30, EMBER = 31, MAGMA = 32, IMP = 33, FLAME_WOLF = 34, LAVA_TURTLE = 35,
+            BLACK_KNIGHT = 36, HELLHOUND = 37, FLAME_BEAST = 38, VOID_MAGE = 39, WYVERN = 40, BLACK_GOLEM = 41,
+            RUBY = 42, LAVA_TOAD = 43, VARGAS0 = 44, GIANT = 45, IGRON = 46, WITCH = 47, VOLKA = 48, VARGAS = 49;
     public static final int RARE_EXP = 1, RARE_GOLD = 2;
 
     public static final Monster[] MONSTERS = {
@@ -1119,6 +1519,32 @@ public final class RpgData {
             // 2장 보스
             new Monster("붉은 수염 갈리온", "galleon", 20, 3800, 72, 34, 14, 1600, 1500, 2),
             new Monster("심해의 군주", "serpent", 27, 6800, 84, 44, 17, 3500, 4000, 2),
+            // 3장: 이그나 섬 (동료를 잃은 고난의 시기)
+            new Monster("재 박쥐", "ashbat", 25, 150, 78, 34, 24, 55, 70, 0),
+            new Monster("흑요석 도마뱀", "lizard", 26, 220, 84, 56, 10, 62, 85, 0),
+            new Monster("화산 멧돼지", "boar", 27, 270, 90, 42, 12, 70, 90, 0),
+            new Monster("불씨 정령", "ember", 27, 170, 82, 36, 18, 72, 80, 1),
+            new Monster("용암 슬라임", "magma", 28, 260, 88, 66, 6, 80, 100, 0),
+            new Monster("화염 도깨비", "imp", 29, 240, 96, 46, 24, 90, 110, 1),
+            new Monster("흑염 늑대", "flamewolf", 30, 300, 102, 52, 20, 100, 120, 0),
+            new Monster("용암 거북", "lavaturtle", 31, 460, 98, 90, 4, 118, 150, 0),
+            // 흑염의 요새: 보스급 마물 무리 (용사가 된 뒤에 싸운다)
+            new Monster("흑염 기사", "blackknight", 30, 1100, 150, 90, 18, 63, 200, 0),
+            new Monster("지옥 사냥개", "hellhound", 31, 900, 160, 70, 30, 66, 190, 0),
+            new Monster("화염 마수", "flamebeast", 32, 1500, 170, 85, 14, 81, 250, 1),
+            new Monster("공허 마도사", "voidmage", 32, 1000, 165, 75, 22, 78, 260, 1),
+            new Monster("용암 와이번", "wyvern", 33, 1700, 180, 90, 26, 96, 300, 0),
+            new Monster("흑염 골렘", "blackgolem", 34, 2600, 190, 130, 6, 129, 400, 0),
+            // 3장 진귀한 몬스터
+            new Monster("루비 요정", "ruby", 32, 18, 30, 100, 60, 2800, 30, 0, 0.7, 0.3, RARE_EXP),
+            new Monster("금빛 화산 두꺼비", "lavatoad", 28, 900, 10, 40, 1, 60, 4000, 0, 0, 0, RARE_GOLD),
+            // 3장 보스
+            new Monster("흑염의 마장군 바르가스", "vargas", 70, 99999, 260, 400, 60, 0, 0, 2),
+            new Monster("화염 거인", "giant", 32, 3400, 150, 56, 14, 2400, 2500, 2),
+            new Monster("화염 기사단장 이그론", "ignis", 38, 8000, 175, 100, 24, 3000, 3000, 2),
+            new Monster("독안개 마녀 모르가", "witch", 40, 9000, 185, 90, 30, 3500, 3500, 2),
+            new Monster("용암룡 볼카", "lavadragon", 42, 12000, 200, 120, 20, 4500, 4500, 2),
+            new Monster("흑염의 마장군 바르가스", "vargas", 45, 20000, 230, 140, 32, 8000, 10000, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
@@ -1143,6 +1569,23 @@ public final class RpgData {
             {{MER_KNIGHT}, {SKEL_SAILOR}, {MER_KNIGHT, URCHIN}, {SKEL_SAILOR, OCTOPUS}, {CORAL_GOLEM, MER_KNIGHT}},
             // 9: 해저 신전 2층
             {{STATUE}, {EEL}, {MER_KNIGHT, SKEL_SAILOR}, {EEL, MER_KNIGHT}, {STATUE, EEL}},
+            // 10: 이그나 섬 남쪽 (마을·해변)
+            {{ASH_BAT}, {LIZARD}, {BOAR}, {ASH_BAT, ASH_BAT}, {LIZARD, ASH_BAT}, {EMBER}},
+            // 11: 이그나 섬 북쪽·동쪽 (화산 기슭)
+            {{BOAR, EMBER}, {MAGMA}, {IMP}, {FLAME_WOLF}, {BOAR, BOAR}, {MAGMA, ASH_BAT}},
+            // 12: 용암 동굴 1층
+            {{MAGMA}, {IMP}, {FLAME_WOLF}, {IMP, EMBER}, {MAGMA, IMP}, {LAVA_TURTLE}},
+            // 13: 용암 동굴 2층
+            {{LAVA_TURTLE}, {FLAME_WOLF, IMP}, {MAGMA, MAGMA}, {LAVA_TURTLE, EMBER}, {FLAME_WOLF, FLAME_WOLF}},
+            // 14: 흑염의 요새 1층
+            {{BLACK_KNIGHT, BLACK_KNIGHT, HELLHOUND}, {HELLHOUND, HELLHOUND, HELLHOUND}, {BLACK_KNIGHT, VOID_MAGE, HELLHOUND},
+                    {FLAME_BEAST, HELLHOUND}, {BLACK_KNIGHT, BLACK_KNIGHT, BLACK_KNIGHT, BLACK_KNIGHT}},
+            // 15: 흑염의 요새 2층
+            {{FLAME_BEAST, VOID_MAGE, BLACK_KNIGHT}, {WYVERN, HELLHOUND, HELLHOUND}, {VOID_MAGE, VOID_MAGE, VOID_MAGE},
+                    {FLAME_BEAST, FLAME_BEAST, BLACK_KNIGHT}, {WYVERN, BLACK_KNIGHT, VOID_MAGE, HELLHOUND}},
+            // 16: 흑염의 요새 옥좌
+            {{BLACK_GOLEM, WYVERN}, {WYVERN, WYVERN, FLAME_BEAST}, {BLACK_GOLEM, VOID_MAGE, VOID_MAGE},
+                    {BLACK_GOLEM, BLACK_GOLEM}, {WYVERN, FLAME_BEAST, VOID_MAGE, BLACK_KNIGHT}},
     };
 
     public static int encounterZone(int map, int x, int y) {
@@ -1154,6 +1597,12 @@ public final class RpgData {
             case SPRAY2: return 7;
             case TEMPLE1: return 8;
             case TEMPLE2: return 9;
+            case WORLD3: return y < 12 || x > 16 ? 11 : 10;
+            case LAVA1: return 12;
+            case LAVA2: return 13;
+            case FORT1: return 14;
+            case FORT2: return 15;
+            case FORT3: return 16;
             default: return y > 11 ? 0 : 1;
         }
     }
@@ -1170,6 +1619,8 @@ public final class RpgData {
         if (map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2) return PEARL;
         if (map == WORLD && (near(x, y, 6, 18) || near(x, y, 20, 8))) return GOLD_TOAD;
         if (map == WORLD2 && (near(x, y, 5, 17) || near(x, y, 28, 19))) return GEM_CRAB;
+        if (map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3) return RUBY;
+        if (map == WORLD3 && near(x, y, 8, 17)) return LAVA_TOAD;
         return -1;
     }
 

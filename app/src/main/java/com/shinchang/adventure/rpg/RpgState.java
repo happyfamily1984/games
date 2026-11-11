@@ -24,6 +24,8 @@ public final class RpgState {
     public int dir = UP;
     public int gold = 30;
     public final List<Hero> party = new ArrayList<>();
+    /** 잠시 헤어진 동료 (3장에서 공허로 끌려간 리나·피피) */
+    public final List<Hero> reserve = new ArrayList<>();
     public final int[] items = new int[RpgData.ITEM_SLOTS];
     public final boolean[] chestOpened = new boolean[RpgData.CHESTS.length];
     public int townMap = RpgData.REBEL, townX = 8, townY = 11;
@@ -57,7 +59,10 @@ public final class RpgState {
 
     /** 배달 경험: 길을 잘 알아서 몬스터를 덜 만난다 */
     public double encounterRate() {
-        return ENCOUNTER_RATE * (perkDelivery ? 0.8 : 1);
+        double r = ENCOUNTER_RATE * (perkDelivery ? 0.8 : 1);
+        // 흑염의 요새에는 마물이 우글거린다
+        if ("fort".equals(RpgData.theme(map))) r *= 2.2;
+        return r;
     }
 
     /** 공인중개사 경험: 상점 10% 할인 */
@@ -128,6 +133,8 @@ public final class RpgState {
         if (RpgData.blocks(t) || t == 'c') return false;
         // 해저 신전 입구는 등대의 등불을 받아야 열린다
         if (t == 'G' && step < RpgData.STEP_LAMP) return false;
+        // 흑염의 요새는 결혼(각성) 뒤에 검은 불길이 걷힌다
+        if (t == 'J' && step < RpgData.STEP_WEDDING) return false;
         return npcAt(tx, ty) == null;
     }
 
@@ -151,6 +158,8 @@ public final class RpgState {
         y = ny;
         r.moved = true;
         stepsWalked++;
+        // 맹세의 반지: 걸을 때도 MP가 조금씩 찬다
+        for (Hero h : party) if (h.alive() && h.mpRegen() > 0) h.mp = Math.min(h.maxMp(), h.mp + Math.max(1, h.maxMp() / 50));
         for (int[] link : RpgData.LINKS) {
             if (link[0] == map && link[1] == x && link[2] == y) {
                 warp(link[3], link[4], link[5]);
@@ -234,6 +243,8 @@ public final class RpgState {
         public boolean sailed;
         /** 장(챕터)이 끝났으면 true */
         public boolean chapterClear;
+        /** 결혼으로 각성했으면 true (화면 연출) */
+        public boolean awakened;
     }
 
     public Interaction interact() {
@@ -288,9 +299,23 @@ public final class RpgState {
             if (!first && l.startsWith("(「") && l.endsWith("손에 넣었다!)")) continue;
             in.lines.add(l);
         }
-        if (r.linaLine != null && party.size() > 1) in.lines.add(r.linaLine);
+        if (r.linaLine != null && speakerInParty(r.linaLine)) in.lines.add(r.linaLine);
         if (r.flag != 0) flags |= r.flag;
         if (r.item >= 0 && first) addItem(r.item, 1);
+    }
+
+    /** "[리나] ..." 같은 대사는 그 사람이 일행에 있을 때만 */
+    private boolean speakerInParty(String line) {
+        int end = line.indexOf(']');
+        if (!line.startsWith("[") || end < 0) return party.size() > 1;
+        String who = line.substring(1, end);
+        for (Hero h : party) if (h.name().equals(who)) return true;
+        return false;
+    }
+
+    public Hero member(int heroId) {
+        for (Hero h : party) if (h.id == heroId) return h;
+        return null;
     }
 
     /** 지금까지 찾은 단서 이름들 */
@@ -328,11 +353,54 @@ public final class RpgState {
                 case RpgData.EV_BOSS:
                 case RpgData.EV_MIDBOSS:
                 case RpgData.EV_BOSS2:
+                case RpgData.EV_GIANT:
+                case RpgData.EV_GEN1:
+                case RpgData.EV_GEN2:
+                case RpgData.EV_GEN3:
+                case RpgData.EV_VARGAS:
                     for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
                     in.bossBattle = true;
-                    in.bossMonster = npc.arg == RpgData.EV_BOSS ? RpgData.WOLF_KING
-                            : npc.arg == RpgData.EV_MIDBOSS ? RpgData.GALLEON : RpgData.SERPENT;
+                    in.bossMonster = bossFor(npc.arg);
                     return;
+                case RpgData.EV_SHIP_TO_IGNA:
+                    // 3장: 바다 위의 습격 (이길 수 없는 전투)
+                    for (String l : RpgData.SAIL_TO_IGNA) in.lines.add(l);
+                    in.bossBattle = true;
+                    in.bossMonster = RpgData.VARGAS0;
+                    return;
+                case RpgData.EV_JIHEON:
+                    if (step == RpgData.STEP_ALONE) {
+                        for (String l : RpgData.JIHEON_JOINS) in.lines.add(l);
+                        Hero jiheon = new Hero(3, Math.max(20, party.get(0).level - 3));
+                        party.add(jiheon);
+                        gold += 300;
+                        step = RpgData.STEP_JIHEON;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_IGNA_ELDER:
+                    if (step == RpgData.STEP_GIANT_DOWN) {
+                        for (String l : RpgData.WEDDING) in.lines.add(l);
+                        wedding();
+                        in.awakened = true;
+                        return;
+                    }
+                    if (step == RpgData.STEP_REVENGE) {
+                        for (String l : RpgData.HOME) in.lines.add(l);
+                        step = RpgData.STEP_HOME;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_BIRTH:
+                    if (step == RpgData.STEP_HOME) {
+                        for (String l : RpgData.BIRTH) in.lines.add(l);
+                        step = RpgData.STEP_CHAPTER3_CLEAR;
+                        gold += 5000;
+                        for (Hero h : party) h.fullHeal();
+                        in.chapterClear = true;
+                        return;
+                    }
+                    break;
                 case RpgData.EV_SHIP_TO_MERCA:
                     if (step == RpgData.STEP_CHAPTER1_CLEAR) {
                         for (String l : RpgData.SAIL_TO_MERCA_FIRST) in.lines.add(l);
@@ -381,6 +449,66 @@ public final class RpgState {
         for (String l : npc.linesFor(step)) in.lines.add("[" + npc.name + "] " + l);
         in.action = npc.action == RpgData.ACT_EVENT ? RpgData.ACT_NONE : npc.action;
         in.arg = npc.arg;
+    }
+
+    static int bossFor(int event) {
+        switch (event) {
+            case RpgData.EV_BOSS: return RpgData.WOLF_KING;
+            case RpgData.EV_MIDBOSS: return RpgData.GALLEON;
+            case RpgData.EV_BOSS2: return RpgData.SERPENT;
+            case RpgData.EV_GIANT: return RpgData.GIANT;
+            case RpgData.EV_GEN1: return RpgData.IGRON;
+            case RpgData.EV_GEN2: return RpgData.WITCH;
+            case RpgData.EV_GEN3: return RpgData.VOLKA;
+            default: return RpgData.VARGAS;
+        }
+    }
+
+    /** 바다 위에서 바르가스에게 지면: 동료를 잃고, 가진 것을 모두 잃고, 이그나에서 눈을 뜬다 */
+    public List<String> onAmbush() {
+        List<String> out = new ArrayList<>();
+        for (String l : RpgData.AMBUSH_AFTER) out.add(l);
+        Hero hero = party.get(0);
+        reserve.clear();
+        for (int i = 1; i < party.size(); i++) reserve.add(party.get(i));
+        party.clear();
+        party.add(hero);
+        hero.weapon = RpgData.STICK;
+        hero.armor = RpgData.CLOTHES;
+        for (int i = 0; i < items.length; i++) {
+            RpgData.Item it = RpgData.ITEMS[i];
+            if (it == null || it.type != RpgData.KEY) items[i] = 0;
+        }
+        gold = 0;
+        hero.hp = Math.max(1, hero.maxHp() / 3);
+        hero.mp = 0;
+        step = RpgData.STEP_ALONE;
+        warp(RpgData.IGNA, 5, 4);
+        out.add("— " + RpgData.CHAPTER_TITLES[3] + " —");
+        for (String l : RpgData.WAKE_UP) out.add(l);
+        return out;
+    }
+
+    /** 혼례: 신창은 용사로 전직하고, 지헌은 불의 축복을 받는다 */
+    private void wedding() {
+        step = RpgData.STEP_WEDDING;
+        removeItem(RpgData.FLAME_ORE, 1);
+        Hero hero = party.get(0);
+        hero.awakened = true;
+        addItem(RpgData.HERO_SWORD, 1);
+        addItem(RpgData.PHOENIX_ARMOR, 1);
+        addItem(RpgData.VOW_RING, 2);
+        equip(hero, RpgData.HERO_SWORD);
+        equip(hero, RpgData.PHOENIX_ARMOR);
+        equip(hero, RpgData.VOW_RING);
+        Hero jiheon = member(3);
+        if (jiheon != null) {
+            jiheon.awakened = true;
+            addItem(RpgData.BRIDE_DRESS, 1);
+            equip(jiheon, RpgData.BRIDE_DRESS);
+            equip(jiheon, RpgData.VOW_RING);
+        }
+        for (Hero h : party) h.fullHeal();
     }
 
     private void kingEvent(Interaction in) {
@@ -476,7 +604,25 @@ public final class RpgState {
 
     public List<String> onBossDefeated(int monster) {
         String[] lines;
-        if (monster == RpgData.GALLEON) {
+        if (monster == RpgData.GIANT) {
+            step = RpgData.STEP_GIANT_DOWN;
+            addItem(RpgData.FLAME_ORE, 1);
+            addItem(RpgData.DOGEON_HAMMER, 1);
+            lines = RpgData.GIANT_DEFEATED;
+        } else if (monster == RpgData.IGRON) {
+            step = RpgData.STEP_GEN1;
+            lines = RpgData.GEN1_DEFEATED;
+        } else if (monster == RpgData.WITCH) {
+            step = RpgData.STEP_GEN2;
+            lines = RpgData.GEN2_DEFEATED;
+        } else if (monster == RpgData.VOLKA) {
+            step = RpgData.STEP_GEN3;
+            lines = RpgData.GEN3_DEFEATED;
+        } else if (monster == RpgData.VARGAS) {
+            step = RpgData.STEP_REVENGE;
+            addItem(RpgData.FIRE_SHARD, 1);
+            lines = RpgData.VARGAS_DEFEATED;
+        } else if (monster == RpgData.GALLEON) {
             step = RpgData.STEP_GALLEON_DOWN;
             addItem(RpgData.PIPI_SCALE, 1);
             lines = RpgData.GALLEON_DEFEATED;
@@ -534,6 +680,11 @@ public final class RpgState {
             if (target.alive()) return Josa.eun(target.name()) + " 쓰러져 있지 않다. 깃털이 바람에 날아갔다…";
             target.hp = Math.max(1, target.maxHp() / 2);
             return Josa.i(target.name()) + " 되살아났다!";
+        }
+        if (id == RpgData.ELIXIR) {
+            if (!target.alive()) return Josa.eun(target.name()) + " 쓰러져 있어 엘릭서가 듣지 않는다.";
+            target.fullHeal();
+            return Josa.i(target.name()) + " HP와 MP를 모두 회복했다!";
         }
         if (id == RpgData.MANA_CANDY) {
             int before = target.mp;
@@ -610,9 +761,12 @@ public final class RpgState {
     /** 가방의 장비를 장착하고, 벗은 장비는 가방으로 */
     public boolean equip(Hero h, int itemId) {
         RpgData.Item item = RpgData.ITEMS[itemId];
-        if (!hasItem(itemId) || (item.type != RpgData.WEAPON && item.type != RpgData.ARMOR)) return false;
+        if (!hasItem(itemId) || (item.type != RpgData.WEAPON && item.type != RpgData.ARMOR && item.type != RpgData.ACCESSORY)) return false;
         removeItem(itemId, 1);
-        if (item.type == RpgData.WEAPON) {
+        if (item.type == RpgData.ACCESSORY) {
+            if (h.accessory >= 0) addItem(h.accessory, 1);
+            h.accessory = itemId;
+        } else if (item.type == RpgData.WEAPON) {
             addItem(h.weapon, 1);
             h.weapon = itemId;
         } else {
@@ -664,7 +818,11 @@ public final class RpgState {
         for (boolean b : chestOpened) sb.append(b ? '1' : '0');
         sb.append(';').append(townMap).append(';').append(townX).append(';').append(townY)
                 .append(';').append(battlesWon).append(';').append(stepsWalked)
-                .append(';').append(flags);
+                .append(';').append(flags).append(';');
+        for (int i = 0; i < reserve.size(); i++) {
+            if (i > 0) sb.append('/');
+            sb.append(reserve.get(i).serialize());
+        }
         return sb.toString();
     }
 
@@ -697,6 +855,7 @@ public final class RpgState {
             s.battlesWon = Integer.parseInt(p[13]);
             s.stepsWalked = Integer.parseInt(p[14]);
             if (p.length > 15) s.flags = Integer.parseInt(p[15]);
+            if (p.length > 16 && !p[16].isEmpty()) for (String h : p[16].split("/")) s.reserve.add(Hero.deserialize(h));
             s.fixPosition();
             return s;
         } catch (RuntimeException e) {

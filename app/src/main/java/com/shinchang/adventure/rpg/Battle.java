@@ -62,6 +62,10 @@ public final class Battle {
     public boolean enragedThisRound;
     private final boolean[] defending = new boolean[4];
     private int totalExp, totalGold;
+    /** 지금까지 진행한 라운드 수 */
+    public int round;
+    /** 지금 행동 중인 아군 (회심·슬레이어 계산용) */
+    private Hero acting;
 
     public Battle(RpgState state, int[] monsterIds, boolean boss, Random random) {
         this.state = state;
@@ -171,6 +175,16 @@ public final class Battle {
         List<String> log = new ArrayList<>();
         enragedThisRound = false;
         java.util.Arrays.fill(defending, false);
+        round++;
+        // 맹세의 반지: 매 턴 MP 회복
+        StringBuilder regen = new StringBuilder();
+        for (Hero h : state.party) {
+            if (!h.alive() || h.mpRegen() <= 0 || h.mp >= h.maxMp()) continue;
+            int before = h.mp;
+            h.mp = Math.min(h.maxMp(), h.mp + Math.max(1, h.maxMp() * h.mpRegen() / 100));
+            regen.append(regen.length() == 0 ? "" : ", ").append(h.name()).append(" MP +").append(h.mp - before);
+        }
+        if (regen.length() > 0) log.add("💍 맹세의 반지가 빛난다! (" + regen + ")");
 
         if (!actions.isEmpty() && actions.get(0).cmd == FLEE) {
             if (!boss && random.nextDouble() < 0.6) {
@@ -263,6 +277,15 @@ public final class Battle {
     }
 
     private void heroAct(Hero h, Action a, List<String> log) {
+        acting = h;
+        try {
+            heroActInner(h, a, log);
+        } finally {
+            acting = null;
+        }
+    }
+
+    private void heroActInner(Hero h, Action a, List<String> log) {
         switch (a.cmd) {
             case ATTACK: {
                 Enemy t = enemyTarget(a.target);
@@ -308,6 +331,29 @@ public final class Battle {
         h.mp -= s.mp;
         log.add(Josa.eun(h.name()) + " 「" + s.name + "」" + Josa.eulOf(s.name) + " 썼다!");
         switch (s.kind) {
+            case RpgData.HERO_ALL:
+                log.add(s.power >= 600 ? "하늘이 갈라지고 성스러운 빛의 폭풍이 몰아친다!"
+                        : s.power >= 300 ? "용사의 검이 거대한 빛의 칼날이 되어 적 전체를 베어 낸다!" : "검광이 번쩍이며 적 전체를 가른다!");
+                for (Enemy t : aliveEnemies()) {
+                    if (dodged(t, false, log)) continue;
+                    hitEnemy(t, rand(h.atk() * s.power / 110, h.atk() * s.power / 90), log);
+                }
+                break;
+            case RpgData.HERO_ONE: {
+                Enemy t = enemyTarget(a.target);
+                if (t == null) return;
+                log.add(s.power >= 1000 ? "슬레이어의 눈이 빛난다. 한 줄기 섬광이 모든 것을 꿰뚫는다!" : "용사의 검에 빛이 모인다!");
+                if (dodged(t, false, log)) return;
+                hitEnemy(t, rand(h.atk() * s.power / 110, h.atk() * s.power / 90), log);
+                break;
+            }
+            case RpgData.HOLY_ALL:
+                log.add("하늘에서 천벌의 뇌격이 쏟아진다!");
+                for (Enemy t : aliveEnemies()) {
+                    if (dodged(t, true, log)) continue;
+                    hitEnemy(t, rand(s.power * 9 / 10, s.power * 11 / 10), log);
+                }
+                break;
             case RpgData.REVIVE: {
                 Hero t = a.target >= 0 && a.target < state.party.size() ? state.party.get(a.target) : null;
                 if (t == null || t.alive()) {
@@ -420,6 +466,13 @@ public final class Battle {
     }
 
     private void hitEnemy(Enemy t, int dmg, List<String> log) {
+        if (acting != null && dmg > 0) {
+            dmg = (int) Math.round(dmg * acting.slayer());
+            if (acting.critChance() > 0 && random.nextDouble() < acting.critChance()) {
+                dmg *= 2;
+                log.add("⚡ 회심의 일격!");
+            }
+        }
         if (dmg <= 0) {
             log.add("미스! " + Josa.eun(t.name) + " 피해를 받지 않았다.");
             return;
@@ -439,7 +492,8 @@ public final class Battle {
             for (String l : RpgData.bossScript(t.m.sprite)[0]) log.add(l);
         } else if (boss && !faltered && t.hp <= t.m.hp / 5) {
             faltered = true;
-            log.add(Josa.i(t.name) + " 비틀거린다. 검은 털 사이로 은빛이 언뜻 비친다…");
+            log.add("wolfking".equals(t.m.sprite) ? Josa.i(t.name) + " 비틀거린다. 검은 털 사이로 은빛이 언뜻 비친다…"
+                    : Josa.i(t.name) + " 크게 비틀거린다!");
             for (String l : RpgData.bossScript(t.m.sprite)[1]) log.add(l);
         }
     }
@@ -455,13 +509,13 @@ public final class Battle {
         if (e.m.special == 1 && random.nextDouble() < 0.3) {
             Hero t = randomAliveHero();
             if (t == null) return;
-            log.add(Josa.eun(e.name) + (e.m.level >= 12 ? " 바닷물 폭탄을 쏘았다!" : " 불씨를 뱉었다!"));
+            log.add(Josa.eun(e.name) + (e.m.level >= 32 ? " 검은 불꽃을 터뜨렸다!" : e.m.level >= 25 ? " 화염을 내뿜었다!"
+                    : e.m.level >= 12 ? " 바닷물 폭탄을 쏘았다!" : " 불씨를 뱉었다!"));
             hurtHero(t, (int) Math.round(rand(Math.max(7, e.m.atk / 2), Math.max(11, e.m.atk * 4 / 5)) * guard), log);
             return;
         }
         if (e.m.special == 2 && random.nextDouble() < (enraged ? 0.4 : 0.25)) {
-            String move = "galleon".equals(e.m.sprite) ? " 갑판 대포를 마구 쏘아 댔다!"
-                    : "serpent".equals(e.m.sprite) ? " 검은 해일을 일으켰다!" : " 어둠의 포효를 내질렀다!";
+            String move = roar(e.m.sprite);
             log.add(Josa.eun(e.name) + move);
             for (Hero t : state.party) {
                 if (t.alive()) hurtHero(t, (int) Math.round(rand(e.m.atk / 2, e.m.atk * 7 / 10) * (enraged ? 1.3 : 1) * guard), log);
@@ -480,6 +534,19 @@ public final class Battle {
         int dmg = (int) Math.round(damage(atk, t.def()) * guard);
         if (idx >= 0 && defending[idx]) dmg /= 2;
         hurtHero(t, dmg, log);
+    }
+
+    private static String roar(String sprite) {
+        switch (sprite) {
+            case "galleon": return " 갑판 대포를 마구 쏘아 댔다!";
+            case "serpent": return " 검은 해일을 일으켰다!";
+            case "giant": return " 용암 덩어리를 내리쳤다!";
+            case "ignis": return " 화염의 검을 휘둘러 불의 파도를 일으켰다!";
+            case "witch": return " 독안개를 퍼뜨렸다!";
+            case "lavadragon": return " 용암 브레스를 뿜었다!";
+            case "vargas": return " 공허의 검은 불꽃을 터뜨렸다!";
+            default: return " 어둠의 포효를 내질렀다!";
+        }
     }
 
     private void hurtHero(Hero t, int dmg, List<String> log) {

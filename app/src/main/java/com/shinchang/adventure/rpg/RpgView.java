@@ -190,7 +190,7 @@ public class RpgView extends View {
     /** 바탕이 투명한 물건 타일 */
     private static final String OBJECTS = "btoxFQYPANLZjeq";
     /** 물건 밑에 깔 수 있는 바닥 */
-    private static final String GROUNDS = ";,:.f=r_";
+    private static final String GROUNDS = ";,:.f=r_an";
     private static final int[][] AROUND = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {1, 1}, {-1, -1}, {1, -1}};
 
     private char groundAt(int tx, int ty) {
@@ -210,6 +210,9 @@ public class RpgView extends View {
         if (t == '~' && (SystemClock.uptimeMillis() / 500) % 2 == 1) return "~1";
         // 등불을 받으면 해저 신전 입구에 돌계단이 떠오른다
         if (t == 'G' && state.step >= RpgData.STEP_LAMP) return "G1";
+        // 결혼하면 흑염의 요새를 막던 검은 불길이 걷힌다
+        if (t == 'J' && state.step >= RpgData.STEP_WEDDING) return "J1";
+        if (t == 'l' && (SystemClock.uptimeMillis() / 400) % 2 == 1) return "l1";
         return String.valueOf(t);
     }
 
@@ -297,9 +300,9 @@ public class RpgView extends View {
                 drawChar(canvas, state.party.get(i).base().sprite, fx * ts - camX, fy * ts - camY, ts, t < 1);
             }
         }
-        drawChar(canvas, "hero", px * ts - camX, py * ts - camY, ts, t < 1);
+        drawChar(canvas, state.party.get(0).isHero() ? "hero2" : "hero", px * ts - camX, py * ts - camY, ts, t < 1);
 
-        if (t < 1 || world) postInvalidateDelayed(t < 1 ? 16 : 250);
+        if (t < 1 || world || "lava".equals(RpgData.theme(state.map))) postInvalidateDelayed(t < 1 ? 16 : 250);
     }
 
     private void drawChar(Canvas canvas, String key, float x, float y, int ts, boolean walking) {
@@ -325,6 +328,18 @@ public class RpgView extends View {
         } else if ("tmp".equals(theme)) {
             top = 0xFF0E2E33;
             bottom = 0xFF2F7F86;
+        } else if (battle.firstMonster == RpgData.VARGAS0) {
+            top = 0xFF120A14;
+            bottom = 0xFF3A0E0E;
+        } else if ("lava".equals(theme)) {
+            top = 0xFF1A0804;
+            bottom = 0xFF7A2A0A;
+        } else if ("fort".equals(theme)) {
+            top = 0xFF0C0612;
+            bottom = 0xFF3B1640;
+        } else if (state.map == RpgData.WORLD3 || state.map == RpgData.IGNA) {
+            top = 0xFFE07A3A;
+            bottom = 0xFF5A4A44;
         } else if (state.map == RpgData.WORLD2) {
             top = 0xFF7EC8F0;
             bottom = 0xFFE3C88F;
