@@ -438,7 +438,8 @@ public class RpgActivity extends Activity {
         }
         if (in.awakened) {
             view.victoryFlash();
-            Toast.makeText(this, state.step == RpgData.STEP_LEGACY ? "✨ 민한이 해의 계승자로 깨어났습니다! ✨"
+            Toast.makeText(this, state.step == RpgData.STEP_GUILD_REFUSED ? "✨ 신창이 용자의 사명을 받아들였습니다! ✨"
+                    : state.step == RpgData.STEP_LEGACY ? "✨ 민한이 해의 계승자로 깨어났습니다! ✨"
                     : "✨ 신창이 용사로 전직했습니다! ✨", Toast.LENGTH_LONG).show();
         }
         if (in.chapterClear) {
@@ -612,12 +613,20 @@ public class RpgActivity extends Activity {
             Toast.makeText(this, Josa.eun(h.name()) + " 아직 주문을 모른다.", Toast.LENGTH_SHORT).show();
             return;
         }
-        String[] names = new String[spells.size()];
-        for (int i = 0; i < names.length; i++) {
+        boolean family = battle != null && battle.familyReady();
+        int off = family ? 1 : 0;
+        String[] names = new String[spells.size() + off];
+        if (family) names[0] = "💞 사랑의 완성 · FAMILY (세 사람의 연합기)";
+        for (int i = 0; i < spells.size(); i++) {
             RpgData.Spell s = RpgData.SPELLS[spells.get(i)];
-            names[i] = s.name + "  (MP " + s.mp + ")";
+            names[i + off] = s.name + "  (MP " + s.mp + ")";
         }
-        chooseFrom(h.name() + "의 주문 · MP " + h.mp, names, i -> {
+        chooseFrom(h.name() + "의 주문 · MP " + h.mp, names, pick -> {
+            if (family && pick == 0) {
+                addAction(new Battle.Action(Battle.FAMILY, -1, 0));
+                return;
+            }
+            int i = pick - off;
             int idx = spells.get(i);
             RpgData.Spell s = RpgData.SPELLS[idx];
             if (s.targetsEnemy()) chooseEnemy(t -> addAction(new Battle.Action(Battle.SPELL, t, idx)));
@@ -642,6 +651,10 @@ public class RpgActivity extends Activity {
         setCommandsEnabled(false);
         List<String> log = battle.playRound(new ArrayList<>(actions));
         if (battle.enragedThisRound) view.setEnraged(true);
+        if (battle.miracleThisRound) {
+            view.victoryFlash();
+            if (battle.familyReady()) log.add("(「주문」에서 「사랑의 완성 · FAMILY」를 고르세요!)");
+        }
         // 적이 맞으면 깜빡이게: 첫 피해 대상
         for (int i = 0; i < battle.enemies.size(); i++) {
             if (!battle.enemies.get(i).alive() || battle.enemies.get(i).hp < battle.enemies.get(i).m.hp) {
@@ -662,6 +675,7 @@ public class RpgActivity extends Activity {
                 view.victoryFlash();
                 say(state.onBossDefeated(bossId), () -> {
                     save();
+                    if (state.step == RpgData.STEP_ENDING && bossId == RpgData.BEELZEBUB) showFinale();
                     // 보스를 이긴 직후 이어지는 전투 (4장: 인질극)
                     if (state.pendingBoss >= 0) {
                         int next = state.pendingBoss;
@@ -754,6 +768,19 @@ public class RpgActivity extends Activity {
                     break;
             }
         });
+    }
+
+    /** 완결 */
+    private void showFinale() {
+        dialogOpen = true;
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("🏆 신창의 모험 · 완결")
+                .setMessage("배달부에서 재벌로, 종교계와 정계를 지나 대통령이 된 신창.\n"
+                        + "문 저편 아르카디아에서 용사가 되고, 남편이 되고, 아빠가 되어\n"
+                        + "돈·권력·믿음의 세 악마를 물리쳤습니다.\n\n"
+                        + "신의 가호와 만물의 칭송 속에서, 신창의 가족은 영원한 전설이 되었습니다.\n\n"
+                        + String.format(Locale.KOREA, "승리한 전투 %,d번 · 걸음 %,d", state.battlesWon, state.stepsWalked))
+                .setPositiveButton("영원한 전설로", (d, w) -> dialogOpen = false)
+                .setOnCancelListener(d -> dialogOpen = false).show();
     }
 
     private void showClues() {

@@ -496,6 +496,58 @@ CHARS["forestlord"] = subst(CHARS["deer"], {"w": "h", "n": "q", "k": "c"})
 MONSTERS["moonmoth"] = subst(MONSTERS["bat"], {"p": "u", "k": "y", "P": "w"})
 MONSTERS["darkbear"] = subst(MONSTERS["rat"], {"n": "h", "N": "k", "k": "r", "P": "q"})
 MONSTERS["forestlord"] = subst(MONSTERS["wolfking"], {"p": "h", "q": "z", "y": "u", "r": "c", "w": "u"})
+# 2장 수련
+CHARS["sage"] = subst(ELDER, {"H": "e", "C": "E", "D": "r"})
+CHARS["rockking"] = subst(CHARS["giant"], {"x": "M", "o": "m", "y": "r", "k": "E"})
+CHARS["windking"] = subst(CHARS["haru"], {"e": "g", "l": "G", "k": "y"})
+CHARS["shadowhero"] = subst(CHARS["hero"], {"o": "z", "b": "q", "s": "e", "N": "z", "y": "r", "h": "k"})
+MONSTERS["rockking"] = subst(MONSTERS["guardian"], {"e": "m", "E": "M", "y": "r", "m": "N"})
+MONSTERS["windking"] = subst(MONSTERS["wolfking"], {"p": "G", "q": "g", "y": "w", "r": "y", "w": "w"})
+MONSTERS["shadowhero"] = subst(MONSTERS["ignis"], {"h": "z", "R": "q", "o": "c", "y": "u", "r": "r", "k": "k"})
+TILES["1"] = ["gggggggg", "ggMMMMgg", "gMmrrmMg", "gMmmmmMg", "MMmkkmMM", "MmmkkmmM", "gggggggg", "gGgggggg"]
+TILES["2"] = ["gggggggg", "ggGGGGgg", "gGgwwgGg", "gGgggggg", "GGgkkgGG", "GggkkggG", "gggggggg", "gGgggggg"]
+TILES["3"] = ["gggggggg", "ggccccgg", "gcuwwucg", "gcuuuucg", "ccukkucc", "cuukkuuc", "gggggggg", "gGgggggg"]
+
+# 최종장 인물
+CHARS["ella"] = subst(ELDER, {"H": "l", "C": "q", "D": "y"})
+CHARS["arsen"] = subst(ROBE, {"H": "e", "C": "E", "D": "c", "s": "s"})
+CHARS["mammon"] = mirror([
+    "..y.y", "..yyy", ".yyyy", ".yrYr", ".yyyy", "yyyyy",
+    "yYyyy", "yyYyy", "yyyyy", ".yyyy", "..YY.", "..kk.",
+])
+CHARS["belial"] = mirror([
+    "y.y.y", "yyyyy", ".hhhh", ".hrhr", ".hhhh", "..hhh",
+    "BBRRR", "BRyRR", "BBRRR", "BBRRR", "B.RRR", "..kk.",
+])
+CHARS["beelzebub"] = mirror([
+    "q....", "qq.zz", ".qzzz", "q.zrz", "qqzzz", ".qqzz",
+    "qqzzz", "qzyzz", "qqzzz", "..zzz", "..zz.", "..kk.",
+])
+
+# 최종장 몬스터
+MONSTERS.update({
+    "goldgolem": subst(MONSTERS["golem"], {"x": "Y", "P": "y", "k": "r"}),
+    "greedimp": subst(MONSTERS["imp"], {"x": "y", "R": "Y", "r": "g"}),
+    "mimic": subst(MONSTERS["crab"], {"r": "Y", "R": "y", "k": "r", "w": "w"}),
+    "debtghost": subst(MONSTERS["saltspirit"], {"w": "e", "l": "E", "k": "y"}),
+    "powerknight": subst(MONSTERS["merknight"], {"e": "y", "c": "B", "v": "R", "s": "s"}),
+    "agitator": subst(MONSTERS["shadowyokai"], {"q": "R", "z": "x"}),
+    "watcher": subst(MONSTERS["statue"], {"e": "E", "E": "h", "y": "r"}),
+    "puppet": subst(MONSTERS["skeleton"], {"l": "n", "k": "y"}),
+    "fallen": subst(MONSTERS["pixie"], {"c": "h", "u": "z", "y": "y", "P": "q", "s": "l"}),
+    "zealot": subst(MONSTERS["pirate"], {"r": "q", "R": "p", "N": "q", "B": "z", "w": "l"}),
+    "flies": mirror(["........", "..k...k.", ".kuk.kuk", "..k...k.", "....k...", "...kuk..", "....k...", ".k....k.",
+                     "kuk..kuk", ".k....k.", "...k....", "..kuk...", "...k...k", "......ku", ".......k", "........"]),
+    "hypocrite": subst(MONSTERS["skelsailor"], {"w": "y", "b": "w", "l": "q", "k": "r"}),
+    "chaosbeast": subst(MONSTERS["flamebeast"], {"o": "p", "x": "q", "y": "c"}),
+    "holyfeather": subst(MONSTERS["stardust"], {"y": "w", "w": "u"}),
+    "goldpig": subst(MONSTERS["boar"], {"n": "y", "N": "Y", "w": "w", "P": "P"}),
+})
+MONSTERS["mammon"] = subst(MONSTERS["galleon"], {"k": "Y", "s": "y", "r": "Y", "R": "y", "N": "Y", "B": "n", "w": "r"})
+MONSTERS["arsen"] = subst(MONSTERS["witch"], {"q": "E", "p": "e", "s": "s"})
+MONSTERS["belial"] = subst(MONSTERS["demonking"], {"q": "R", "h": "B", "R": "y", "z": "x"})
+MONSTERS["beelzebub"] = subst(MONSTERS["vargas"], {"h": "z", "x": "q", "z": "p", "r": "y", "k": "q"})
+
 CHARS["fox"] = subst(CHARS["fox"], {"C": "p"})
 MONSTERS["fox"] = subst(MONSTERS["fox"], {"C": "p"})
 
@@ -506,7 +558,16 @@ for _k in (",", "#", "X", "C", "c", "i"):
                                                                            "N": "v", "n": "c", "o": "w", "x": "u"})
     TILES["moon" + _k] = subst(TILES.get("cave" + _k, TILES["lava" + _k]), {"m": "G", "M": "g", "d": "B", "D": "z", "l": "u",
                                                                             "N": "B", "n": "v", "o": "u", "x": "c"})
+    TILES["gold" + _k] = subst(TILES.get("sea" + _k, TILES["lava" + _k]), {"e": "Y", "u": "y", "B": "N", "v": "Y", "l": "y"})
+    TILES["tower" + _k] = subst(TILES["fort" + _k], {"z": "E", "q": "e", "h": "B", "p": "c"})
+    TILES["holy" + _k] = subst(TILES["tmp" + _k], {"c": "q", "v": "z", "l": "l", "u": "p"})
     TILES["demon" + _k] = subst(TILES["fort" + _k], {"z": "R", "q": "x", "h": "z", "E": "q", "p": "r"})
+
+
+# 최종장 대륙의 세 소굴 입구
+TILES["D"] = ["gggggggg", "gYyyyyYg", "gYyYYyYg", "YyykkyyY", "YyykkyyY", "YyyyyyyY", "gggggggg", "gGgggggg"]
+TILES["E"] = ["gggEEggg", "ggEBBEgg", "ggEyBEgg", "ggEBBEgg", "gEEkkEEg", "gEBkkBEg", "gEEEEEEg", "gggggggg"]
+TILES["R"] = ["eeeqqeee", "eeqyyqee", "eqqqqqqe", "eqpqqpqe", "eqqkkqqe", "eqqkkqqe", "eeeeeeee", "eEeeeeEe"]
 
 
 def check():
@@ -514,7 +575,8 @@ def check():
         assert len(rows) == 12 and all(len(r) == 10 for r in rows), name
     for name, rows in MONSTERS.items():
         big = name in ("wolfking", "galleon", "serpent", "giant", "ignis", "witch", "lavadragon", "vargas",
-                       "fox", "guardian", "crystalqueen", "demonking", "forestlord")
+                       "fox", "guardian", "crystalqueen", "demonking", "forestlord",
+                       "mammon", "arsen", "belial", "beelzebub", "rockking", "windking", "shadowhero")
         w = 24 if big else 16
         h = 20 if big else 16
         assert len(rows) == h and all(len(r) == w for r in rows), (name, [len(r) for r in rows])

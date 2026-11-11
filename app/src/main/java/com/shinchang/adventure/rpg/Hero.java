@@ -17,6 +17,8 @@ public final class Hero {
     public int accessory = -1;
     /** 결혼으로 깨어난 힘 (신창: 용사 전직, 지헌: 불의 축복) */
     public boolean awakened;
+    /** 2장 수련 (1 힘, 2 민첩, 4 정신) */
+    public int trained;
 
     public Hero(int id, int level) {
         this.id = id;
@@ -52,12 +54,16 @@ public final class Hero {
         return boost(base().hp + base().ghp * (level - 1), 2.0, 300, 1.4, 100);
     }
 
+    private int train(int value, int bit, double mul) {
+        return (trained & bit) != 0 ? (int) Math.round(value * mul) : value;
+    }
+
     public int maxMp() {
-        return boost(base().mp + base().gmp * (level - 1), 2.0, 100, 1.5, 60);
+        return boost(train(base().mp + base().gmp * (level - 1), 4, 1.4), 2.0, 100, 1.5, 60);
     }
 
     public int atk() {
-        return boost(base().atk + base().gatk * (level - 1), 1.8, 60, 1.3, 20) + RpgData.ITEMS[weapon].power;
+        return boost(train(base().atk + base().gatk * (level - 1), 1, 1.2), 1.8, 60, 1.3, 20) + RpgData.ITEMS[weapon].power;
     }
 
     public int def() {
@@ -65,7 +71,7 @@ public final class Hero {
     }
 
     public int agi() {
-        return boost(base().agi + base().gagi * (level - 1), 1.6, 20, 1.2, 10);
+        return boost(train(base().agi + base().gagi * (level - 1), 2, 1.4), 1.6, 20, 1.2, 10);
     }
 
     /** 회심의 일격 확률 */
@@ -84,7 +90,7 @@ public final class Hero {
     }
 
     public String job() {
-        if (id == 0) return awakened ? "용사 · 슬레이어" : "배달부";
+        if (id == 0) return awakened ? "용사 · 슬레이어" : trained == 7 ? "용자 (세 수련 완료)" : "배달부";
         if (id == 3) return awakened ? "불의 무녀 (불의 축복)" : "대장장이의 딸";
         if (id == 4) return awakened ? "해의 계승자" : "숲의 아이";
         if (id == 5) return awakened ? "해의 늑대" : "숲의 늑대";
@@ -94,7 +100,7 @@ public final class Hero {
 
     /** 주문의 주인 번호: 각성한 사람은 (번호 + 10) 주문도 쓴다 */
     private boolean owns(RpgData.Spell s) {
-        return s.owner == id || (awakened && s.owner == id + 10);
+        return s.owner == id || (awakened && s.owner == id + 10) || (id == 0 && trained == 7 && s.owner == 20);
     }
 
     public boolean alive() {
@@ -140,7 +146,8 @@ public final class Hero {
     }
 
     String serialize() {
-        return id + ":" + level + ":" + exp + ":" + hp + ":" + mp + ":" + weapon + ":" + armor + ":" + accessory + ":" + (awakened ? 1 : 0);
+        return id + ":" + level + ":" + exp + ":" + hp + ":" + mp + ":" + weapon + ":" + armor + ":" + accessory + ":" + (awakened ? 1 : 0)
+                + ":" + trained;
     }
 
     static Hero deserialize(String s) {
@@ -153,6 +160,7 @@ public final class Hero {
             h.accessory = Integer.parseInt(p[7]);
             h.awakened = "1".equals(p[8]);
         }
+        if (p.length > 9) h.trained = Integer.parseInt(p[9]);
         h.hp = Math.max(0, Math.min(h.maxHp(), Integer.parseInt(p[3])));
         h.mp = Math.max(0, Math.min(h.maxMp(), Integer.parseInt(p[4])));
         return h;

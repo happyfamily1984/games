@@ -347,6 +347,21 @@ public class RpgView extends View {
         } else if ("ice".equals(theme)) {
             top = 0xFF0E2A44;
             bottom = 0xFF9FC6E8;
+        } else if (battle.firstMonster == RpgData.BEELZEBUB) {
+            top = battle.blessing >= 3 ? 0xFFFFF3C0 : 0xFF0A0A0A;
+            bottom = battle.blessing >= 3 ? 0xFFE0B040 : 0xFF2A1A3A;
+        } else if ("gold".equals(theme)) {
+            top = 0xFF3A2A08;
+            bottom = 0xFFC9962A;
+        } else if ("tower".equals(theme)) {
+            top = 0xFF101828;
+            bottom = 0xFF5B6168;
+        } else if ("holy".equals(theme)) {
+            top = 0xFF1A1020;
+            bottom = 0xFF7B4BB5;
+        } else if (state.map == RpgData.WORLD5 || state.map == RpgData.LUMEN) {
+            top = 0xFFF5E3A0;
+            bottom = 0xFF4CAF50;
         } else if ("moon".equals(theme)) {
             top = 0xFF0A1430;
             bottom = 0xFF2E5A5A;

@@ -71,6 +71,8 @@ public final class RpgState {
         // 4장 던전에도 마물이 많다
         String th = RpgData.theme(map);
         if ("ruin".equals(th) || "ice".equals(th) || "moon".equals(th)) r *= 1.6;
+        // 최종장: 세 악마의 소굴
+        if ("gold".equals(th) || "tower".equals(th) || "holy".equals(th)) r *= 2;
         return r;
     }
 
@@ -124,17 +126,36 @@ public final class RpgState {
         return -1;
     }
 
+    /** 단계와 이야기 표시를 보고 지금 보이는 사람인지 */
+    public boolean shown(RpgData.Npc n) {
+        if (!n.visible(step)) return false;
+        // 이겨 낸 수련의 수호자는 사라진다
+        if (n.action == RpgData.ACT_EVENT) {
+            if (n.arg == RpgData.EV_TRIAL_P) return !hasFlag(RpgData.FLAG_TRIAL_P);
+            if (n.arg == RpgData.EV_TRIAL_A) return !hasFlag(RpgData.FLAG_TRIAL_A);
+            if (n.arg == RpgData.EV_TRIAL_S) return !hasFlag(RpgData.FLAG_TRIAL_S);
+        }
+        return true;
+    }
+
     public RpgData.Npc npcAt(int tx, int ty) {
         for (RpgData.Npc n : RpgData.NPCS) {
-            if (n.map == map && n.x == tx && n.y == ty && n.visible(step)) return n;
+            if (n.map == map && n.x == tx && n.y == ty && shown(n)) return n;
         }
         return null;
     }
 
     public List<RpgData.Npc> visibleNpcs() {
         List<RpgData.Npc> out = new ArrayList<>();
-        for (RpgData.Npc n : RpgData.NPCS) if (n.map == map && n.visible(step)) out.add(n);
+        for (RpgData.Npc n : RpgData.NPCS) if (n.map == map && shown(n)) out.add(n);
         return out;
+    }
+
+    /** 마친 수련 개수 */
+    public int trialsDone() {
+        int n = 0;
+        for (int f : new int[]{RpgData.FLAG_TRIAL_P, RpgData.FLAG_TRIAL_A, RpgData.FLAG_TRIAL_S}) if (hasFlag(f)) n++;
+        return n;
     }
 
     public boolean walkable(int tx, int ty) {
@@ -146,6 +167,12 @@ public final class RpgState {
         if (t == 'J' && step < RpgData.STEP_WEDDING) return false;
         // 요마성은 부모를 모두 되찾은 뒤에 안개가 걷힌다
         if (t == 'J' && map == RpgData.WORLD4 && step < RpgData.STEP_DAD_BACK) return false;
+        // 2장: 수련의 던전은 길드장에게 거절당한 뒤 열린다
+        if ((t == '1' || t == '2' || t == '3') && step < RpgData.STEP_GUILD_REFUSED) return false;
+        // 최종장: 세 악마의 소굴은 차례로 열린다
+        if (t == 'D' && step < RpgData.STEP_TRUTH) return false;
+        if (t == 'E' && step < RpgData.STEP_MAMMON_DOWN) return false;
+        if (t == 'R' && step < RpgData.STEP_BELIAL_DOWN) return false;
         return npcAt(tx, ty) == null;
     }
 
@@ -361,8 +388,14 @@ public final class RpgState {
                         return;
                     }
                     break;
-                case RpgData.EV_BOSS:
                 case RpgData.EV_MIDBOSS:
+                    if (step == RpgData.STEP_GUILD_REFUSED && !hasFlag(RpgData.FLAG_MISSION)) {
+                        in.lines.add("(동굴 깊은 곳에서 해적들의 웃음소리가 들린다. 수십 명은 되는 것 같다)");
+                        in.lines.add("[신창] (…지금의 나로는 저들을 감당할 자신이 없어. 먼저 무현 어르신 말대로 수련을……)");
+                        return;
+                    }
+                    // fall through
+                case RpgData.EV_BOSS:
                 case RpgData.EV_BOSS2:
                 case RpgData.EV_GIANT:
                 case RpgData.EV_GEN1:
@@ -401,6 +434,47 @@ public final class RpgState {
                     in.bossBattle = true;
                     in.bossMonster = step == RpgData.STEP_HOSTAGE ? RpgData.HOSTAGE : RpgData.FOX1;
                     return;
+                case RpgData.EV_SAGE:
+                    if (step == RpgData.STEP_GUILD_REFUSED && !hasFlag(RpgData.FLAG_MISSION)) {
+                        int done = trialsDone();
+                        if (done == 3) {
+                            for (String l : RpgData.MISSION) in.lines.add(l);
+                            flags |= RpgData.FLAG_MISSION;
+                            Hero hero = member(0);
+                            if (hero != null) hero.fullHeal();
+                            in.awakened = true;
+                        } else if (done == 0) {
+                            for (String l : RpgData.TRIAL_INTRO) in.lines.add(l);
+                        } else {
+                            in.lines.add("[검객 무현] 남은 수련은 " + (3 - done) + "개. 자네 얼굴이 조금 달라졌군.");
+                            in.lines.add("[검객 무현] 서쪽 바위산의 힘, 꽃밭 옆의 민첩, 남쪽 해안의 정신. 어디든 남은 곳으로 가게.");
+                        }
+                        return;
+                    }
+                    break;
+                case RpgData.EV_TRIAL_P:
+                case RpgData.EV_TRIAL_A:
+                case RpgData.EV_TRIAL_S:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
+                    in.bossBattle = true;
+                    in.bossMonster = npc.arg == RpgData.EV_TRIAL_P ? RpgData.ROCK_KING : npc.arg == RpgData.EV_TRIAL_A ? RpgData.WIND_KING : RpgData.SHADOW_HERO;
+                    return;
+                case RpgData.EV_ELLA:
+                    if (step == RpgData.STEP_WORLD) {
+                        for (String l : RpgData.TRUTH) in.lines.add(l);
+                        step = RpgData.STEP_TRUTH;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_MAMMON:
+                case RpgData.EV_ARSEN:
+                case RpgData.EV_BELIAL:
+                case RpgData.EV_BEEL:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
+                    in.bossBattle = true;
+                    in.bossMonster = npc.arg == RpgData.EV_MAMMON ? RpgData.MAMMON : npc.arg == RpgData.EV_ARSEN ? RpgData.ARSEN
+                            : npc.arg == RpgData.EV_BELIAL ? RpgData.BELIAL : RpgData.BEELZEBUB;
+                    return;
                 case RpgData.EV_MOONLORD:
                     for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
                     in.bossBattle = true;
@@ -416,6 +490,12 @@ public final class RpgState {
                     if (step == RpgData.STEP_MOM_FOUND) {
                         // 달빛 이슬은 달빛 샘에서 (보스를 쓰러뜨려야 얻는다)
                         for (String l : RpgData.MOON_QUEST) in.lines.add(l);
+                        return;
+                    }
+                    if (step == RpgData.STEP_CHAPTER4_CLEAR) {
+                        // 최종장의 시작: 하루는 숲에 남고, 세 가족이 루멘으로
+                        for (String l : RpgData.WORLD_CALL) in.lines.add(l);
+                        startFinalChapter();
                         return;
                     }
                     if (step == RpgData.STEP_KING_DOWN) {
@@ -541,6 +621,11 @@ public final class RpgState {
                     guildEvent(in);
                     return;
                 case RpgData.EV_PIPI:
+                    if (step == RpgData.STEP_GUILD_REFUSED && !hasFlag(RpgData.FLAG_MISSION)) {
+                        in.lines.add("[요정 상인 피피] 장사 망해서 기분 별로야. …너, 눈에 힘이 하나도 없네.");
+                        in.lines.add("[요정 상인 피피] 그런 손님한텐 부탁 안 해. 스스로가 누군지 알면 다시 와.");
+                        return;
+                    }
                     if (step == RpgData.STEP_GALLEON_DOWN) {
                         for (String l : RpgData.PIPI_JOINS) in.lines.add(l);
                         removeItem(RpgData.PIPI_SCALE, 1);
@@ -589,6 +674,21 @@ public final class RpgState {
         sunsSpent += p;
         addItem(itemId, 1);
         return true;
+    }
+
+    /** 최종장: 신창·지헌·민한 셋이 판테온 대륙 루멘으로 (하루는 숲을 지킨다) */
+    private void startFinalChapter() {
+        List<Hero> keep = new ArrayList<>();
+        for (int id : new int[]{0, 3, 4}) {
+            Hero h = member(id);
+            if (h != null) keep.add(h);
+        }
+        for (Hero h : party) if (!keep.contains(h)) reserve.add(h);
+        party.clear();
+        party.addAll(keep);
+        for (Hero h : party) h.fullHeal();
+        step = RpgData.STEP_WORLD;
+        warp(RpgData.LUMEN, 12, 17);
     }
 
     /** 헤어졌던 동료가 돌아온다 */
@@ -777,7 +877,33 @@ public final class RpgState {
 
     public List<String> onBossDefeated(int monster) {
         String[] lines;
-        if (monster == RpgData.FOX1) {
+        if (monster == RpgData.ROCK_KING || monster == RpgData.WIND_KING || monster == RpgData.SHADOW_HERO) {
+            int bit = monster == RpgData.ROCK_KING ? 1 : monster == RpgData.WIND_KING ? 2 : 4;
+            flags |= bit == 1 ? RpgData.FLAG_TRIAL_P : bit == 2 ? RpgData.FLAG_TRIAL_A : RpgData.FLAG_TRIAL_S;
+            Hero hero = member(0);
+            if (hero != null) {
+                hero.trained |= bit;
+                hero.fullHeal();
+            }
+            List<String> out = new ArrayList<>();
+            for (String l : bit == 1 ? RpgData.TRIAL_P_DONE : bit == 2 ? RpgData.TRIAL_A_DONE : RpgData.TRIAL_S_DONE) out.add(l);
+            for (String l : RpgData.TRIAL_HEART[Math.max(0, trialsDone() - 1)]) out.add(l);
+            return out;
+        }
+        if (monster == RpgData.MAMMON) {
+            step = RpgData.STEP_MAMMON_DOWN;
+            lines = RpgData.MAMMON_DEFEATED;
+        } else if (monster == RpgData.ARSEN) {
+            step = RpgData.STEP_ARSEN_DOWN;
+            lines = RpgData.ARSEN_DEFEATED;
+        } else if (monster == RpgData.BELIAL) {
+            step = RpgData.STEP_BELIAL_DOWN;
+            lines = RpgData.BELIAL_DEFEATED;
+        } else if (monster == RpgData.BEELZEBUB) {
+            step = RpgData.STEP_ENDING;
+            for (Hero h : party) h.fullHeal();
+            lines = RpgData.ENDING;
+        } else if (monster == RpgData.FOX1) {
             step = RpgData.STEP_HOSTAGE;
             pendingBoss = RpgData.HOSTAGE;
             lines = RpgData.FOX1_DEFEATED;

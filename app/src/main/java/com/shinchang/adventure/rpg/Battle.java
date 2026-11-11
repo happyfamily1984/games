@@ -8,7 +8,9 @@ import java.util.Random;
 /** 턴제 전투. 한 라운드씩 명령을 받아 결과 메시지를 돌려준다. */
 public final class Battle {
 
-    public static final int ATTACK = 0, SPELL = 1, ITEM = 2, DEFEND = 3, FLEE = 4;
+    public static final int ATTACK = 0, SPELL = 1, ITEM = 2, DEFEND = 3, FLEE = 4, FAMILY = 5;
+    /** 연합기 「사랑의 완성 · FAMILY」의 피해 */
+    public static final int FAMILY_DAMAGE = 99999999;
 
     public static final class Enemy {
         public final RpgData.Monster m;
@@ -66,6 +68,53 @@ public final class Battle {
     public int round;
     /** 지금 행동 중인 아군 (회심·슬레이어 계산용) */
     private Hero acting;
+    /** 바알세불전의 기적: 0 없음, 1 세계인의 기도, 2 동식물의 기도, 3 창조주의 가호 */
+    public int blessing;
+    private double atkMul = 1, defMul = 1;
+    /** 이번 라운드에 기적이 일어났는지 (화면 연출용) */
+    public boolean miracleThisRound;
+
+    /** 연합기를 쓸 수 있는지 (창조주의 가호를 받은 뒤) */
+    public boolean familyReady() {
+        return blessing >= 3;
+    }
+
+    private static final String[][] MIRACLES = {
+            {"……", "(신창 일행이 모두 쓰러졌다. 바알세불의 웃음소리가 대성당을 울린다)",
+                    "(그때, 아주 멀리서 노랫소리가 들려온다)",
+                    "(루멘의 사람들, 메르카의 상인들, 이그나의 대장장이들, 에르덴의 기사들… 온 세상 사람들이 무릎을 꿇고 기도하고 있다)",
+                    "[리나의 목소리] 일어나요, 신창 씨!  [피피의 목소리] 신창, 지면 안 돼!",
+                    "🙏 세계인들의 기도가 세 사람을 일으켜 세웠다! 🙏",
+                    "✨ HP·MP 완전 회복! 공격력 2배! ✨"},
+            {"……", "(다시 쓰러진 세 사람 위로, 바알세불의 날개 그림자가 드리운다)",
+                    "(땅이 울린다. 숲의 나무들이, 바다의 물고기들이, 하늘의 새들이 같은 쪽을 향해 고개를 숙인다)",
+                    "[하루의 울음] 아우우우우——!!  [백년 부엉이 노을] 부엉… 우리 아이를 지켜 다오…",
+                    "🌿 모든 동식물의 기도가 세 사람을 다시 일으켜 세웠다! 🌿",
+                    "✨ HP·MP 완전 회복! 방어력 2배! ✨"},
+            {"……", "(세 번째로 쓰러졌다. 이번에는 아무 소리도 들리지 않는다)",
+                    "(완전한 고요. 그리고… 하늘이 열렸다)",
+                    "[창조주의 목소리] 나의 아이들아. 너희는 서로를 위해 모든 것을 내려놓았구나.",
+                    "[창조주의 목소리] 일어나거라. 그리고 내가 세상에 넣어 둔 가장 큰 힘을 보여 주거라.",
+                    "☀️ 창조주의 가호가 세 사람을 감쌌다! ☀️",
+                    "✨ 공격력 10배! 매 턴 HP·MP 완전 회복! ✨",
+                    "💞 세 사람의 마음이 하나로 이어진다… 연합기 「사랑의 완성 · FAMILY」를 쓸 수 있게 되었다! 💞"},
+    };
+
+    /** 바알세불전: 쓰러져도 기적이 일어나 다시 일어선다 */
+    private void miracle(List<String> log) {
+        if (firstMonster != RpgData.BEELZEBUB || !lost()) return;
+        if (blessing < 3) {
+            for (String l : MIRACLES[blessing]) log.add(l);
+            blessing++;
+            if (blessing == 1) atkMul = 2;
+            if (blessing == 2) defMul = 2;
+            if (blessing == 3) atkMul = 10;
+        } else {
+            log.add("☀️ 창조주의 가호가 쓰러진 세 사람을 다시 일으킨다!");
+        }
+        miracleThisRound = true;
+        for (Hero h : state.party) h.fullHeal();
+    }
 
     public Battle(RpgState state, int[] monsterIds, boolean boss, Random random) {
         this.state = state;
@@ -176,6 +225,11 @@ public final class Battle {
         enragedThisRound = false;
         java.util.Arrays.fill(defending, false);
         round++;
+        miracleThisRound = false;
+        if (blessing >= 3) {
+            for (Hero h : state.party) h.fullHeal();
+            log.add("☀️ 창조주의 가호! 일행의 HP·MP가 완전히 회복되었다!");
+        }
         // 맹세의 반지: 매 턴 MP 회복
         StringBuilder regen = new StringBuilder();
         for (Hero h : state.party) {
@@ -223,9 +277,11 @@ public final class Battle {
                 Enemy e = enemies.get(idx);
                 if (!e.alive()) continue;
                 enemyAct(e, log);
+                miracle(log);
                 if (e.m.special == 2 && random.nextDouble() < (enraged ? 0.55 : 0.35) && !lost()) {
                     log.add(Josa.eun(e.name) + " 쉴 틈도 주지 않는다!");
                     enemyAct(e, log);
+                    miracle(log);
                 }
             }
         }
@@ -237,6 +293,7 @@ public final class Battle {
         for (Enemy e : enemies) {
             if (!e.alive() || lost()) continue;
             enemyAct(e, log);
+            miracle(log);
         }
         finishLog(log);
     }
@@ -302,6 +359,24 @@ public final class Battle {
             return;
         }
         switch (a.cmd) {
+            case FAMILY: {
+                Enemy t = enemyTarget(a.target);
+                if (t == null) return;
+                if (!familyReady()) {
+                    log.add("…아직 세 사람의 마음이 하나로 이어지지 않았다.");
+                    return;
+                }
+                log.add("[신창] 지헌, 민한. 손 잡아.");
+                log.add("[지헌] 응. 언제나처럼.");
+                log.add("[민한] 아빠, 엄마. 하나, 둘, 셋!");
+                log.add("(세 사람이 맞잡은 손 사이에서, 해보다 밝은 빛이 터져 나온다)");
+                log.add("(배달 가방의 다섯 점 문장, 맹세의 반지, 해의 유산이 하나로 빛난다)");
+                log.add("💞 연합기 「사랑의 완성 · FAMILY」!! 💞");
+                t.hp = Math.max(0, t.hp - FAMILY_DAMAGE);
+                log.add(t.name + "에게 " + String.format(java.util.Locale.ROOT, "%,d", FAMILY_DAMAGE) + "의 피해!!!");
+                if (!t.alive() && !boss) log.add(Josa.eul(t.name) + " 물리쳤다!");
+                break;
+            }
             case ATTACK: {
                 if (h.weapon == RpgData.ETERNAL_SUN) {
                     // 초초 전설의 검: 보통 공격이 적 전체를 벤다
@@ -491,7 +566,7 @@ public final class Battle {
 
     private void hitEnemy(Enemy t, int dmg, List<String> log) {
         if (acting != null && dmg > 0) {
-            dmg = (int) Math.round(dmg * acting.slayer());
+            dmg = (int) Math.min(Integer.MAX_VALUE / 4, Math.round(dmg * acting.slayer() * atkMul));
             if (acting.critChance() > 0 && random.nextDouble() < acting.critChance()) {
                 dmg *= 2;
                 log.add("⚡ 회심의 일격!");
@@ -542,7 +617,7 @@ public final class Battle {
             String move = roar(e.m.sprite);
             log.add(Josa.eun(e.name) + move);
             for (Hero t : state.party) {
-                if (t.alive()) hurtHero(t, (int) Math.round(rand(e.m.atk / 2, e.m.atk * 7 / 10) * (enraged ? 1.3 : 1) * guard), log);
+                if (t.alive()) hurtHero(t, (int) Math.round(rand(e.m.atk / 2, e.m.atk * 7 / 10) * (enraged ? 1.3 : 1) * guard / defMul), log);
             }
             return;
         }
@@ -555,7 +630,7 @@ public final class Battle {
         }
         int idx = state.party.indexOf(t);
         int atk = enraged ? (int) Math.round(e.m.atk * 1.3) : e.m.atk;
-        int dmg = (int) Math.round(damage(atk, t.def()) * guard);
+        int dmg = (int) Math.round(damage(atk, (int) Math.round(t.def() * defMul)) * guard);
         if (idx >= 0 && defending[idx]) dmg /= 2;
         hurtHero(t, dmg, log);
     }
@@ -573,6 +648,10 @@ public final class Battle {
             case "guardian": return " 대지를 내리쳐 바위를 쏟아냈다!";
             case "crystalqueen": return " 수정 가시를 사방으로 쏘았다!";
             case "demonking": return " 요마의 검은 낙뢰를 내리쳤다!";
+            case "mammon": return " 황금 비를 퍼부었다!";
+            case "arsen": return " 공허의 문을 열어 검은 바람을 쏟아냈다!";
+            case "belial": return " 수천 개의 거짓 약속을 외쳤다!";
+            case "beelzebub": return " 수억 마리 파리 떼를 쏟아냈다!";
             default: return " 어둠의 포효를 내질렀다!";
         }
     }

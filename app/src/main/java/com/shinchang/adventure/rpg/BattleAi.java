@@ -28,6 +28,10 @@ public final class BattleAi {
         int round = b.round;
         for (int i = 0; i < s.party.size(); i++) {
             Hero h = s.party.get(i);
+            if (b.familyReady() && i == 0 && h.alive()) {
+                acts.add(new Battle.Action(Battle.FAMILY, -1, 0));
+                continue;
+            }
             // 종류별로 쓸 수 있는 가장 센 기술
             Map<Integer, Integer> sp = new HashMap<>();
             for (int k : h.spells()) {

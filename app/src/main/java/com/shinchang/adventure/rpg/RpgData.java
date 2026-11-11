@@ -12,13 +12,19 @@ public final class RpgData {
             WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13,
             WORLD3 = 14, IGNA = 15, LAVA1 = 16, LAVA2 = 17, FORT1 = 18, FORT2 = 19, FORT3 = 20,
             LAKE = 21, WORLD4 = 22, BEASTDEN = 23, ROA = 24, RUINS1 = 25, RUINS2 = 26, CRYSTAL1 = 27, CRYSTAL2 = 28, DEMON1 = 29, DEMON2 = 30,
-            RUINS3 = 31, CRYSTAL3 = 32, MOON1 = 33, MOON2 = 34, DEMON3 = 35;
+            RUINS3 = 31, CRYSTAL3 = 32, MOON1 = 33, MOON2 = 34, DEMON3 = 35,
+            TRIAL_P = 47, TRIAL_A = 48, TRIAL_S = 49,
+            WORLD5 = 36, LUMEN = 37, GOLD1 = 38, GOLD2 = 39, GOLD3 = 40, TOWER1 = 41, TOWER2 = 42, TOWER3 = 43,
+            CATH1 = 44, CATH2 = 45, CATH3 = 46;
     public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층",
             "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층",
             "이그나 섬", "화산섬 마을 이그나", "용암 동굴 1층", "용암 동굴 2층", "흑염의 요새 1층", "흑염의 요새 2층", "흑염의 요새 옥좌",
             "안개 호수", "실바 대륙", "짐승의 보금자리", "로아 마을", "바람의 고원 유적 1층", "바람의 고원 유적 2층",
             "수정 동굴 1층", "수정 동굴 2층", "요마성 1층", "요마성 옥좌",
-            "바람의 고원 유적 3층", "수정 동굴 3층", "달빛 숲길", "달빛 샘", "요마성 2층"};
+            "바람의 고원 유적 3층", "수정 동굴 3층", "달빛 숲길", "달빛 샘", "요마성 2층",
+            "판테온 대륙", "성도 루멘", "황금 금고 1층", "황금 금고 2층", "맘몬의 보물고", "권좌의 탑 1층", "권좌의 탑 2층",
+            "권좌의 탑 꼭대기", "타락한 대성당 1층", "타락한 대성당 2층", "반역자의 제단",
+            "힘의 던전", "민첩의 던전", "정신의 던전"};
 
     /** 지도 그림은 tools/rpg_maps.py 가 만든 RpgMaps 에 있다 */
     public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2,
@@ -26,11 +32,16 @@ public final class RpgData {
             RpgMaps.WORLD3, RpgMaps.IGNA, RpgMaps.LAVA1, RpgMaps.LAVA2, RpgMaps.FORT1, RpgMaps.FORT2, RpgMaps.FORT3,
             RpgMaps.LAKE, RpgMaps.WORLD4, RpgMaps.BEASTDEN, RpgMaps.ROA, RpgMaps.RUINS1, RpgMaps.RUINS2,
             RpgMaps.CRYSTAL1, RpgMaps.CRYSTAL2, RpgMaps.DEMON1, RpgMaps.DEMON2,
-            RpgMaps.RUINS3, RpgMaps.CRYSTAL3, RpgMaps.MOON1, RpgMaps.MOON2, RpgMaps.DEMON3};
+            RpgMaps.RUINS3, RpgMaps.CRYSTAL3, RpgMaps.MOON1, RpgMaps.MOON2, RpgMaps.DEMON3,
+            RpgMaps.WORLD5, RpgMaps.LUMEN, RpgMaps.GOLD1, RpgMaps.GOLD2, RpgMaps.GOLD3, RpgMaps.TOWER1, RpgMaps.TOWER2,
+            RpgMaps.TOWER3, RpgMaps.CATH1, RpgMaps.CATH2, RpgMaps.CATH3,
+            RpgMaps.TRIAL_P, RpgMaps.TRIAL_A, RpgMaps.TRIAL_S};
 
     /** 지도 분위기: 동굴(갈색), 바다 동굴(푸른색), 신전(청록 돌) */
     public static String theme(int map) {
-        if (map == CAVE1 || map == CAVE2) return "cave";
+        if (map == CAVE1 || map == CAVE2 || map == TRIAL_P) return "cave";
+        if (map == TRIAL_A) return "ruin";
+        if (map == TRIAL_S) return "tmp";
         if (map == SPRAY1 || map == SPRAY2) return "sea";
         if (map == TEMPLE1 || map == TEMPLE2) return "tmp";
         if (map == LAVA1 || map == LAVA2) return "lava";
@@ -39,12 +50,15 @@ public final class RpgData {
         if (map == CRYSTAL1 || map == CRYSTAL2 || map == CRYSTAL3) return "ice";
         if (map == DEMON1 || map == DEMON2 || map == DEMON3) return "demon";
         if (map == MOON1 || map == MOON2) return "moon";
+        if (map == GOLD1 || map == GOLD2 || map == GOLD3) return "gold";
+        if (map == TOWER1 || map == TOWER2 || map == TOWER3) return "tower";
+        if (map == CATH1 || map == CATH2 || map == CATH3) return "holy";
         return null;
     }
 
     /** 바깥이 바다인 지도 */
     public static boolean isOverworld(int map) {
-        return map == WORLD || map == WORLD2 || map == WORLD3 || map == WORLD4;
+        return map == WORLD || map == WORLD2 || map == WORLD3 || map == WORLD4 || map == WORLD5;
     }
 
     /** 지나갈 수 없는 타일 */
@@ -58,7 +72,9 @@ public final class RpgData {
                 || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2
                 || map == WORLD3 || map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3
                 || map == WORLD4 || map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2
-                || map == RUINS3 || map == CRYSTAL3 || map == MOON1 || map == MOON2 || map == DEMON3;
+                || map == RUINS3 || map == CRYSTAL3 || map == MOON1 || map == MOON2 || map == DEMON3
+                || map == WORLD5 || map == GOLD1 || map == GOLD2 || map == TOWER1 || map == TOWER2 || map == TOWER3
+                || map == CATH1 || map == CATH2 || map == TRIAL_P || map == TRIAL_A || map == TRIAL_S;
     }
 
     /** 지도 이동: (지도, x, y) 에 들어가면 (도착 지도, x, y) 로 */
@@ -148,6 +164,41 @@ public final class RpgData {
             {MOON1, 12, 14, WORLD4, 10, 10},
             {MOON1, 4, 4, MOON2, 12, 11},
             {MOON2, 12, 12, MOON1, 4, 5},
+            // 2장: 수련의 던전
+            {WORLD2, 4, 10, TRIAL_P, 11, 13},
+            {WORLD2, 12, 12, TRIAL_A, 11, 13},
+            {WORLD2, 8, 21, TRIAL_S, 11, 13},
+            {TRIAL_P, 11, 14, WORLD2, 4, 11},
+            {TRIAL_P, 12, 14, WORLD2, 4, 11},
+            {TRIAL_A, 11, 14, WORLD2, 12, 13},
+            {TRIAL_A, 12, 14, WORLD2, 12, 13},
+            {TRIAL_S, 11, 14, WORLD2, 8, 22},
+            {TRIAL_S, 12, 14, WORLD2, 8, 22},
+            // 5장: 판테온 대륙
+            {WORLD5, 17, 18, LUMEN, 12, 18},
+            {LUMEN, 12, 19, WORLD5, 17, 19},
+            {LUMEN, 13, 19, WORLD5, 17, 19},
+            {WORLD5, 6, 10, GOLD1, 11, 13},
+            {GOLD1, 11, 14, WORLD5, 6, 11},
+            {GOLD1, 12, 14, WORLD5, 6, 11},
+            {GOLD1, 4, 11, GOLD2, 11, 12},
+            {GOLD2, 11, 13, GOLD1, 3, 11},
+            {GOLD2, 5, 4, GOLD3, 12, 10},
+            {GOLD3, 12, 11, GOLD2, 5, 5},
+            {WORLD5, 29, 9, TOWER1, 11, 13},
+            {TOWER1, 11, 14, WORLD5, 29, 10},
+            {TOWER1, 12, 14, WORLD5, 29, 10},
+            {TOWER1, 18, 5, TOWER2, 16, 12},
+            {TOWER2, 16, 13, TOWER1, 18, 6},
+            {TOWER2, 3, 12, TOWER3, 12, 11},
+            {TOWER3, 12, 12, TOWER2, 3, 11},
+            {WORLD5, 17, 3, CATH1, 11, 13},
+            {CATH1, 11, 14, WORLD5, 17, 4},
+            {CATH1, 12, 14, WORLD5, 17, 4},
+            {CATH1, 6, 8, CATH2, 12, 12},
+            {CATH2, 12, 13, CATH1, 7, 8},
+            {CATH2, 11, 3, CATH3, 12, 10},
+            {CATH3, 12, 11, CATH2, 11, 4},
     };
 
     /** 마을에 들어가면 그 마을이 "마지막으로 들른 마을"이 된다 (전멸·날개깃 귀환 위치) */
@@ -159,6 +210,7 @@ public final class RpgData {
             {IGNA, 12, 17},
             {BEASTDEN, 11, 15},
             {ROA, 12, 17},
+            {LUMEN, 12, 17},
     };
 
     /** 배를 타고 내리는 곳 */
@@ -209,26 +261,39 @@ public final class RpgData {
     public static final int STEP_FOX_DOWN = 33;
     public static final int STEP_KING_DOWN = 34;
     public static final int STEP_CHAPTER4_CLEAR = 35;
+    // 최종장
+    public static final int STEP_WORLD = 36;
+    public static final int STEP_TRUTH = 37;
+    public static final int STEP_MAMMON_DOWN = 38;
+    public static final int STEP_ARSEN_DOWN = 39;
+    public static final int STEP_BELIAL_DOWN = 40;
+    public static final int STEP_ENDING = 41;
 
-    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」", "3장 「용사의 탄생」",
-            "4장 「해를 물려받은 아이」"};
+    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「나를 찾는 여정」", "3장 「용사의 탄생」",
+            "4장 「해를 물려받은 아이」", "최종장 「영원한 전설」"};
 
     public static int chapterOf(int step) {
         if (step == STEP_PROLOGUE) return 0;
+        if (step < 0) return 0;
         if (step < STEP_SAILED) return 1;
         if (step < STEP_ALONE) return 2;
-        return step < STEP_FAMILY ? 3 : 4;
+        if (step < STEP_FAMILY) return 3;
+        return step < STEP_WORLD ? 4 : 5;
     }
 
     /** 찾아낸 단서 (비트) */
     public static final int FLAG_RECORD = 1, FLAG_CHRONICLE = 2, FLAG_MURAL = 4, FLAG_LIBRARY = 8, FLAG_DIARY = 16,
             FLAG_LEDGER = 32, FLAG_SHIPLOG = 64, FLAG_LIGHTLOG = 128, FLAG_TEMPLE = 256, FLAG_PROPHECY = 512, FLAG_COMPASS = 1024,
             FLAG_SMITHLOG = 2048, FLAG_ORDER = 4096, FLAG_FIRESEAL = 8192,
-            FLAG_SUNLORE = 16384, FLAG_PACT = 32768;
+            FLAG_SUNLORE = 16384, FLAG_PACT = 32768,
+            FLAG_LEDGER5 = 65536, FLAG_LAW = 131072, FLAG_REBEL = 262144;
+    /** 단서가 아닌 이야기 표시 (단서 목록에 나오지 않는다) */
+    public static final int FLAG_TRIAL_P = 1 << 24, FLAG_TRIAL_A = 1 << 25, FLAG_TRIAL_S = 1 << 26, FLAG_MISSION = 1 << 27;
     public static final String[] CLUE_NAMES = {"금고의 경고문", "리벨 연대기", "성당 벽화", "에르덴 서고의 기록", "로웰의 일기",
             "길드 장부", "선박 기록", "등대 일지", "해저 신전 벽화", "문지기의 각인", "바로스의 나침반",
             "도건의 작업 일지", "요새의 명령서", "불의 봉인 제단",
-            "해의 제단 벽화", "요마왕의 맹약"};
+            "해의 제단 벽화", "요마왕의 맹약",
+            "맘몬의 고객 명부", "벨리알의 법전", "반역자의 벽화"};
     /** 단서 메뉴에 보여 줄 요약 */
     public static final String[] CLUE_TEXTS = {
             "청와대 금고: '문 저편에서 오는 자는 짐꾼이 아니다' — 서명 E. 가방과 같은 문양.",
@@ -247,6 +312,9 @@ public final class RpgData {
             "불의 봉인은 나누는 손으로만 지켜진다. 문지기: '그릇을 비워라. 잃게 하라. 빈 그릇에 왕이 깃든다.'",
             "해를 모은 자가 짐을 내려놓을 때, 그 해는 아이에게 내려가 아이를 지킨다. 해는 신창의 유산이었다.",
             "문지기와 요마왕의 맹약: 다시 가득 찬 짐꾼에게서 가장 소중한 것을 빼앗을 것. 해를 물려받은 아이를 데려올 것.",
+            "맘몬의 고객 1번은 신창. 돈을 쌓을수록 욕망을 바쳤지만, 내려놓고 얻은 해만은 맘몬의 손에 들어가지 않았다.",
+            "벨리알의 법 제3조: 권력은 결코 내려놓지 않는다. 그런데 짐꾼은 대통령이 된 뒤 권좌를 버리고 문을 건넜다.",
+            "바알세불은 경배받기를 원해 신에게 반역했다. 믿음은 먹지만, 서로를 위한 사랑은 먹지 못한다.",
     };
 
     // ------------------------------------------------------------ 등장인물 (마을 사람)
@@ -256,7 +324,9 @@ public final class RpgData {
             EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11,
             EV_SHIP_TO_IGNA = 12, EV_JIHEON = 13, EV_GIANT = 14, EV_IGNA_ELDER = 15, EV_GEN1 = 16, EV_GEN2 = 17, EV_GEN3 = 18,
             EV_VARGAS = 19, EV_BIRTH = 20,
-            EV_KID = 21, EV_FOX1 = 22, EV_OWL = 23, EV_ALTAR = 24, EV_DAD_STATUE = 25, EV_MOM_STATUE = 26, EV_FOX2 = 27, EV_KING4 = 28, EV_MOONLORD = 29;
+            EV_KID = 21, EV_FOX1 = 22, EV_OWL = 23, EV_ALTAR = 24, EV_DAD_STATUE = 25, EV_MOM_STATUE = 26, EV_FOX2 = 27, EV_KING4 = 28, EV_MOONLORD = 29,
+            EV_ELLA = 30, EV_MAMMON = 31, EV_ARSEN = 32, EV_BELIAL = 33, EV_BEEL = 34,
+            EV_SAGE = 35, EV_TRIAL_P = 36, EV_TRIAL_A = 37, EV_TRIAL_S = 38;
 
     public static final class Npc {
         public final int map, x, y;
@@ -440,7 +510,7 @@ public final class RpgData {
                             "[리나] 신창 씨, 온다!"),
             }),
 
-            // ================================================== 2장 「상인의 길」
+            // ================================================== 2장 「나를 찾는 여정」
             // ---- 에르덴 부두 / 메르카 부두의 선장
             new Npc(ERDEN, 24, 18, "captain", "모르칸의 선장", ACT_EVENT, EV_SHIP_TO_MERCA, STEP_CHAPTER1_CLEAR, 99, new Object[][]{
                     at(0, "대신 모르칸 님의 명으로 메르카까지 모시겠습니다."),
@@ -462,6 +532,32 @@ public final class RpgData {
                             "바로스 님은 늘 '푸른 돌은 팔면 안 된다'고 하셨대요. 길드장님은 그 말을 듣지 않았고요.",
                             "…요즘 길드장님, 밤마다 부두에 나가서 바다만 보세요."),
                     at(STEP_SERPENT_DOWN, "길드장님이 웃으셨어요! 그리고 저한테 처음으로 '고맙다'고 하셨어요.")),
+
+            // ---- 메르카: 수련을 권하는 검객
+            new Npc(MERCA, 6, 7, "sage", "검객 무현", ACT_EVENT, EV_SAGE, STEP_GUILD_REFUSED, 99, new Object[][]{
+                    at(0, "…"),
+                    at(STEP_GALLEON_DOWN, "해적 두목을 쓰러뜨렸다지? 수련한 보람이 있군. 하지만 진짜 마물은 바다 밑에 있다네."),
+                    at(STEP_SERPENT_DOWN, "바다가 잔잔해졌군. 이제 자네를 '그냥 배달부'라고 부르는 사람은 없을 걸세."),
+                    at(STEP_CHAPTER2_CLEAR, "가게, 용자. 이 세계가 자네를 기다리고 있네."),
+            }),
+
+            // ---- 2장: 수련의 던전 수호자
+            new Npc(TRIAL_P, 11, 2, "rockking", "힘의 수호자 바위왕", ACT_EVENT, EV_TRIAL_P, STEP_GUILD_REFUSED, 99, new Object[][]{
+                    at(0, "(제단 앞에서 바위로 된 거인이 몸을 일으킨다)",
+                            "…힘을 원하는가, 짐꾼. 힘이란 무거운 것을 끝까지 드는 것. 네 팔로 나를 들어 올려 보아라!",
+                            "[신창] 저는… 그냥 무거운 짐을 오래 들어 본 것뿐이에요."),
+            }),
+            new Npc(TRIAL_A, 11, 2, "windking", "민첩의 수호자 질풍왕", ACT_EVENT, EV_TRIAL_A, STEP_GUILD_REFUSED, 99, new Object[][]{
+                    at(0, "(바람이 소용돌이치더니, 날개 달린 늑대가 제단 위에 내려앉는다)",
+                            "빠름이란 망설이지 않는 것. 너는 늘 한 발 늦게 망설이지. 내 바람을 잡아 보아라!",
+                            "[신창] 배달은 늦으면 안 되는데… 그래, 이번엔 안 망설여."),
+            }),
+            new Npc(TRIAL_S, 11, 2, "shadowhero", "정신의 수호자 그림자 신창", ACT_EVENT, EV_TRIAL_S, STEP_GUILD_REFUSED, 99, new Object[][]{
+                    at(0, "(거울 같은 제단에 신창의 모습이 비친다. 그 그림자가 거울 밖으로 걸어 나왔다)",
+                            "[그림자 신창] 안녕, 나. 용자? 웃기지 마. 너는 돈 벌고 표 얻고 믿음 모은 게 전부잖아.",
+                            "[그림자 신창] 이번에도 도망쳐. 무거운 짐은 내려놓고, 그냥 배달부로 살아.",
+                            "[신창] …그게 내 목소리라서 더 아프네. 그래도, 이번엔 안 도망쳐."),
+            }),
 
             // ---- 메르카: 피피 (동료가 되기 전, 시장 노점)
             new Npc(MERCA, 10, 10, "pipi", "요정 상인 피피", ACT_EVENT, EV_PIPI, STEP_SAILED, STEP_GALLEON_DOWN, new Object[][]{
@@ -709,6 +805,7 @@ public final class RpgData {
                     at(STEP_DEW, "달빛 이슬을 석상에 부어 주거라. 어머니부터 가 보는 게 좋겠구나. 이슬의 빛은 어머니의 마법에서 왔으니."),
                     at(STEP_DAD_BACK, "북쪽 산의 요마성으로 가는 길이 열렸다. 네 가족을 갈라놓은 그 여우가 거기 있다."),
                     at(STEP_CHAPTER4_CLEAR, "부엉. 언제든 놀러 오너라. 숲은 늘 네 집이란다."),
+                    at(STEP_WORLD, "부엉. 하루가 매일 밤 너희가 간 쪽을 보고 운단다. 꼭 이기고 오너라."),
             }),
             act(BEASTDEN, 5, 9, "bear", "곰 어미 두두", ACT_INN, 0,
                     at(0, "크릉. 우리 아기 민한, 다쳤니? 이리 와서 둥지에서 자렴. 공짜야, 공짜.")),
@@ -781,6 +878,89 @@ public final class RpgData {
                             "[신창] 안 비었어. 아들이 8년 동안 혼자 채워 왔거든.",
                             "[민한] 아빠, 엄마. 하루. 같이 가요. 이번엔 우리가 지킬 차례예요!"),
             }),
+
+            // ---- 5장: 성도 루멘
+            new Npc(LUMEN, 12, 3, "ella", "엘라", ACT_EVENT, EV_ELLA, STEP_WORLD, 99, new Object[][]{
+                    at(0, "기다렸단다."),
+                    at(STEP_TRUTH, "서쪽 황금 도시의 지하 금고에 돈의 악마 맘몬이 있단다. 가장 먼저, 네가 가장 많이 쌓았던 것부터.",
+                            "무섭지 않단다. 너는 이미 다 내려놓았잖니."),
+                    at(STEP_MAMMON_DOWN, "동쪽 권좌의 탑. 정치의 악마 벨리알… 그리고 내 오라비 아르센이 거기 있을 게다.",
+                            "아르센을… 부탁한다. 미워하지만, 그래도 내 하나뿐인 오라비란다."),
+                    at(STEP_BELIAL_DOWN, "북쪽 산 위 타락한 대성당. 신에게 반역한 자, 바알세불. 종교의 악마가 기다린다.",
+                            "그는 믿음을 먹고 자란다. 하지만 사랑은 먹지 못한단다. 기억하렴."),
+                    at(STEP_ENDING, "고맙구나, 짐꾼. 아니… 용사의 가족아. 이제야 내 짐도 내려놓을 수 있겠어."),
+            }),
+            new Npc(LUMEN, 16, 4, "elder", "해의 제단지기", ACT_EVENT, EV_ALTAR, STEP_WORLD, 99, new Object[][]{
+                    at(0, "해의 제단 분소에 온 걸 환영하오."),
+            }),
+            act(LUMEN, 4, 12, "merchant", "루멘 도구점", ACT_SHOP, 7,
+                    at(0, "세상이 이 꼴이라 장사가 안 돼요. 그래도 약은 넉넉히 챙기세요.")),
+            act(LUMEN, 8, 12, "innkeeper", "별빛 여관", ACT_INN, 60,
+                    at(0, "별빛 여관입니다. 용사님 가족이시라고요? 오늘은 푹 쉬세요.")),
+            act(LUMEN, 19, 14, "priest", "루멘 대성당 사제", ACT_SAVE, 0,
+                    at(0, "진짜 신앙은 무언가를 바라지 않는 것이지요. 모험을 기록해 드리겠습니다.")),
+            npc(LUMEN, 4, 10, "merchant", "루멘 상인",
+                    at(0, "요즘 사람들은 미쳤어요. 돈만 보면 눈이 뒤집혀요. 서쪽 황금 도시에서 금화 냄새가 퍼진 뒤로…"),
+                    at(STEP_MAMMON_DOWN, "이상하죠? 갑자기 다들 이웃한테 빵을 나눠 주기 시작했어요. 저도요!")),
+            npc(LUMEN, 21, 10, "soldier", "루멘 경비병",
+                    at(0, "동쪽 권좌의 탑이 생긴 뒤로 왕들이 서로 싸워요. 다들 탑에서 내려온 목소리를 듣는대요."),
+                    at(STEP_BELIAL_DOWN, "왕들이 휴전했대요! 탑의 목소리가 끊겼다고요.")),
+            npc(LUMEN, 9, 17, "villager", "기도하는 여인",
+                    at(0, "대성당의 종이 울리면 사람들이 눈이 멀어 서로를 저주해요. 신의 이름으로요…",
+                            "저는 그래도 기도해요. 누군가 이 세상을 구해 주기를."),
+                    at(STEP_BELIAL_DOWN, "온 세상 사람들이 같은 기도를 하고 있어요. 용사님 가족을 위해서요.")),
+            new Npc(LUMEN, 15, 9, "lina", "리나", ACT_NONE, 0, STEP_MAMMON_DOWN, 99, new Object[][]{
+                    at(0, "신창 씨…! 정말 신창 씨예요? 그리고… 이 아이가 민한이?",
+                            "황금 금고에서 꺼내 줘서 고마워요. 우린 맘몬의 '담보'로 갇혀 있었어요.",
+                            "저는 루멘을 지킬게요. 신창 씨 가족은… 끝까지 가요. 기사의 이름으로 응원할게요!"),
+            }),
+            new Npc(LUMEN, 17, 9, "pipi", "피피", ACT_NONE, 0, STEP_MAMMON_DOWN, 99, new Object[][]{
+                    at(0, "신창! 살아 있었구나! 와, 결혼도 했고 애도 있고! 내 저울이 축하 무게로 터질 것 같아!",
+                            "민한이라고? 아빠 닮아서 짐 많이 들게 생겼다. 히히.",
+                            "나는 리나랑 여기 남을게. 우리 몫까지 세게 때려 줘!"),
+            }),
+            new Npc(LUMEN, 22, 12, "soldier", "기사단장 로웰", ACT_NONE, 0, STEP_BELIAL_DOWN, 99, new Object[][]{
+                    at(0, "…짐꾼. 벨리알의 꼭두각시로 살던 나를 풀어 줘서 고맙소.",
+                            "리나가 이렇게 컸다니. 당신이 내 딸을 지켜 줬군.",
+                            "이제 이 늙은 기사도 루멘의 성벽을 지키겠소. 대성당은… 당신 가족에게 맡기겠소."),
+            }),
+
+            // ---- 5장: 세 악마
+            new Npc(GOLD3, 11, 2, "mammon", "돈의 악마 맘몬", ACT_EVENT, EV_MAMMON, STEP_TRUTH, STEP_TRUTH, new Object[][]{
+                    at(0, "(금화가 산처럼 쌓인 방. 황금 옥좌 위에서 살찐 악마가 금화를 씹어 삼키고 있다)",
+                            "오호, 내 최고의 고객이 왔군! 배달부에서 재벌까지, 너만큼 돈을 사랑한 인간은 없었지!",
+                            "[신창] 그땐 그랬지. 돈이 쌓일수록 마음은 텅 비어 갔어.",
+                            "[맘몬] 다시 와라, 신창. 이번엔 세상의 모든 돈을 주마. 대신 그 가족을 담보로 맡겨라!",
+                            "[지헌] 우리 가족은 담보가 아니에요.",
+                            "[민한] 아빠가 다 내려놓고 받은 해가, 나를 지켜 줬어. 너 같은 거 필요 없어!",
+                            "[맘몬] 크르르… 그럼 금화 속에 파묻어 주마!"),
+            }),
+            new Npc(TOWER2, 1, 8, "arsen", "문지기 아르센", ACT_EVENT, EV_ARSEN, STEP_MAMMON_DOWN, STEP_MAMMON_DOWN, new Object[][]{
+                    at(0, "(회색 망토의 사내가 길을 막아선다. 지팡이 끝이 푸르게 빛난다)",
+                            "왔구나, 짐꾼. 300년을 기다렸다. 가장 많이 가진 자가 문을 건너오기를.",
+                            "[신창] 문지기… 아르센. 리벨 동굴에서부터 줄곧 당신이었지.",
+                            "[아르센] 공허의 왕은 봉인으로는 막을 수 없다. 담을 그릇이 필요했다. 그래서 너를 채우고, 비우고, 또 채웠다.",
+                            "[지헌] 그 '그릇'이 사람이라는 걸 잊었나요? 남편이고, 아빠라는 걸!",
+                            "[아르센] …엘라와 같은 말을 하는구나. 그럼 증명해 봐라. 그릇이 아닌 사람의 힘을!"),
+            }),
+            new Npc(TOWER3, 11, 2, "belial", "정치의 악마 벨리알", ACT_EVENT, EV_BELIAL, STEP_ARSEN_DOWN, STEP_ARSEN_DOWN, new Object[][]{
+                    at(0, "(왕관 수십 개가 박힌 옥좌. 얼굴이 여럿인 악마가 각국 왕들의 그림자를 실처럼 조종하고 있다)",
+                            "환영하오, 대통령 각하. 당원에서 대통령까지, 참 빠른 출세였지. 내가 밀어 줬으니까.",
+                            "[신창] 표를 얻을수록 사람이 숫자로 보였어. 그게 당신이 원한 거였군.",
+                            "[벨리알] 권력은 달콤하다. 한 번만 더 오르시오. 이번엔 세계의 왕좌를!",
+                            "[민한] 우리 아빠는 왕 같은 거 안 해. 우리 아빠는 배달부고, 용사고, 그냥 아빠야!",
+                            "[벨리알] 하하하! 그럼 그 '그냥 아빠'를 끌어내려 주지!"),
+            }),
+            new Npc(CATH3, 11, 2, "beelzebub", "종교의 악마 바알세불", ACT_EVENT, EV_BEEL, STEP_BELIAL_DOWN, STEP_BELIAL_DOWN, new Object[][]{
+                    at(0, "(무너진 제단 위, 수억 마리 파리가 날개 소리로 찬송가를 부른다. 그 가운데 거대한 날개를 단 존재가 내려앉는다)",
+                            "…경배하라. 나는 파리의 왕, 높은 곳의 주인. 신에게 반역한 자, 바알세불이다.",
+                            "[바알세불] 짐꾼. 너는 신자에서 교주까지, 믿음을 끝없이 쌓았지. 그 믿음이 누구에게 갔는지 아느냐? 바로 나다.",
+                            "[바알세불] 돈의 맘몬도, 권력의 벨리알도 나의 그림자일 뿐. 공허의 왕이란, 인간의 욕망을 먹고 자란 나의 다른 이름이다!",
+                            "[신창] 그래서 마지막에 남은 게 너구나. 사람들이 신에게 바친 마음을 가로챈 도둑.",
+                            "[지헌] 우리 셋이 서로에게 바친 마음은 못 가져갈 거예요.",
+                            "[민한] 아빠, 엄마. 끝내자. 우리 가족이!",
+                            "[바알세불] 가족? 하찮은 것. 신조차 나를 막지 못했다. 덤벼라, 먼지 같은 것들아!"),
+            }),
     };
 
     // ------------------------------------------------------------ 살펴볼 수 있는 것 (단서)
@@ -810,6 +990,12 @@ public final class RpgData {
 
     public static final Readable[] READABLES = {
             // 청와대
+            new Readable(TRIAL_S, 2, 3, 0, -1, null,
+                    "거울처럼 매끄러운 벽이다. 비친 얼굴이… 배달을 시작하던 날의 앳된 신창이다.",
+                    "[신창] (그때는 4,000원 한 건에도 신났었는데.)"),
+            new Readable(TRIAL_S, 21, 3, 0, -1, null,
+                    "거울처럼 매끄러운 벽이다. 비친 얼굴이… 대통령 취임식 날의 지친 신창이다.",
+                    "[신창] (가장 많이 가졌던 날, 나는 왜 그렇게 공허했을까.)"),
             new Readable(OFFICE, 6, 1, 0, -1, null,
                     "역대 대통령들의 초상화가 걸려 있다. 신창의 초상화는 아직 걸리지 않았다."),
             new Readable(OFFICE, 15, 4, FLAG_RECORD, -1, null,
@@ -949,6 +1135,22 @@ public final class RpgData {
                     "'문지기 아르센과 요마왕 다르칸의 맹약. 짐꾼이 다시 가득 차거든, 가장 소중한 것을 빼앗아 비울 것. 대가로 실바 대륙을 준다.'",
                     "'짐꾼의 아이는 반드시 데려올 것. 그 아이는 해를 물려받았다. — 아르센'",
                     "[신창] 문지기는 민한이까지… 처음부터 노리고 있었던 거야."),
+            // ---- 5장
+            new Readable(GOLD3, 2, 2, FLAG_LEDGER5, -1, null,
+                    "황금 통 위에 두꺼운 장부가 놓여 있다.",
+                    "'고객 명부 1번: 신창. 배달 4,000원부터 재벌까지. 별·해를 쌓을수록 맘몬에게 바친 욕망도 쌓였음.'",
+                    "'단, 이 고객은 몇 번이고 모든 것을 내려놓았다. 해는 맘몬의 손에 들어오지 않았다. — 이해할 수 없음'",
+                    "[신창] …해는 내려놓을 때 얻은 거였으니까."),
+            new Readable(TOWER3, 5, 2, FLAG_LAW, -1, null,
+                    "제단 위에 벨리알의 법전이 펼쳐져 있다.",
+                    "'제1조: 백성은 숫자다. 제2조: 표는 사고판다. 제3조: 권력은 결코 내려놓지 않는다.'",
+                    "(마지막 장에 누군가 굵게 그어 놓았다) '…짐꾼은 대통령이 된 뒤에도 차원 이동 장치를 눌렀다. 권좌를 버리고.'"),
+            new Readable(CATH1, 2, 2, FLAG_REBEL, -1, null,
+                    "벽화: 하늘의 빛 아래, 날개 달린 존재가 등을 돌린다. '그는 경배받기를 원하였다'.",
+                    "그 아래로 수많은 사람이 엎드려 있고, 그들의 기도가 검은 파리가 되어 날개 달린 존재에게 빨려 들어간다."),
+            new Readable(CATH1, 21, 2, FLAG_REBEL, -1, null,
+                    "벽화: 마지막 그림. 세 사람이 손을 맞잡자, 그 사이에서 해보다 밝은 빛이 터져 나온다.",
+                    "글귀: '반역자는 믿음은 먹을 수 있으나, 서로를 위한 사랑은 먹지 못하리라.'"),
     };
 
     /** 단서가 아닌 물건을 살폈을 때 */
@@ -1058,7 +1260,7 @@ public final class RpgData {
             "[대신 모르칸] 폐하, 메르카로 가는 배는 제가 주선하겠습니다. (…짐꾼이 직접 바다로 와 주신다니, 일이 쉬워지는군)",
             "[리나] 저도 끝까지 함께할게요. 이제 견습이 아니라 정식 기사로서!",
             "— 1장 「배달부 용사」 끝 —",
-            "(2장 「상인의 길」은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 지금까지 모은 단서를 볼 수 있어요.)",
+            "(이야기는 2장 「나를 찾는 여정」으로 이어집니다. 메뉴 「단서」에서 지금까지 모은 단서를 볼 수 있어요.)",
     };
 
     public static final String[] KING_AFTER_CLEAR = {
@@ -1100,6 +1302,63 @@ public final class RpgData {
             "[길드장 바론] 외지인이 길드 일에 끼어들 자격은 없소. 바다에 나갈 배도, 신전 가는 길도 내줄 수 없지.",
             "[길드장 바론] …그런 헛소리를 하던 요정 상인이 하나 있었지. 피피라고. 시장에서 쫓겨나 노점이나 하고 있을 거요.",
             "(바론은 책상 위의 빈 나침반 상자를 무심코 쓰다듬었다)",
+    };
+
+    public static final String[] TRIAL_INTRO = {
+            "[검객 무현] 거기, 배달 가방 멘 사내. 잠깐.",
+            "[검객 무현] 길드장에게 쫓겨났군. 당연하지. 자네 눈엔 짐을 질 각오가 없어.",
+            "[신창] …저는 그냥 배달부예요. 예언이니 용자니, 다들 저를 잘못 본 거예요.",
+            "[신창] 늑대왕을 쓰러뜨린 것도 리나 덕분이고, 운이 좋았던 거고요.",
+            "[검객 무현] 그래? 그럼 확인해 보게. 메르카 평원에는 옛 용자들이 스스로를 시험하던 세 개의 수련 던전이 있다네.",
+            "[검객 무현] 서쪽 바위산의 「힘의 던전」, 꽃밭 옆의 「민첩의 던전」, 남쪽 해안의 「정신의 던전」.",
+            "[검객 무현] 셋을 모두 넘고도 자네가 '그냥 배달부'라고 말한다면, 그때는 나도 더 묻지 않겠네.",
+            "[리나] 신창 씨… 가 봐요. 저도 같이 갈게요. 아버지도 늘 말씀하셨어요. 기사는 검보다 마음을 먼저 단련한다고.",
+    };
+
+    public static final String[] TRIAL_P_DONE = {
+            "(바위왕이 무너지자, 제단의 붉은 돌이 빛이 되어 신창의 팔에 스며든다)",
+            "[바위왕] …무거운 것을 끝까지 드는 팔이로군. 그 팔로 무엇을 들지는, 네가 정해라.",
+            "✨ 힘의 수련 완료! 신창의 공격력이 영구히 20% 올랐다 ✨",
+    };
+    public static final String[] TRIAL_A_DONE = {
+            "(질풍왕이 웃음소리처럼 바람이 되어 흩어지고, 한 줄기 바람이 신창의 다리를 감싼다)",
+            "[질풍왕] 망설이지 않았구나. 누군가를 향해 달려가는 발은 원래 빠른 법이지.",
+            "✨ 민첩의 수련 완료! 신창의 민첩이 영구히 40% 올랐다 ✨",
+    };
+    public static final String[] TRIAL_S_DONE = {
+            "(그림자 신창이 무릎을 꿇는다. 그 얼굴이 조금 웃고 있다)",
+            "[그림자 신창] …이제 알겠지. 나는 너의 두려움이었어. 짐을 지기 싫어하는 마음.",
+            "[그림자 신창] 두려워도 괜찮아. 두려운 채로 지는 거야. 그게 용기래.",
+            "(그림자는 빛이 되어 신창의 가슴 속으로 돌아왔다)",
+            "✨ 정신의 수련 완료! 신창의 최대 MP가 영구히 40% 올랐다 ✨",
+    };
+    /** 수련을 몇 개 마쳤느냐에 따라 달라지는 신창의 속마음 */
+    public static final String[][] TRIAL_HEART = {
+            {"[신창] (…아니야. 몸이 좀 단단해졌을 뿐이야. 나는 그냥 배달부라고.)",
+                    "[리나] 신창 씨, 방금 그 일격… 아버지보다 셌어요."},
+            {"[신창] (요즘 자꾸 가방이 빛나. 옛 용자들의 목소리가 들리는 것 같아. …아니, 착각이야. 착각이어야 해.)",
+                    "[리나] 신창 씨, 요즘 표정이 달라졌어요. 처음 만났을 때보다… 덜 도망치는 얼굴이에요."},
+            {"[신창] (부인하고 싶었다. 그런데 이제는… 부인할 수가 없어.)",
+                    "[신창] (문 저편에서도, 여기서도, 나는 늘 무언가를 날라 왔지. 어쩌면 처음부터 이 짐을 나르러 온 건지도 몰라.)",
+                    "[리나] 무현 어르신께 가 봐요. 메르카에서 기다리고 계실 거예요."},
+    };
+
+    public static final String[] MISSION = {
+            "[검객 무현] 세 수련을 모두 넘었군. 자, 이제 말해 보게. 자네는 누구인가?",
+            "[신창] 저는……",
+            "(그때, 부두 쪽에서 누군가 숨을 헐떡이며 달려왔다)",
+            "[소금꽃 마을 소년] 사, 살려 주세요! 소금꽃 마을이… 바다에서 올라온 마물한테 습격당했어요!",
+            "[소금꽃 마을 소년] 해적들은 그 틈에 마을을 털고, 사람들은 푸른 열병으로 쓰러지고… 아무도 도와주지 않아요!",
+            "[리나] 바다의 봉인이… 깨지고 있는 거예요. 그림자 동굴 때처럼.",
+            "(신창은 배달 가방을 꽉 쥐었다. 원 안의 다섯 점 문장이 손바닥을 뜨겁게 데운다)",
+            "[신창] …무현 어르신. 저는 배달부예요. 받은 건 끝까지 갖다 줘야 직성이 풀리는.",
+            "[신창] 이 세계가 저한테 맡긴 짐이 있다면, 그것도 끝까지 나르겠습니다.",
+            "[신창] 저는… 이 세계를 구할 용자입니다.",
+            "[검객 무현] (처음으로 웃는다) 그 말을 기다렸네.",
+            "(가방의 문장이 눈부시게 빛나며 신창의 몸을 감싼다. 세 수련의 힘이 하나로 이어진다)",
+            "✨ 신창이 사명을 받아들였다! 「용자의 결의」가 깨어났다: 결의의 일격 · 정신 통일 ✨",
+            "[검객 무현] 해적은 북서쪽 물보라 동굴에 있네. 바다로 가는 길은 시장의 요정 상인 피피가 알고 있지.",
+            "[리나] 가요, 용자님. …아니, 신창 씨!",
     };
 
     public static final String[] GUILD_WAITING = {
@@ -1196,7 +1455,9 @@ public final class RpgData {
             "[피피] 바론 아저씨가 돈을 내놓다니! 오늘 저울이 고장 났나 봐.",
             "[신창] 다섯 봉인석 중 둘에 금이 갔어. 문지기는 다음 봉인을 노릴 거야.",
             "[리나] 불의 봉인석… 그리고 아버지가 있는 이그나로 가요.",
-            "— 2장 「상인의 길」 끝 —",
+            "[신창] 무현 어르신 말이 맞았어. 나는 그냥 배달부가 아니었어.",
+            "[신창] 아니, 배달부라서 용자인 거야. 맡은 짐은 끝까지 나르니까.",
+            "— 2장 「나를 찾는 여정」 끝 —",
             "[길드장 바론] 부두에 이그나로 가는 길드의 배를 대 두겠소. 형의 나침반이 북쪽을 가리키더군.",
     };
 
@@ -1361,7 +1622,7 @@ public final class RpgData {
             "[신창] (이번엔 지켜야 할 집이 있으니까.)",
             "(마을 사람들이 축하금을 모아 주었다. 5000골드를 받았다!)",
             "— 3장 「용사의 탄생」 끝 —",
-            "(4장은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 3장의 단서도 확인해 보세요.)",
+            "(이야기는 4장 「해를 물려받은 아이」로 이어집니다. 해련에게 다시 말을 걸어 보세요.)",
     };
 
     // ---- 4장 이벤트 대사
@@ -1553,7 +1814,111 @@ public final class RpgData {
             "[신창] (리나, 피피. 로웰 단장님. 이제 우리 가족이 데리러 갈게. 문지기, 기다려라.)",
             "(요마왕이 남긴 보물을 받았다. 20000골드!)",
             "— 4장 「해를 물려받은 아이」 끝 —",
-            "(5장은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 4장의 단서도 확인해 보세요.)",
+            "(이야기는 최종장 「영원한 전설」로 이어집니다. 부엉이에게 다시 말을 걸어 보세요.)",
+    };
+
+    // ---- 5장 이벤트 대사
+
+    public static final String[] WORLD_CALL = {
+            "[백년 부엉이 노을] 부엉… 민한아, 별이 이상하구나. 세상 곳곳에서 검은 기운이 솟고 있어.",
+            "(그날 밤, 해의 제단에서 받은 배달 가방의 문장이 저절로 빛났다. 가방 속에서 낯익은 할머니의 목소리가 들린다)",
+            "[???] 짐꾼아. 이제 마지막 배달이란다. 세상의 한가운데, 루멘으로 오너라.",
+            "[신창] 이 목소리… 첫 배달 날, 가방을 준 그 할머니야!",
+            "[하루] 아우… (하루가 민한의 손을 핥고, 숲 쪽으로 한 걸음 물러선다)",
+            "[민한] 하루, 너는 남아서 숲을 지켜 줄래? …응. 꼭 돌아올게.",
+            "(하루는 숲에 남았다. 신창, 지헌, 민한 세 사람이 가방의 빛을 따라 세상의 한가운데로 건너갔다)",
+    };
+
+    public static final String[] TRUTH = {
+            "[엘라] 기다렸단다, 짐꾼. 그리고 그 아내와 아들도.",
+            "[신창] 할머니…! 그날 저한테 가방을 주신……",
+            "[엘라] 그래. 내 이름은 엘라. 300년 전 짐꾼 카이른과 함께 다섯 빛을 날랐던 사람이고, 문지기 아르센의 누이란다.",
+            "[엘라] 문 저편 네 세계로 건너가, 아르센이 노리는 '가장 많이 가진 자'를 지켜보았지. 그게 너였어.",
+            "[엘라] 이제 진실을 말해 주마. 공허의 왕에게는 세 개의 얼굴이 있다.",
+            "[엘라] 첫째, 돈의 악마 맘몬. 사람에게 끝없이 벌라고 속삭이지. 네가 배달부에서 재벌이 될 때, 그 곁에 있었단다.",
+            "[엘라] 둘째, 정치의 악마 벨리알. 권력을 쥐면 놓지 못하게 하지. 네가 당원에서 대통령이 될 때, 그 곁에 있었고.",
+            "[엘라] 그리고 셋째이자 그 모든 것의 주인, 종교의 악마 바알세불. 신에게 반역한 자. 사람들의 믿음을 가로채 제 것으로 삼는 자.",
+            "[엘라] 네가 신자에서 교주까지 오를 때 바친 믿음이… 그에게 흘러갔단다.",
+            "[신창] 돈, 권력, 믿음… 내가 문 저편에서 쌓아 올린 전부잖아요.",
+            "[엘라] 그래서 아르센은 너를 '그릇'이라 불렀지. 세 악마를 한 몸에 담을 수 있는 그릇.",
+            "[엘라] 하지만 너는 몇 번이고 다 내려놓았다. 그때마다 해를 얻었고, 그 해는 아들에게 갔지. 세 악마가 가장 두려워하는 건 바로 그거란다.",
+            "[지헌] 그럼 우리가 할 일은…",
+            "[엘라] 세 악마를 하나씩 쓰러뜨리는 것. 서쪽 황금 도시의 맘몬, 동쪽 권좌의 탑의 벨리알, 그리고 북쪽 산 위 타락한 대성당의 바알세불.",
+            "[민한] 가자, 아빠, 엄마. 우리 가족이 세상을 지킬 차례야!",
+            "(서쪽 황금 도시로 가는 길이 열렸다!)",
+    };
+
+    public static final String[] MAMMON_DEFEATED = {
+            "(맘몬의 몸에서 금화가 폭포처럼 쏟아져 나온다. 금화는 땅에 닿자 흙과 씨앗으로 변했다)",
+            "[맘몬] 내… 돈… 내 금화가… 왜… 너희는 하나도 줍지 않지……",
+            "[신창] 이미 충분히 가져 봤거든. 그리고 그게 다 아니라는 것도 알아.",
+            "(맘몬은 녹아내리는 금처럼 사라졌다. 금고 깊은 곳에서 쇠사슬 소리가 들린다)",
+            "[리나] …신창 씨? 신창 씨!!",
+            "[피피] 신창이다! 진짜 신창이다!!",
+            "(금고 감옥에 '담보'로 갇혀 있던 리나와 피피를 구해 냈다!)",
+            "[리나] 바다에서 끌려간 뒤로 줄곧 여기 있었어요. 맘몬이 우리를 신창 씨를 부를 미끼로 쓰려고……",
+            "[피피] 어? 이 예쁜 언니는? 이 꼬마는? 신창, 너… 결혼했어?!",
+            "[지헌] 처음 뵙겠습니다. 지헌이에요. 남편한테 두 분 얘기 많이 들었어요.",
+            "[민한] 민한이에요! 아빠 동료들이죠? 리나 누나, 피피 누나!",
+            "[리나] 우리는 지쳐서 함께 싸우긴 힘들 것 같아요. 루멘으로 돌아가서 기다릴게요.",
+            "(동쪽 권좌의 탑으로 가는 길이 열렸다!)",
+    };
+
+    public static final String[] ARSEN_DEFEATED = {
+            "(아르센의 지팡이가 부러지고, 회색 망토가 바닥에 떨어진다. 그 아래 늙고 지친 얼굴이 드러났다)",
+            "[아르센] …강하구나. 그릇이 아니라, 사람이라서인가.",
+            "[아르센] 나는 공허의 왕을 다스리려 했다. 그런데 그것은 다스릴 수 있는 게 아니었다. 그것이 나를 다스렸지.",
+            "[아르센] 300년. 엘라가 옳았다. 짐은 담는 게 아니라… 나누는 거였어.",
+            "[신창] 엘라 할머니가 기다리고 계세요. 루멘에서.",
+            "[아르센] …누이가? 그 아이는 아직도 나를……",
+            "[아르센] 짐꾼. 위층의 벨리알을 쓰러뜨려라. 그리고 대성당의 바알세불을. 그가 공허의 왕의 진짜 얼굴이다.",
+            "(아르센은 부러진 지팡이를 짚고 천천히 계단을 내려갔다)",
+    };
+
+    public static final String[] BELIAL_DEFEATED = {
+            "(벨리알의 왕관들이 하나씩 깨지며, 실에 묶여 있던 왕들의 그림자가 풀려난다)",
+            "[벨리알] 내 권좌… 내 표… 너는 대통령이었잖나… 왜 권력을 탐내지 않지……",
+            "[신창] 대통령 자리보다 아빠 자리가 훨씬 무겁더라.",
+            "(벨리알이 쓰러진 자리에서, 꼭두각시처럼 굳어 있던 흑기사가 무릎을 꿇었다. 투구가 벗겨진다)",
+            "[로웰] …여긴… 나는… 무엇을……",
+            "[신창] 기사단장 로웰님이시죠? 리나가 루멘에서 기다리고 있어요.",
+            "[로웰] 리나가…! 짐꾼, 고맙소. 정말 고맙소……",
+            "(세계 곳곳에서 사람들이 무릎을 꿇고 기도하기 시작했다. 신창의 가족을 위해서)",
+            "(북쪽 산 위 타락한 대성당으로 가는 길이 열렸다!)",
+    };
+
+    public static final String[] ENDING = {
+            "(99,999,999의 빛이 바알세불을 꿰뚫었다. 수억 마리의 파리가 한꺼번에 빛으로 타올랐다)",
+            "[바알세불] 이럴 수가… 신에게도 무릎 꿇지 않은 내가… 고작 한 가족에게……",
+            "[바알세불] 믿음은… 먹을 수 있었는데… 이것은… 이 빛은… 먹을 수가… 없……",
+            "(바알세불은 빛 속으로 흩어졌다. 그와 함께 세상을 덮고 있던 검은 기운이 사라져 갔다)",
+            "……",
+            "(하늘이 열렸다. 해보다 따스한 빛이 세 사람 위로 쏟아진다)",
+            "[???] 잘했다, 나의 아이들아.",
+            "(그것은 목소리라기보다 온 세상이 한꺼번에 미소 짓는 느낌이었다)",
+            "[창조주의 목소리] 쌓은 것을 내려놓을 줄 알았고, 잃은 자리를 사랑으로 채웠으며, 그 사랑을 서로에게 나누었구나.",
+            "[창조주의 목소리] 그것이 내가 처음 세상을 만들 때 넣어 둔, 가장 무거우면서 가장 가벼운 짐이란다.",
+            "(다섯 봉인석이 하늘 높이 떠올라 하나의 빛이 되었다. 다섯 번째 봉인석은… 세 사람이 맞잡은 손 위에 내려앉았다)",
+            "[엘라] (멀리서) 다섯 번째 봉인은… 짐꾼이 스스로 내려놓는 짐. 카이른, 보고 있니? 드디어 완성됐어.",
+            "……",
+            "(신창의 가족이 루멘으로 돌아오자, 온 세상이 그들을 맞이했다)",
+            "[리나] 신창 씨! 지헌 씨! 민한아!!",
+            "[피피] 세상에서 제일 무거운 걸 쓰러뜨렸네! 내 저울로도 못 재겠어!",
+            "[로웰] 용사의 가족에게, 기사의 이름으로 경례!",
+            "[아르센] (엘라 곁에서 고개를 숙인다) …고맙다, 짐꾼.",
+            "(새들이 노래하고, 숲의 짐승들이 울부짖고, 바다의 물고기들이 뛰어올랐다. 만물이 세 사람을 칭송했다)",
+            "[하루] 아우우우— (먼 숲에서, 늑대 한 마리가 달을 향해 길게 울었다)",
+            "[지헌] 여보. 우리 이제… 집에 가요.",
+            "[민한] 아빠. 집에 가서, 나 배달 놀이 다시 가르쳐 줘.",
+            "[신창] (아들의 머리를 쓰다듬으며) 그래. 이번엔 우리 셋이 같이 배달하자. 세상에서 제일 가벼운 짐을.",
+            "……",
+            "(그 뒤로 사람들은 이야기했다)",
+            "(문 저편에서 온 배달부가 있었다고. 그는 돈과 권력과 믿음을 모두 쌓았다가, 모두 내려놓았다고)",
+            "(그리고 그가 사랑한 아내와, 해를 물려받은 아들과 함께 세상을 구했다고)",
+            "(신의 가호와 만물의 칭송 속에서, 신창의 가족은 영원한 전설이 되었다)",
+            "— 최종장 「영원한 전설」 끝 —",
+            "✨ 신창의 모험 · 완결 ✨",
+            "플레이해 주셔서 고맙습니다.",
     };
 
     /** 보스 전투 중 연출 대사: {격노할 때, 쓰러지기 직전} */
@@ -1598,6 +1963,36 @@ public final class RpgData {
             return new String[][]{
                     {"[다르칸] 크하하! 가족 놀이는 여기까지다!", "[민한] 아빠, 엄마, 하루! 한 번 더!"},
                     {"(다르칸의 뿔에 금이 간다)", "[신창] 민한아, 마지막은 네가 해라!", "[민한] 응! 이건… 아빠의 해야!"},
+            };
+        }
+        if ("rockking".equals(sprite) || "windking".equals(sprite)) {
+            return new String[][]{
+                    {"(수호자의 기운이 거세진다. 수련은 이제부터다!)", "[리나] 버텨요, 신창 씨!"},
+                    {"[신창] (조금만 더… 끝까지 들어 올려!)"},
+            };
+        }
+        if ("shadowhero".equals(sprite)) {
+            return new String[][]{
+                    {"[그림자 신창] 봐, 너도 무섭잖아! 그냥 도망쳐!", "[신창] 무서워. 그래도 안 도망쳐."},
+                    {"[그림자 신창] …왜 계속 일어나는 거야?", "[신창] 기다리는 사람들이 있으니까."},
+            };
+        }
+        if ("mammon".equals(sprite)) {
+            return new String[][]{
+                    {"[맘몬] 금화다! 금화를 보아라! 탐나지 않느냐!", "[신창] 하나도."},
+                    {"(맘몬의 황금 피부가 갈라지며 녹슨 동전이 우수수 떨어진다)"},
+            };
+        }
+        if ("arsen".equals(sprite)) {
+            return new String[][]{
+                    {"[아르센] 300년의 고독을 아느냐! 누이마저 등을 돌린 300년을!", "[지헌] 엘라 할머니는 등을 돌린 게 아니에요. 당신을 막으러 따라간 거예요!"},
+                    {"(아르센의 지팡이에 금이 간다)", "[아르센] …엘라……"},
+            };
+        }
+        if ("belial".equals(sprite)) {
+            return new String[][]{
+                    {"[벨리알] 모든 왕이 내게 엎드린다! 너도 엎드려라!", "[민한] 우리 집엔 왕 같은 거 없어. 가족만 있어!"},
+                    {"(벨리알의 얼굴들이 하나씩 금이 가며 서로를 노려본다)"},
             };
         }
         if ("forestlord".equals(sprite)) {
@@ -1733,6 +2128,7 @@ public final class RpgData {
             {HERB, HI_HERB, MANA_CANDY, WING},
             {HI_HERB, MANA_CANDY, PHOENIX, WING, OBSIDIAN_SWORD, VOLCANO_ARMOR, ASH_ROBE},
             {HI_HERB, MANA_CANDY, PHOENIX, WING, ROA_SPEAR, RANGER_MAIL},
+            {HI_HERB, MANA_CANDY, PHOENIX, WING},
     };
 
     /** 해의 제단: {아이템, 해 개수} */
@@ -1775,6 +2171,19 @@ public final class RpgData {
             {MOON1, 21, 1, PHOENIX, 3},
             {MOON2, 22, 6, ELIXIR, 3},
             {DEMON3, 21, 2, ELIXIR, 4},
+            {GOLD1, 22, 1, ELIXIR, 3},
+            {GOLD1, 11, 4, -1, 99999},
+            {GOLD2, 20, 3, ELIXIR, 3},
+            {GOLD3, 22, 6, -1, 200000},
+            {TOWER1, 6, 5, ELIXIR, 3},
+            {TOWER2, 21, 6, ELIXIR, 3},
+            {TOWER3, 22, 6, ELIXIR, 5},
+            {CATH1, 22, 5, ELIXIR, 5},
+            {CATH2, 21, 6, ELIXIR, 5},
+            {CATH3, 22, 9, ELIXIR, 9},
+            {TRIAL_P, 22, 5, HI_HERB, 3},
+            {TRIAL_A, 11, 8, -1, 1200},
+            {TRIAL_S, 22, 6, MANA_CANDY, 3},
     };
 
     // ------------------------------------------------------------ 주문 · 특기
@@ -1838,6 +2247,9 @@ public final class RpgData {
             new Spell("흥정", 2, 1, 2, STEAL_GOLD, 0),
             new Spell("해일", 2, 18, 9, WATER_ALL, 75),
             new Spell("행운의 저울", 2, 22, 10, EVADE_UP, 0),
+            // 세 수련을 마치고 사명을 받아들인 신창 (주인 번호 20)
+            new Spell("결의의 일격", 20, 1, 12, BIG_HIT, 240),
+            new Spell("정신 통일", 20, 1, 5, HEAL_ONE, 160),
             // 지헌
             new Spell("따스한 손길", 3, 1, 4, HEAL_ONE, 110),
             new Spell("대장간 불꽃", 3, 1, 7, FIRE_ALL, 60),
@@ -1973,7 +2385,11 @@ public final class RpgData {
             ICE_WOLF = 58, CRYSTAL_GOLEM = 59, CRYSTAL_BAT = 60, DEMON_SOLDIER = 61, NINE_TAIL = 62, SHADOW_YOKAI = 63,
             DEMON_CAPTAIN = 64, SUN_FAIRY = 65, RAINBOW_TURTLE = 66, FOX1 = 67, HOSTAGE = 68, GUARDIAN = 69,
             CRYSTAL_QUEEN = 70, FOX2 = 71, DEMON_KING = 72,
-            MOON_MOTH = 73, DARK_BEAR = 74, MOON_LORD = 75;
+            MOON_MOTH = 73, DARK_BEAR = 74, MOON_LORD = 75,
+            GOLD_GOLEM = 76, GREED_IMP = 77, MIMIC = 78, DEBT_GHOST = 79, POWER_KNIGHT = 80, AGITATOR = 81, WATCHER = 82,
+            PUPPET = 83, FALLEN = 84, ZEALOT = 85, FLIES = 86, HYPOCRITE = 87, CHAOS_BEAST = 88, HOLY_FEATHER = 89,
+            GOLD_PIG = 90, MAMMON = 91, ARSEN = 92, BELIAL = 93, BEELZEBUB = 94,
+            ROCK_KING = 95, WIND_KING = 96, SHADOW_HERO = 97;
     public static final int RARE_EXP = 1, RARE_GOLD = 2;
 
     public static final Monster[] MONSTERS = {
@@ -2064,6 +2480,31 @@ public final class RpgData {
             new Monster("달빛 나방", "moonmoth", 36, 900, 230, 110, 40, 80, 280, 1),
             new Monster("어둠 곰", "darkbear", 38, 1700, 250, 150, 10, 90, 320, 0),
             new Monster("어둠에 먹힌 숲의 주인", "forestlord", 44, 16000, 300, 170, 28, 3000, 6000, 2),
+            // 최종장: 세계를 지배하는 세 악마의 졸개들
+            new Monster("황금 골렘", "goldgolem", 62, 4000, 400, 300, 8, 400, 1200, 0),
+            new Monster("탐욕의 도깨비", "greedimp", 60, 2500, 410, 220, 40, 380, 1500, 1),
+            new Monster("금화 미믹", "mimic", 61, 3000, 420, 260, 20, 380, 3000, 0),
+            new Monster("빚쟁이 유령", "debtghost", 63, 2800, 400, 240, 30, 420, 900, 1),
+            new Monster("권력의 기사", "powerknight", 65, 4500, 440, 300, 24, 460, 900, 0),
+            new Monster("선동가의 그림자", "agitator", 64, 3000, 430, 240, 36, 440, 800, 1),
+            new Monster("철의 감시자", "watcher", 66, 5000, 430, 340, 10, 480, 900, 0),
+            new Monster("꼭두각시 관료", "puppet", 63, 2600, 420, 230, 28, 420, 1000, 0),
+            new Monster("타락 천사", "fallen", 70, 5500, 480, 320, 40, 520, 1000, 1),
+            new Monster("광신도", "zealot", 67, 3500, 450, 260, 26, 480, 900, 0),
+            new Monster("파리 군단", "flies", 68, 3000, 460, 220, 50, 500, 800, 0),
+            new Monster("위선의 사제", "hypocrite", 69, 4000, 460, 280, 22, 500, 1100, 1),
+            new Monster("혼돈의 짐승", "chaosbeast", 58, 3000, 380, 240, 30, 350, 700, 0),
+            new Monster("천사의 깃털", "holyfeather", 65, 30, 50, 300, 80, 9000, 100, 0, 0.7, 0.3, RARE_EXP),
+            new Monster("황금 돼지", "goldpig", 55, 6000, 30, 200, 1, 200, 40000, 0, 0, 0, RARE_GOLD),
+            // 세 악마
+            new Monster("돈의 악마 맘몬", "mammon", 70, 120000, 560, 320, 30, 30000, 99999, 2),
+            new Monster("문지기 아르센", "arsen", 72, 150000, 580, 330, 40, 30000, 20000, 2),
+            new Monster("정치의 악마 벨리알", "belial", 75, 200000, 620, 350, 36, 40000, 50000, 2),
+            new Monster("종교의 악마 바알세불", "beelzebub", 99, 99999999, 6000, 9000, 80, 0, 0, 2),
+            // 2장 수련의 수호자
+            new Monster("힘의 수호자 바위왕", "rockking", 17, 2600, 56, 34, 6, 900, 800, 2),
+            new Monster("민첩의 수호자 질풍왕", "windking", 18, 2100, 58, 24, 30, 1000, 900, 2, 0.2, 0, 0),
+            new Monster("정신의 수호자 그림자 신창", "shadowhero", 19, 2700, 62, 28, 16, 1100, 1000, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
@@ -2134,6 +2575,23 @@ public final class RpgData {
             // 29: 요마성 2층
             {{DEMON_SOLDIER, DEMON_SOLDIER, DEMON_SOLDIER}, {NINE_TAIL, NINE_TAIL, SHADOW_YOKAI},
                     {DEMON_CAPTAIN, SHADOW_YOKAI, NINE_TAIL}, {DEMON_CAPTAIN, DEMON_CAPTAIN, DEMON_SOLDIER}},
+            // 30: 판테온 대륙
+            {{CHAOS_BEAST}, {CHAOS_BEAST, CHAOS_BEAST}, {CHAOS_BEAST, GREED_IMP}, {CHAOS_BEAST, CHAOS_BEAST, CHAOS_BEAST}},
+            // 31: 황금 금고
+            {{GOLD_GOLEM, GREED_IMP}, {MIMIC, MIMIC}, {DEBT_GHOST, DEBT_GHOST, GREED_IMP}, {GOLD_GOLEM, GOLD_GOLEM, MIMIC},
+                    {GREED_IMP, GREED_IMP, DEBT_GHOST, DEBT_GHOST}},
+            // 32: 권좌의 탑
+            {{POWER_KNIGHT, PUPPET, PUPPET}, {AGITATOR, AGITATOR, PUPPET}, {WATCHER, POWER_KNIGHT}, {WATCHER, AGITATOR, PUPPET, PUPPET},
+                    {POWER_KNIGHT, POWER_KNIGHT, AGITATOR}},
+            // 33: 타락한 대성당
+            {{FALLEN, ZEALOT, ZEALOT}, {FLIES, FLIES, FLIES}, {HYPOCRITE, ZEALOT, FLIES}, {FALLEN, FALLEN, HYPOCRITE},
+                    {FLIES, FLIES, ZEALOT, HYPOCRITE}},
+            // 34: 힘의 던전
+            {{CRAB}, {URCHIN}, {CRAB, URCHIN}, {CRAB, CRAB}, {CORAL_GOLEM}},
+            // 35: 민첩의 던전
+            {{GULL, GULL}, {GULL, JELLY}, {SALT_SPIRIT, GULL}, {GULL, GULL, GULL}},
+            // 36: 정신의 던전
+            {{SALT_SPIRIT, SALT_SPIRIT}, {JELLY, JELLY}, {SALT_SPIRIT, JELLY, GULL}, {OCTOPUS}},
     };
 
     public static int encounterZone(int map, int x, int y) {
@@ -2163,6 +2621,13 @@ public final class RpgData {
             case RUINS3: return 27;
             case CRYSTAL3: return 28;
             case DEMON3: return 29;
+            case WORLD5: return 30;
+            case TRIAL_P: return 34;
+            case TRIAL_A: return 35;
+            case TRIAL_S: return 36;
+            case GOLD1: case GOLD2: case GOLD3: return 31;
+            case TOWER1: case TOWER2: case TOWER3: return 32;
+            case CATH1: case CATH2: case CATH3: return 33;
             default: return y > 11 ? 0 : 1;
         }
     }
@@ -2184,6 +2649,8 @@ public final class RpgData {
         if (map == RUINS1 || map == RUINS2 || map == RUINS3 || map == CRYSTAL1 || map == CRYSTAL2 || map == CRYSTAL3
                 || map == DEMON1 || map == DEMON2 || map == DEMON3 || map == MOON1 || map == MOON2) return SUN_FAIRY;
         if (map == WORLD4 && (near(x, y, 6, 6) || near(x, y, 14, 18))) return RAINBOW_TURTLE;
+        if ("gold".equals(theme(map)) || "tower".equals(theme(map)) || "holy".equals(theme(map))) return HOLY_FEATHER;
+        if (map == WORLD5 && near(x, y, 17, 18)) return GOLD_PIG;
         return -1;
     }
 
