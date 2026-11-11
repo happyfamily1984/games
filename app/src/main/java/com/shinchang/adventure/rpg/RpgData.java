@@ -11,19 +11,22 @@ public final class RpgData {
     public static final int OFFICE = 0, WORLD = 1, REBEL = 2, ERDEN = 3, CAVE1 = 4, CAVE2 = 5,
             WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13,
             WORLD3 = 14, IGNA = 15, LAVA1 = 16, LAVA2 = 17, FORT1 = 18, FORT2 = 19, FORT3 = 20,
-            LAKE = 21, WORLD4 = 22, BEASTDEN = 23, ROA = 24, RUINS1 = 25, RUINS2 = 26, CRYSTAL1 = 27, CRYSTAL2 = 28, DEMON1 = 29, DEMON2 = 30;
+            LAKE = 21, WORLD4 = 22, BEASTDEN = 23, ROA = 24, RUINS1 = 25, RUINS2 = 26, CRYSTAL1 = 27, CRYSTAL2 = 28, DEMON1 = 29, DEMON2 = 30,
+            RUINS3 = 31, CRYSTAL3 = 32, MOON1 = 33, MOON2 = 34, DEMON3 = 35;
     public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층",
             "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층",
             "이그나 섬", "화산섬 마을 이그나", "용암 동굴 1층", "용암 동굴 2층", "흑염의 요새 1층", "흑염의 요새 2층", "흑염의 요새 옥좌",
             "안개 호수", "실바 대륙", "짐승의 보금자리", "로아 마을", "바람의 고원 유적 1층", "바람의 고원 유적 2층",
-            "수정 동굴 1층", "수정 동굴 2층", "요마성 1층", "요마성 옥좌"};
+            "수정 동굴 1층", "수정 동굴 2층", "요마성 1층", "요마성 옥좌",
+            "바람의 고원 유적 3층", "수정 동굴 3층", "달빛 숲길", "달빛 샘", "요마성 2층"};
 
     /** 지도 그림은 tools/rpg_maps.py 가 만든 RpgMaps 에 있다 */
     public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2,
             RpgMaps.WORLD2, RpgMaps.MERCA, RpgMaps.SALT, RpgMaps.LIGHTHOUSE, RpgMaps.SPRAY1, RpgMaps.SPRAY2, RpgMaps.TEMPLE1, RpgMaps.TEMPLE2,
             RpgMaps.WORLD3, RpgMaps.IGNA, RpgMaps.LAVA1, RpgMaps.LAVA2, RpgMaps.FORT1, RpgMaps.FORT2, RpgMaps.FORT3,
             RpgMaps.LAKE, RpgMaps.WORLD4, RpgMaps.BEASTDEN, RpgMaps.ROA, RpgMaps.RUINS1, RpgMaps.RUINS2,
-            RpgMaps.CRYSTAL1, RpgMaps.CRYSTAL2, RpgMaps.DEMON1, RpgMaps.DEMON2};
+            RpgMaps.CRYSTAL1, RpgMaps.CRYSTAL2, RpgMaps.DEMON1, RpgMaps.DEMON2,
+            RpgMaps.RUINS3, RpgMaps.CRYSTAL3, RpgMaps.MOON1, RpgMaps.MOON2, RpgMaps.DEMON3};
 
     /** 지도 분위기: 동굴(갈색), 바다 동굴(푸른색), 신전(청록 돌) */
     public static String theme(int map) {
@@ -32,9 +35,10 @@ public final class RpgData {
         if (map == TEMPLE1 || map == TEMPLE2) return "tmp";
         if (map == LAVA1 || map == LAVA2) return "lava";
         if (map == FORT1 || map == FORT2 || map == FORT3) return "fort";
-        if (map == RUINS1 || map == RUINS2) return "ruin";
-        if (map == CRYSTAL1 || map == CRYSTAL2) return "ice";
-        if (map == DEMON1 || map == DEMON2) return "demon";
+        if (map == RUINS1 || map == RUINS2 || map == RUINS3) return "ruin";
+        if (map == CRYSTAL1 || map == CRYSTAL2 || map == CRYSTAL3) return "ice";
+        if (map == DEMON1 || map == DEMON2 || map == DEMON3) return "demon";
+        if (map == MOON1 || map == MOON2) return "moon";
         return null;
     }
 
@@ -53,7 +57,8 @@ public final class RpgData {
         return map == WORLD || map == CAVE1 || map == CAVE2 || map == WORLD2
                 || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2
                 || map == WORLD3 || map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3
-                || map == WORLD4 || map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2;
+                || map == WORLD4 || map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2
+                || map == RUINS3 || map == CRYSTAL3 || map == MOON1 || map == MOON2 || map == DEMON3;
     }
 
     /** 지도 이동: (지도, x, y) 에 들어가면 (도착 지도, x, y) 로 */
@@ -130,8 +135,19 @@ public final class RpgData {
             {CRYSTAL2, 10, 13, CRYSTAL1, 4, 11},
             {DEMON1, 11, 14, WORLD4, 18, 4},
             {DEMON1, 12, 14, WORLD4, 18, 4},
-            {DEMON1, 18, 5, DEMON2, 12, 11},
-            {DEMON2, 12, 12, DEMON1, 18, 6},
+            {DEMON1, 18, 5, DEMON3, 12, 11},
+            {DEMON3, 12, 12, DEMON1, 18, 6},
+            {DEMON3, 3, 2, DEMON2, 12, 11},
+            {DEMON2, 12, 12, DEMON3, 3, 3},
+            {RUINS2, 12, 3, RUINS3, 11, 12},
+            {RUINS3, 11, 13, RUINS2, 12, 4},
+            {CRYSTAL2, 5, 4, CRYSTAL3, 11, 11},
+            {CRYSTAL3, 11, 12, CRYSTAL2, 5, 5},
+            {WORLD4, 10, 9, MOON1, 11, 13},
+            {MOON1, 11, 14, WORLD4, 10, 10},
+            {MOON1, 12, 14, WORLD4, 10, 10},
+            {MOON1, 4, 4, MOON2, 12, 11},
+            {MOON2, 12, 12, MOON1, 4, 5},
     };
 
     /** 마을에 들어가면 그 마을이 "마지막으로 들른 마을"이 된다 (전멸·날개깃 귀환 위치) */
@@ -240,7 +256,7 @@ public final class RpgData {
             EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11,
             EV_SHIP_TO_IGNA = 12, EV_JIHEON = 13, EV_GIANT = 14, EV_IGNA_ELDER = 15, EV_GEN1 = 16, EV_GEN2 = 17, EV_GEN3 = 18,
             EV_VARGAS = 19, EV_BIRTH = 20,
-            EV_KID = 21, EV_FOX1 = 22, EV_OWL = 23, EV_ALTAR = 24, EV_DAD_STATUE = 25, EV_MOM_STATUE = 26, EV_FOX2 = 27, EV_KING4 = 28;
+            EV_KID = 21, EV_FOX1 = 22, EV_OWL = 23, EV_ALTAR = 24, EV_DAD_STATUE = 25, EV_MOM_STATUE = 26, EV_FOX2 = 27, EV_KING4 = 28, EV_MOONLORD = 29;
 
     public static final class Npc {
         public final int map, x, y;
@@ -688,6 +704,8 @@ public final class RpgData {
                     at(STEP_LEGACY, "해의 유산이라… 네 아버지는 문 저편에서 해를 수없이 모았다더구나. 그 해가 지금 너를 지키는 게야.",
                             "동쪽 고원의 유적에 사람 모양 석상이 있다는 소문이 있다. 가 보거라."),
                     at(STEP_DAD_FOUND, "아버지를 찾았구나…! 그럼 어머니도 멀지 않았을 게다. 동남쪽 수정 동굴을 찾아보거라."),
+                    at(STEP_MOM_FOUND, "달빛 이슬은 숲 깊은 곳 '달빛 샘'에 고여 있단다. 보금자리 동쪽의 달빛 숲길로 들어가거라.",
+                            "…그런데 요즘 샘을 지키던 숲의 주인이 어둠에 먹혔다는 소문이 있구나. 조심하거라."),
                     at(STEP_DEW, "달빛 이슬을 석상에 부어 주거라. 어머니부터 가 보는 게 좋겠구나. 이슬의 빛은 어머니의 마법에서 왔으니."),
                     at(STEP_DAD_BACK, "북쪽 산의 요마성으로 가는 길이 열렸다. 네 가족을 갈라놓은 그 여우가 거기 있다."),
                     at(STEP_CHAPTER4_CLEAR, "부엉. 언제든 놀러 오너라. 숲은 늘 네 집이란다."),
@@ -729,11 +747,20 @@ public final class RpgData {
                     at(STEP_DAD_BACK, "요마성 안개가 걷혔어! 형이 한 거지?")),
 
             // ---- 4장: 석상이 된 부모
-            new Npc(RUINS2, 11, 3, "statue_dad", "석상", ACT_EVENT, EV_DAD_STATUE, STEP_MINHAN, STEP_MOM_BACK, new Object[][]{
+            new Npc(RUINS3, 12, 2, "statue_dad", "석상", ACT_EVENT, EV_DAD_STATUE, STEP_MINHAN, STEP_MOM_BACK, new Object[][]{
                     at(0, "(검을 들어 무언가를 막으려는 자세의 석상이다)"),
             }),
-            new Npc(CRYSTAL2, 5, 4, "statue_mom", "석상", ACT_EVENT, EV_MOM_STATUE, STEP_MINHAN, STEP_DEW, new Object[][]{
+            new Npc(CRYSTAL3, 4, 2, "statue_mom", "석상", ACT_EVENT, EV_MOM_STATUE, STEP_MINHAN, STEP_DEW, new Object[][]{
                     at(0, "(두 손을 앞으로 뻗은 여인의 석상이다)"),
+            }),
+
+            // ---- 4장: 달빛 샘
+            new Npc(MOON2, 11, 3, "forestlord", "어둠에 먹힌 숲의 주인", ACT_EVENT, EV_MOONLORD, STEP_MOM_FOUND, STEP_MOM_FOUND, new Object[][]{
+                    at(0, "(달빛 샘 앞. 거대한 사슴뿔을 단 검은 짐승이 샘을 막아서고 있다. 샘물이 검게 물들어 있다)",
+                            "[민한] 숲의 주인님…? 부엉이 할아버지가 말한, 샘을 지키던 분이야.",
+                            "[하루] 크르르… (하루의 털이 곤두선다)",
+                            "그르르… 사람의… 아이… 짐승의 눈물은… 이제… 내 것……",
+                            "[민한] 그 눈물은 나를 위해 다들 흘려 준 거야. 돌려줘!"),
             }),
 
             // ---- 4장: 요마성
@@ -914,6 +941,9 @@ public final class RpgData {
                     "벽화: 바람의 신전. 짐꾼 카이른이 이곳에서 잠시 짐을 내려놓고 쉬었다고 적혀 있다."),
             new Readable(RUINS1, 21, 2, 0, -1, null,
                     "벽화: 돌이 된 사람들 곁에 짐승들이 모여 있다. 짐승들이 흘린 달빛 같은 눈물이 돌을 적신다."),
+            new Readable(RUINS3, 2, 6, 0, -1, null,
+                    "벽화: 바람의 신전 가장 깊은 곳. 돌이 된 짐꾼 곁에서 아이가 울고 있고, 그 눈물이 해처럼 빛난다."),
+            new Readable(MOON2, 11, 1, 0, -1, null, "달빛 샘이다. 물속에서 은빛 알갱이들이 반짝인다."),
             new Readable(DEMON2, 5, 2, FLAG_PACT, -1, null,
                     "제단 위에 피로 쓴 계약서가 놓여 있다.",
                     "'문지기 아르센과 요마왕 다르칸의 맹약. 짐꾼이 다시 가득 차거든, 가장 소중한 것을 빼앗아 비울 것. 대가로 실바 대륙을 준다.'",
@@ -1435,6 +1465,13 @@ public final class RpgData {
             "[민한] 숲으로 돌아가자, 하루. 부엉이 할아버지한테!",
     };
 
+    public static final String[] MOON_QUEST = {
+            "[백년 부엉이 노을] 부엉… 달빛 이슬을 찾는구나. 결국 그날이 왔어.",
+            "[백년 부엉이 노을] 달빛 이슬은 짐승이 사람을 위해 흘린 눈물이란다. 네가 처음 왔던 밤 우리가 흘린 눈물이, 숲 깊은 '달빛 샘'에 고여 있지.",
+            "[곰 어미 두두] 크릉. 그런데 샘을 지키던 숲의 주인이 요즘 어둠에 먹혔대. 요마성에서 검은 안개가 내려온 뒤로…",
+            "[백년 부엉이 노을] 보금자리 동쪽의 달빛 숲길로 가거라. 샘의 주인을 어둠에서 꺼내 주면, 이슬을 내어 줄 게다.",
+    };
+
     public static final String[] DEW_GIVEN = {
             "[백년 부엉이 노을] 부엉… 달빛 이슬을 찾는구나. 결국 그날이 왔어.",
             "[백년 부엉이 노을] 달빛 이슬은 짐승이 사람을 위해 흘린 눈물이란다. 백 년에 한 방울 맺히지.",
@@ -1444,6 +1481,18 @@ public final class RpgData {
             "(짐승들이 모은 눈물이 부엉이의 깃털 위에서 두 방울의 달빛 이슬이 되었다)",
             "(「달빛 이슬」 2개를 받았다!)",
             "[백년 부엉이 노을] 네가 우리를 가족이라 불러 줘서 고맙구나, 민한아. 이제 진짜 가족을 데려오거라.",
+    };
+
+    public static final String[] MOONLORD_DEFEATED = {
+            "(검은 안개가 빠져나가자, 숲의 주인은 은빛 사슴의 모습으로 돌아왔다)",
+            "[숲의 주인] …고맙구나, 짐승들의 아이야. 어둠이 내 눈을 가렸었다.",
+            "(샘물이 다시 맑아지고, 바닥에서 은빛 이슬들이 떠오른다)",
+            "[숲의 주인] 이 이슬은 네가 이 숲에 온 밤, 모두가 흘린 눈물이다. 곰도, 사슴도, 부엉이도, 작은 토끼들도.",
+            "[숲의 주인] 가져가거라. 이 눈물로 네 진짜 가족을 데려오너라.",
+            "(「달빛 이슬」 2개를 받았다!)",
+            "[민한] 고마워요… 다들, 고마워.",
+            "[하루] 아우우— (하루가 달을 향해 길게 울었다)",
+            "[민한] 엄마부터 가자, 하루. 수정 동굴 3층으로!",
     };
 
     public static final String[] MOM_BACK = {
@@ -1549,6 +1598,12 @@ public final class RpgData {
             return new String[][]{
                     {"[다르칸] 크하하! 가족 놀이는 여기까지다!", "[민한] 아빠, 엄마, 하루! 한 번 더!"},
                     {"(다르칸의 뿔에 금이 간다)", "[신창] 민한아, 마지막은 네가 해라!", "[민한] 응! 이건… 아빠의 해야!"},
+            };
+        }
+        if ("forestlord".equals(sprite)) {
+            return new String[][]{
+                    {"(숲의 주인이 고통스럽게 울부짖는다. 검은 뿔 사이로 은빛이 새어 나온다)"},
+                    {"[민한] 정신 차려요, 숲의 주인님! 조금만 더!"},
             };
         }
         if ("guardian".equals(sprite) || "crystalqueen".equals(sprite)) {
@@ -1715,6 +1770,11 @@ public final class RpgData {
             {CRYSTAL2, 16, 4, -1, 40000},
             {DEMON1, 6, 5, ELIXIR, 3},
             {DEMON2, 22, 6, ELIXIR, 5},
+            {RUINS3, 22, 5, ELIXIR, 3},
+            {CRYSTAL3, 11, 3, -1, 50000},
+            {MOON1, 21, 1, PHOENIX, 3},
+            {MOON2, 22, 6, ELIXIR, 3},
+            {DEMON3, 21, 2, ELIXIR, 4},
     };
 
     // ------------------------------------------------------------ 주문 · 특기
@@ -1912,7 +1972,8 @@ public final class RpgData {
             MOTH = 50, MANTIS = 51, TROLL = 52, MANA_SHROOM = 53, GRIFFIN = 54, ROCK_GIANT = 55, MUMMY = 56, CURSE_STATUE = 57,
             ICE_WOLF = 58, CRYSTAL_GOLEM = 59, CRYSTAL_BAT = 60, DEMON_SOLDIER = 61, NINE_TAIL = 62, SHADOW_YOKAI = 63,
             DEMON_CAPTAIN = 64, SUN_FAIRY = 65, RAINBOW_TURTLE = 66, FOX1 = 67, HOSTAGE = 68, GUARDIAN = 69,
-            CRYSTAL_QUEEN = 70, FOX2 = 71, DEMON_KING = 72;
+            CRYSTAL_QUEEN = 70, FOX2 = 71, DEMON_KING = 72,
+            MOON_MOTH = 73, DARK_BEAR = 74, MOON_LORD = 75;
     public static final int RARE_EXP = 1, RARE_GOLD = 2;
 
     public static final Monster[] MONSTERS = {
@@ -1999,6 +2060,10 @@ public final class RpgData {
             new Monster("수정 여왕", "crystalqueen", 42, 12000, 290, 160, 26, 2500, 5000, 2),
             new Monster("천면귀 (본모습)", "fox", 55, 30000, 380, 200, 36, 6000, 10000, 2),
             new Monster("요마왕 다르칸", "demonking", 60, 60000, 450, 230, 34, 20000, 30000, 2),
+            // 달빛 숲길
+            new Monster("달빛 나방", "moonmoth", 36, 900, 230, 110, 40, 80, 280, 1),
+            new Monster("어둠 곰", "darkbear", 38, 1700, 250, 150, 10, 90, 320, 0),
+            new Monster("어둠에 먹힌 숲의 주인", "forestlord", 44, 16000, 300, 170, 28, 3000, 6000, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
@@ -2058,6 +2123,17 @@ public final class RpgData {
             // 24: 요마성 옥좌
             {{DEMON_CAPTAIN, DEMON_SOLDIER, DEMON_SOLDIER}, {DEMON_CAPTAIN, DEMON_CAPTAIN},
                     {NINE_TAIL, SHADOW_YOKAI, DEMON_CAPTAIN, DEMON_SOLDIER}},
+            // 25: 달빛 숲길
+            {{MOON_MOTH}, {DARK_BEAR}, {MOON_MOTH, MOON_MOTH}, {DARK_BEAR, ICE_WOLF}, {MOON_MOTH, MANTIS, MANTIS}},
+            // 26: 달빛 샘
+            {{DARK_BEAR, DARK_BEAR}, {MOON_MOTH, MOON_MOTH, MOON_MOTH}, {DARK_BEAR, MOON_MOTH, ICE_WOLF}},
+            // 27: 고원 유적 3층
+            {{CURSE_STATUE, CURSE_STATUE, MUMMY}, {ROCK_GIANT, ROCK_GIANT}, {MUMMY, MUMMY, MUMMY, GRIFFIN}},
+            // 28: 수정 동굴 3층
+            {{CRYSTAL_GOLEM, CRYSTAL_GOLEM}, {ICE_WOLF, ICE_WOLF, ICE_WOLF}, {CRYSTAL_GOLEM, CRYSTAL_BAT, ICE_WOLF, CRYSTAL_BAT}},
+            // 29: 요마성 2층
+            {{DEMON_SOLDIER, DEMON_SOLDIER, DEMON_SOLDIER}, {NINE_TAIL, NINE_TAIL, SHADOW_YOKAI},
+                    {DEMON_CAPTAIN, SHADOW_YOKAI, NINE_TAIL}, {DEMON_CAPTAIN, DEMON_CAPTAIN, DEMON_SOLDIER}},
     };
 
     public static int encounterZone(int map, int x, int y) {
@@ -2082,6 +2158,11 @@ public final class RpgData {
             case CRYSTAL2: return 22;
             case DEMON1: return 23;
             case DEMON2: return 24;
+            case MOON1: return 25;
+            case MOON2: return 26;
+            case RUINS3: return 27;
+            case CRYSTAL3: return 28;
+            case DEMON3: return 29;
             default: return y > 11 ? 0 : 1;
         }
     }
@@ -2100,7 +2181,8 @@ public final class RpgData {
         if (map == WORLD2 && (near(x, y, 5, 17) || near(x, y, 28, 19))) return GEM_CRAB;
         if (map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3) return RUBY;
         if (map == WORLD3 && near(x, y, 8, 17)) return LAVA_TOAD;
-        if (map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2) return SUN_FAIRY;
+        if (map == RUINS1 || map == RUINS2 || map == RUINS3 || map == CRYSTAL1 || map == CRYSTAL2 || map == CRYSTAL3
+                || map == DEMON1 || map == DEMON2 || map == DEMON3 || map == MOON1 || map == MOON2) return SUN_FAIRY;
         if (map == WORLD4 && (near(x, y, 6, 6) || near(x, y, 14, 18))) return RAINBOW_TURTLE;
         return -1;
     }

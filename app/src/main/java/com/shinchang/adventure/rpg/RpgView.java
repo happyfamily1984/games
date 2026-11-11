@@ -347,6 +347,9 @@ public class RpgView extends View {
         } else if ("ice".equals(theme)) {
             top = 0xFF0E2A44;
             bottom = 0xFF9FC6E8;
+        } else if ("moon".equals(theme)) {
+            top = 0xFF0A1430;
+            bottom = 0xFF2E5A5A;
         } else if ("demon".equals(theme)) {
             top = 0xFF1A0610;
             bottom = 0xFF6E1B3A;

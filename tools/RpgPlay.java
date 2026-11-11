@@ -98,6 +98,11 @@ public class RpgPlay {
                 case RpgData.CRYSTAL2: walkTo(10, 13, false); break;
                 case RpgData.CRYSTAL1: walkTo(10, 14, false); break;
                 case RpgData.DEMON2: walkTo(12, 12, false); break;
+                case RpgData.DEMON3: walkTo(12, 12, false); break;
+                case RpgData.RUINS3: walkTo(11, 13, false); break;
+                case RpgData.CRYSTAL3: walkTo(11, 12, false); break;
+                case RpgData.MOON2: walkTo(12, 12, false); break;
+                case RpgData.MOON1: walkTo(11, 14, false); break;
                 case RpgData.DEMON1: walkTo(11, 14, false); break;
                 case RpgData.WORLD4:
                     if (s.townMap == RpgData.ROA) walkTo(14, 18, false); else walkTo(6, 6, false); break;
@@ -174,9 +179,13 @@ public class RpgPlay {
 
     // ---- 던전 들어가기 ----
     static void enterRuins2() { goToTown(); exitTown(); walkTo(28, 6, false); while (s.map == RpgData.RUINS1) walkTo(6, 8, false); }
+    static void enterRuins3() { enterRuins2(); while (s.map == RpgData.RUINS2) walkTo(12, 3, false); }
     static void enterCrystal2() { goToTown(); exitTown(); walkTo(30, 19, false); while (s.map == RpgData.CRYSTAL1) walkTo(4, 12, false); }
+    static void enterCrystal3() { enterCrystal2(); while (s.map == RpgData.CRYSTAL2) walkTo(5, 4, false); }
+    static void enterMoon2() { s.townMap = RpgData.BEASTDEN; goToTown(); exitTown(); walkTo(10, 9, false); while (s.map == RpgData.MOON1) walkTo(4, 4, false); }
     static void enterDemon1() { goToTown(); exitTown(); walkTo(18, 3, false); }
-    static void enterDemon2() { enterDemon1(); while (s.map == RpgData.DEMON1) walkTo(18, 5, false); }
+    static void enterDemon3() { enterDemon1(); while (s.map == RpgData.DEMON1) walkTo(18, 5, false); }
+    static void enterDemon2() { enterDemon3(); while (s.map == RpgData.DEMON3) walkTo(3, 2, false); }
     static void enterLava2() { goToTown(); exitTown(); walkTo(24, 12, false); while (s.map == RpgData.LAVA1) walkTo(4, 11, false); }
     static void enterFort1() { goToTown(); exitTown(); walkTo(14, 7, false); }
     static void enterFort2() { enterFort1(); while (s.map == RpgData.FORT1) walkTo(18, 5, false); }
@@ -395,25 +404,36 @@ public class RpgPlay {
         read(2, 2); read(21, 2); read(22, 5);
         while (s.map == RpgData.RUINS1) walkTo(6, 8, false);
         read(21, 6);
-        bossFight(RpgPlay::enterRuins2, RpgData.RUINS2, 11, 3, RpgData.STEP_DAD_FOUND, 12, 11);
+        while (s.map == RpgData.RUINS2) walkTo(12, 3, false);
+        ok(s.map == RpgData.RUINS3, "고원 유적 3층"); read(22, 5); read(2, 6);
+        bossFight(RpgPlay::enterRuins3, RpgData.RUINS3, 12, 2, RpgData.STEP_DAD_FOUND, 11, 12);
         ok(s.step == RpgData.STEP_DAD_FOUND, "아빠의 석상을 찾음");
         goToTown(); exitTown(); walkTo(30, 19, false); ok(s.map == RpgData.CRYSTAL1, "수정 동굴");
         read(20, 1); read(11, 4);
         while (s.map == RpgData.CRYSTAL1) walkTo(4, 12, false);
         read(16, 4);
-        bossFight(RpgPlay::enterCrystal2, RpgData.CRYSTAL2, 5, 4, RpgData.STEP_MOM_FOUND, 10, 12);
+        while (s.map == RpgData.CRYSTAL2) walkTo(5, 4, false);
+        ok(s.map == RpgData.CRYSTAL3, "수정 동굴 3층"); read(11, 3);
+        bossFight(RpgPlay::enterCrystal3, RpgData.CRYSTAL3, 4, 2, RpgData.STEP_MOM_FOUND, 11, 11);
         ok(s.step == RpgData.STEP_MOM_FOUND, "엄마의 석상을 찾음 (달빛 이슬 이야기)");
         s.townMap = RpgData.BEASTDEN; goToTown();
-        talkNpc(npc("백년 부엉이 노을")); ok(s.items[RpgData.MOON_DEW] == 2 && s.step == RpgData.STEP_DEW, "짐승들이 모은 달빛 이슬 2개");
-        enterCrystal2(); walkTo(5, 4, true); s.interact();
+        RpgState.Interaction mq = talkNpc(npc("백년 부엉이 노을")); ok(String.join("", mq.lines).contains("달빛 샘"), "부엉이: 달빛 샘으로");
+        exitTown(); walkTo(10, 9, false); ok(s.map == RpgData.MOON1, "달빛 숲길"); read(21, 1);
+        while (s.map == RpgData.MOON1) walkTo(4, 4, false);
+        ok(s.map == RpgData.MOON2, "달빛 샘"); read(22, 6);
+        bossFight(RpgPlay::enterMoon2, RpgData.MOON2, 11, 3, RpgData.STEP_DEW, 12, 11);
+        ok(s.items[RpgData.MOON_DEW] == 2, "숲의 주인을 구하고 달빛 이슬 2개");
+        enterCrystal3(); walkTo(4, 2, true); s.interact();
         ok(s.step == RpgData.STEP_MOM_BACK && s.member(3) != null, "엄마 지헌이 돌아옴");
-        goToTown(); enterRuins2(); walkTo(11, 3, true); s.interact();
+        goToTown(); enterRuins3(); walkTo(12, 2, true); s.interact();
         ok(s.step == RpgData.STEP_DAD_BACK && s.member(0) != null && s.member(0).isHero() && s.party.size() == 4, "아빠 신창이 돌아옴 (가족 4명)");
         goToTown(); restock();
         exitTown(); walkTo(18, 3, false); ok(s.map == RpgData.DEMON1, "안개가 걷힌 요마성");
         read(6, 5);
         bossFight(RpgPlay::enterDemon1, RpgData.DEMON1, 18, 7, RpgData.STEP_FOX_DOWN, 11, 12);
         while (s.map == RpgData.DEMON1) walkTo(18, 5, false);
+        ok(s.map == RpgData.DEMON3, "요마성 2층"); read(21, 2);
+        while (s.map == RpgData.DEMON3) walkTo(3, 2, false);
         ok(s.map == RpgData.DEMON2, "요마성 옥좌");
         read(22, 6); read(5, 2); ok(s.hasFlag(RpgData.FLAG_PACT), "요마왕의 맹약");
         bossFight(RpgPlay::enterDemon2, RpgData.DEMON2, 11, 2, RpgData.STEP_KING_DOWN, 12, 11);

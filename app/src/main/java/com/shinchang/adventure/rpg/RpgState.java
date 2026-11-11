@@ -69,7 +69,8 @@ public final class RpgState {
         // 흑염의 요새에는 마물이 우글거린다
         if ("fort".equals(RpgData.theme(map)) || "demon".equals(RpgData.theme(map))) r *= 2.2;
         // 4장 던전에도 마물이 많다
-        if ("ruin".equals(RpgData.theme(map)) || "ice".equals(RpgData.theme(map))) r *= 1.6;
+        String th = RpgData.theme(map);
+        if ("ruin".equals(th) || "ice".equals(th) || "moon".equals(th)) r *= 1.6;
         return r;
     }
 
@@ -400,6 +401,11 @@ public final class RpgState {
                     in.bossBattle = true;
                     in.bossMonster = step == RpgData.STEP_HOSTAGE ? RpgData.HOSTAGE : RpgData.FOX1;
                     return;
+                case RpgData.EV_MOONLORD:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
+                    in.bossBattle = true;
+                    in.bossMonster = RpgData.MOON_LORD;
+                    return;
                 case RpgData.EV_FOX2:
                 case RpgData.EV_KING4:
                     for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
@@ -408,9 +414,8 @@ public final class RpgState {
                     return;
                 case RpgData.EV_OWL:
                     if (step == RpgData.STEP_MOM_FOUND) {
-                        for (String l : RpgData.DEW_GIVEN) in.lines.add(l);
-                        addItem(RpgData.MOON_DEW, 2);
-                        step = RpgData.STEP_DEW;
+                        // 달빛 이슬은 달빛 샘에서 (보스를 쓰러뜨려야 얻는다)
+                        for (String l : RpgData.MOON_QUEST) in.lines.add(l);
                         return;
                     }
                     if (step == RpgData.STEP_KING_DOWN) {
@@ -782,6 +787,10 @@ public final class RpgState {
         } else if (monster == RpgData.CRYSTAL_QUEEN) {
             step = RpgData.STEP_MOM_FOUND;
             lines = RpgData.MOM_FOUND;
+        } else if (monster == RpgData.MOON_LORD) {
+            step = RpgData.STEP_DEW;
+            addItem(RpgData.MOON_DEW, 2);
+            lines = RpgData.MOONLORD_DEFEATED;
         } else if (monster == RpgData.FOX2) {
             step = RpgData.STEP_FOX_DOWN;
             lines = RpgData.FOX2_DEFEATED;

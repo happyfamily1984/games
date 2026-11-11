@@ -492,6 +492,10 @@ TILES = {
 }
 
 
+CHARS["forestlord"] = subst(CHARS["deer"], {"w": "h", "n": "q", "k": "c"})
+MONSTERS["moonmoth"] = subst(MONSTERS["bat"], {"p": "u", "k": "y", "P": "w"})
+MONSTERS["darkbear"] = subst(MONSTERS["rat"], {"n": "h", "N": "k", "k": "r", "P": "q"})
+MONSTERS["forestlord"] = subst(MONSTERS["wolfking"], {"p": "h", "q": "z", "y": "u", "r": "c", "w": "u"})
 CHARS["fox"] = subst(CHARS["fox"], {"C": "p"})
 MONSTERS["fox"] = subst(MONSTERS["fox"], {"C": "p"})
 
@@ -500,6 +504,8 @@ for _k in (",", "#", "X", "C", "c", "i"):
     TILES["ruin" + _k] = subst(TILES["tmp" + _k], {"c": "F", "v": "T", "l": "t", "u": "f"})
     TILES["ice" + _k] = subst(TILES.get("cave" + _k, TILES["lava" + _k]), {"m": "u", "M": "c", "d": "v", "D": "B", "l": "w",
                                                                            "N": "v", "n": "c", "o": "w", "x": "u"})
+    TILES["moon" + _k] = subst(TILES.get("cave" + _k, TILES["lava" + _k]), {"m": "G", "M": "g", "d": "B", "D": "z", "l": "u",
+                                                                            "N": "B", "n": "v", "o": "u", "x": "c"})
     TILES["demon" + _k] = subst(TILES["fort" + _k], {"z": "R", "q": "x", "h": "z", "E": "q", "p": "r"})
 
 
@@ -508,7 +514,7 @@ def check():
         assert len(rows) == 12 and all(len(r) == 10 for r in rows), name
     for name, rows in MONSTERS.items():
         big = name in ("wolfking", "galleon", "serpent", "giant", "ignis", "witch", "lavadragon", "vargas",
-                       "fox", "guardian", "crystalqueen", "demonking")
+                       "fox", "guardian", "crystalqueen", "demonking", "forestlord")
         w = 24 if big else 16
         h = 20 if big else 16
         assert len(rows) == h and all(len(r) == w for r in rows), (name, [len(r) for r in rows])

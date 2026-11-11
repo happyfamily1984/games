@@ -88,6 +88,7 @@ public final class RpgArt {
         CHARS.put("demonking", new String[]{"y...yy...y", "y..hhhh..y", ".hhhhhhhh.", ".hrhrrhrh.", ".hhhhhhhh.", "..hhhhhh..", "RRqqqqqqRR", "RqyqRRqyqR", "RRqqqqqqRR", "RRqqqqqqRR", "R.qqqqqq.R", "..kk..kk.."});
         CHARS.put("statue_dad", new String[]{"...eeee...", "..eeeeee..", ".eeeeeeee.", "..eeeeee..", "..eEeeEe..", "..eeeeee..", "e..eeee..e", "eeeeeeeeee", "eeeeeeeeee", "eeeeeeeeee", "e.eeeeee.e", "..EE..EE.."});
         CHARS.put("statue_mom", new String[]{"...EEEE...", "..EEEEEE..", ".EEeeeeEE.", ".EeEeeEeE.", ".EeeeeeeE.", ".E.eeee.E.", "..eeeeee..", ".eeeeeeee.", ".eeeeeeee.", "..EEEEEE..", "..EEEEEE..", "..EE..EE.."});
+        CHARS.put("forestlord", new String[]{"q........q", "q.q....q.q", ".qq....qq.", "..hhhhhh..", "..hchhch..", "...hhhh...", "...hhhh...", "..hhhhhh..", ".hhhhhhhh.", ".hhhhhhhh.", ".h..hh..h.", ".c..cc..c."});
     }
 
     static final java.util.Map<String, String[]> MONSTERS = new java.util.HashMap<>();
@@ -162,6 +163,9 @@ public final class RpgArt {
         MONSTERS.put("guardian", new String[]{"........................", "........eeeeeeee........", ".......eeeeeeeeee.......", ".......eeyeeeeyee.......", ".......eeeeeeeeee.......", "....eeeeeeeeeeeeeeee....", "...eeEEeeeeeeeeeeEEee...", "..eeeEEeeeeeeeeeeEEeee..", "..eee.eeeeEEEEeeee.eee..", "..eee.eeeeEEEEeeee.eee..", "..mmm.eeeeeeeeeeee.mmm..", "..mmm..eeeeeeeeee..mmm..", "........eeeeeeee........", ".......eeeeeeeeee.......", "......eeee....eeee......", "......eeee....eeee......", ".....eeeee....eeeee.....", ".....EEEEE....EEEEE.....", "....EEEEEE....EEEEEE....", "........................"});
         MONSTERS.put("crystalqueen", new String[]{"........................", "..c..................c..", "...c.....uuuuuu.....c...", "....c...uuuuuuuu...c....", ".....c.uucuuuucuu.c.....", "c.....uuuuuuuuuuuu.....c", ".c....ucbcbuubcbcu....c.", "..c..uuuuuuuuuuuuuu..c..", "...cuuuvvvvvvvvvvuuuc...", "....uuvvvvvvvvvvvvuu....", "..cuuvvwvvvvvvvvwvvuuc..", ".c.uuvvvvvvvvvvvvvvuu.c.", "c..uuvvvvvvvvvvvvvvuu..c", "...cuuvvvvvvvvvvvvuuc...", "..c..uuvvvvvvvvvvuu..c..", ".c....uuuuuuuuuuuu....c.", "c......c..c..c..c......c", "......c..c....c..c......", ".....c..c......c..c.....", "........................"});
         MONSTERS.put("demonking", new String[]{"...y................y...", "...yy..............yy...", "....yy..hhhhhhhh..yy....", ".....yyhhhhhhhhhhyy.....", "......hhhrrhhrrhhh......", "......hhhhhhhhhhhh......", ".......hhhhhhhhhh.......", "..RR..qqqqqqqqqqqq..RR..", ".RRRRqqqqqqqqqqqqqqRRRR.", "RRqqqqqqqyqqqqyqqqqqqqRR", "RqqqqqqqqyyqqyyqqqqqqqqR", "RqqqqqqqqqqqqqqqqqqqqqqR", "RqqhqqqqqqqqqqqqqqqqhqqR", "R.qqqqqqqqqqqqqqqqqqqq.R", "..qqqqqqqqqqqqqqqqqqqq..", "..zqqqqqqqqqqqqqqqqqqz..", "...zzqqqqzzqqzzqqqqzz...", "....qqqq..qqqq..qqqq....", "....kkkk..kkkk..kkkk....", "........................"});
+        MONSTERS.put("moonmoth", new String[]{"................", "................", "................", "uu............uu", "uuu...u..u...uuu", "uuuu..uuuu..uuuu", "uuuuuuuuuuuuuuuu", ".uuuuuywwyuuuuu.", "..uuuuyyyyuuuu..", "...uuuwwwwuuu...", "....uuuuuuuu....", ".....uu..uu.....", "................", "................", "................", "................"});
+        MONSTERS.put("darkbear", new String[]{"................", "................", "..hh........hh..", ".hkkh......hkkh.", ".hkkhhhhhhhhkkh.", "..hhhhhhhhhhhh..", "..hrrrrhhrrrrh..", "..hrwrrhhrrwrh..", "..hhhhhhhhhhhh..", "...hhhhqqhhhh...", "....hhhhhhhh....", "...hhhhhhhhhh...", "..hhhhhhhhhhhh..", "..hhhh....hhhh..", "..kkk......kkk..", "................"});
+        MONSTERS.put("forestlord", new String[]{"........................", "...u................u...", "...uu..............uu...", "..uhuu............uuhu..", "..hhhhu..........uhhhh..", ".hhhhhhh........hhhhhhh.", ".hzzzzzzzz....zzzzzzzzh.", ".zzzzzzzzzzzzzzzzzzzzzz.", "zzzcczzzzzzzzzzzzzzcczzz", "zzzcczzzzzzzzzzzzzzcczzz", ".zzzzzzzzzzzzzzzzzzzzzz.", "..zzuzuzzzzzzzzzzuzuzz..", "...zzzzzzzzzzzzzzzzzz...", "..hzzzzzzzzzzzzzzzzzzh..", ".hhzzzzzzzzzzzzzzzzzzhh.", "hhzzzzzzzzzzzzzzzzzzzzhh", ".zzzzzzzzzzzzzzzzzzzzzz.", "..zzzz..zzzzzzzz..zzzz..", "..zzz....zzzzzz....zzz..", "..kkk....kkkkkk....kkk.."});
     }
 
     static final java.util.Map<String, String[]> TILES = new java.util.HashMap<>();
@@ -253,21 +257,27 @@ public final class RpgArt {
         TILES.put("cavec", new String[]{"mmmmmmmm", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "mmmmmmmm"});
         TILES.put("ruin,", new String[]{"tttttttt", "tFtttttF", "tttttttt", "tttFtttt", "tttttttt", "tFtttttF", "tttttttt", "ttttFttt"});
         TILES.put("ice,", new String[]{"uuuuuuuu", "ucuuuuuu", "uuuuuucu", "uuuuuuuu", "uuuuuuuu", "uucuuuuu", "uuuuuuuu", "uuuuucuu"});
+        TILES.put("moon,", new String[]{"GGGGGGGG", "GgGGGGGG", "GGGGGGgG", "GGGGGGGG", "GGGGGGGG", "GGgGGGGG", "GGGGGGGG", "GGGGGgGG"});
         TILES.put("demon,", new String[]{"RRRRRRRR", "RxRRRRxR", "RRRRRRRR", "RRRxxRRR", "RRRxxRRR", "RRRRRRRR", "RxRRRRxR", "RRRRRRRR"});
         TILES.put("ruin#", new String[]{"FFFFFFFF", "TTTTTTTT", "FTTFFTTF", "FTTFFTTF", "FFFFFFFF", "TFFTTFFT", "TFFTTFFT", "FFFFFFFF"});
         TILES.put("ice#", new String[]{"vvvvvvvv", "vBvvBvvv", "vvvvvvBv", "BvvvvBvv", "vvvBvvvv", "vBvvvvBv", "vvvvBvvv", "vBvvvvvv"});
+        TILES.put("moon#", new String[]{"BBBBBBBB", "BzBBzBBB", "BBBBBBzB", "zBBBBzBB", "BBBzBBBB", "BzBBBBzB", "BBBBzBBB", "BzBBBBBB"});
         TILES.put("demon#", new String[]{"zzzzzzzz", "qzzzqzzz", "qzzzqzzz", "zzzzzzzz", "zzqzzzqz", "zzqzzzqz", "zzzzzzzz", "qzzzqzzz"});
         TILES.put("ruinX", new String[]{"FFFFFFFF", "FttttttF", "FttttttF", "FttttttF", "FttttttF", "FttttttF", "FttttttF", "FttttttF"});
         TILES.put("iceX", new String[]{"wwwwwwww", "wuuuuuuw", "wuuuuuuw", "wuuuuuuw", "wuuuuuuw", "wuuuuuuw", "wuuuuuuw", "wuuuuuuw"});
+        TILES.put("moonX", new String[]{"uuuuuuuu", "uGGGGGGu", "uGGGGGGu", "uGGGGGGu", "uGGGGGGu", "uGGGGGGu", "uGGGGGGu", "uGGGGGGu"});
         TILES.put("demonX", new String[]{"xxxxxxxx", "xRRRRRRx", "xRRRRRRx", "xRRRRRRx", "xRRRRRRx", "xRRRRRRx", "xRRRRRRx", "xRRRRRRx"});
         TILES.put("ruinC", new String[]{"tttttttt", "tNNNNNNt", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "tttttttt"});
         TILES.put("iceC", new String[]{"uuuuuuuu", "uvvvvvvu", "vccccccv", "vvvvvvvv", "vccyyccv", "vccccccv", "vvvvvvvv", "uuuuuuuu"});
+        TILES.put("moonC", new String[]{"GGGGGGGG", "GBBBBBBG", "BvvvvvvB", "BBBBBBBB", "BvvyyvvB", "BvvvvvvB", "BBBBBBBB", "GGGGGGGG"});
         TILES.put("demonC", new String[]{"RRRRRRRR", "RNNNNNNR", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "RRRRRRRR"});
         TILES.put("ruinc", new String[]{"tttttttt", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "tttttttt"});
         TILES.put("icec", new String[]{"uuuuuuuu", "vccccccv", "vkkkkkkv", "vvvvvvvv", "vccccccv", "vccccccv", "vvvvvvvv", "uuuuuuuu"});
+        TILES.put("moonc", new String[]{"GGGGGGGG", "BvvvvvvB", "BkkkkkkB", "BBBBBBBB", "BvvvvvvB", "BvvvvvvB", "BBBBBBBB", "GGGGGGGG"});
         TILES.put("demonc", new String[]{"RRRRRRRR", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "RRRRRRRR"});
         TILES.put("ruini", new String[]{"tttttttt", "tttyyttt", "ttyYYytt", "tttyyttt", "tttFFttt", "tttFFttt", "ttFFFFtt", "tttttttt"});
         TILES.put("icei", new String[]{"vvvvvvvv", "vvvyyvvv", "vvywyvvv", "vvvwvvvv", "vvvcvvvv", "vvvcvvvv", "vvvvvvvv", "vvvvvvvv"});
+        TILES.put("mooni", new String[]{"BBBBBBBB", "BBByyBBB", "BByuyBBB", "BBBuBBBB", "BBBvBBBB", "BBBvBBBB", "BBBBBBBB", "BBBBBBBB"});
         TILES.put("demoni", new String[]{"zzzzzzzz", "zqzrrqzz", "zzrxrzzz", "zzzxzzzz", "zqzqzzqz", "zzzqzzzz", "zzzzzzzz", "zqzzzzzz"});
     }
 
