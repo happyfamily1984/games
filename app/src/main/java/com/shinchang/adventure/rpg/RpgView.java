@@ -211,6 +211,7 @@ public class RpgView extends View {
         // 등불을 받으면 해저 신전 입구에 돌계단이 떠오른다
         if (t == 'G' && state.step >= RpgData.STEP_LAMP) return "G1";
         // 결혼하면 흑염의 요새를 막던 검은 불길이 걷힌다
+        if (t == 'J' && state.map == RpgData.WORLD4) return state.step >= RpgData.STEP_DAD_BACK ? "J1" : "J";
         if (t == 'J' && state.step >= RpgData.STEP_WEDDING) return "J1";
         if (t == 'l' && (SystemClock.uptimeMillis() / 400) % 2 == 1) return "l1";
         return String.valueOf(t);
@@ -297,12 +298,18 @@ public class RpgView extends View {
             float fx = followFromX[i - 1] + (followX[i - 1] - followFromX[i - 1]) * t;
             float fy = followFromY[i - 1] + (followY[i - 1] - followFromY[i - 1]) * t;
             if (Math.round(fx) != state.x || Math.round(fy) != state.y || t < 1) {
-                drawChar(canvas, state.party.get(i).base().sprite, fx * ts - camX, fy * ts - camY, ts, t < 1);
+                drawChar(canvas, spriteOf(state.party.get(i)), fx * ts - camX, fy * ts - camY, ts, t < 1);
             }
         }
-        drawChar(canvas, state.party.get(0).isHero() ? "hero2" : "hero", px * ts - camX, py * ts - camY, ts, t < 1);
+        Hero leader = state.party.get(0);
+        String leaderSprite = spriteOf(leader);
+        drawChar(canvas, leaderSprite, px * ts - camX, py * ts - camY, ts, t < 1);
 
         if (t < 1 || world || "lava".equals(RpgData.theme(state.map))) postInvalidateDelayed(t < 1 ? 16 : 250);
+    }
+
+    private static String spriteOf(Hero h) {
+        return h.id == 0 && h.isHero() ? "hero2" : h.base().sprite;
     }
 
     private void drawChar(Canvas canvas, String key, float x, float y, int ts, boolean walking) {
@@ -328,12 +335,24 @@ public class RpgView extends View {
         } else if ("tmp".equals(theme)) {
             top = 0xFF0E2E33;
             bottom = 0xFF2F7F86;
-        } else if (battle.firstMonster == RpgData.VARGAS0) {
+        } else if (battle.firstMonster == RpgData.VARGAS0 || battle.firstMonster == RpgData.HOSTAGE) {
             top = 0xFF120A14;
             bottom = 0xFF3A0E0E;
         } else if ("lava".equals(theme)) {
             top = 0xFF1A0804;
             bottom = 0xFF7A2A0A;
+        } else if ("ruin".equals(theme)) {
+            top = 0xFF5A4A2A;
+            bottom = 0xFFC9A86A;
+        } else if ("ice".equals(theme)) {
+            top = 0xFF0E2A44;
+            bottom = 0xFF9FC6E8;
+        } else if ("demon".equals(theme)) {
+            top = 0xFF1A0610;
+            bottom = 0xFF6E1B3A;
+        } else if (state.map == RpgData.LAKE) {
+            top = 0xFFB8C4CC;
+            bottom = 0xFF4A6A5A;
         } else if ("fort".equals(theme)) {
             top = 0xFF0C0612;
             bottom = 0xFF3B1640;

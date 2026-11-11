@@ -31,6 +31,12 @@ public final class RpgState {
     public int townMap = RpgData.REBEL, townX = 8, townY = 11;
     public int battlesWon;
     public int stepsWalked;
+    /** 세속에서 모은 해 (저장하지 않고, 시작할 때 세속 진행에서 읽는다) */
+    public long suns;
+    /** 해의 제단에서 쓴 해 */
+    public long sunsSpent;
+    /** 보스를 쓰러뜨린 직후 이어서 시작할 전투 (저장하지 않음) */
+    public int pendingBoss = -1;
     /** 찾아낸 단서 비트 (RpgData.FLAG_*) */
     public int flags;
 
@@ -61,7 +67,9 @@ public final class RpgState {
     public double encounterRate() {
         double r = ENCOUNTER_RATE * (perkDelivery ? 0.8 : 1);
         // 흑염의 요새에는 마물이 우글거린다
-        if ("fort".equals(RpgData.theme(map))) r *= 2.2;
+        if ("fort".equals(RpgData.theme(map)) || "demon".equals(RpgData.theme(map))) r *= 2.2;
+        // 4장 던전에도 마물이 많다
+        if ("ruin".equals(RpgData.theme(map)) || "ice".equals(RpgData.theme(map))) r *= 1.6;
         return r;
     }
 
@@ -135,6 +143,8 @@ public final class RpgState {
         if (t == 'G' && step < RpgData.STEP_LAMP) return false;
         // 흑염의 요새는 결혼(각성) 뒤에 검은 불길이 걷힌다
         if (t == 'J' && step < RpgData.STEP_WEDDING) return false;
+        // 요마성은 부모를 모두 되찾은 뒤에 안개가 걷힌다
+        if (t == 'J' && map == RpgData.WORLD4 && step < RpgData.STEP_DAD_BACK) return false;
         return npcAt(tx, ty) == null;
     }
 
@@ -276,7 +286,7 @@ public final class RpgState {
         } else if (RpgData.examineDefault(t) != null) {
             in.lines.add(RpgData.examineDefault(t));
         } else {
-            in.lines.add("신창은 주위를 둘러보았다. 별다른 것은 없다.");
+            in.lines.add(Josa.eun(party.get(0).name()) + " 주위를 둘러보았다. 별다른 것은 없다.");
         }
         return in;
     }
@@ -378,6 +388,106 @@ public final class RpgState {
                         return;
                     }
                     break;
+                case RpgData.EV_KID:
+                    if (step == RpgData.STEP_FAMILY) {
+                        for (String l : RpgData.KID_LURED) in.lines.add(l);
+                        step = RpgData.STEP_KIDNAPPED;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_FOX1:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
+                    in.bossBattle = true;
+                    in.bossMonster = step == RpgData.STEP_HOSTAGE ? RpgData.HOSTAGE : RpgData.FOX1;
+                    return;
+                case RpgData.EV_FOX2:
+                case RpgData.EV_KING4:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
+                    in.bossBattle = true;
+                    in.bossMonster = npc.arg == RpgData.EV_FOX2 ? RpgData.FOX2 : RpgData.DEMON_KING;
+                    return;
+                case RpgData.EV_OWL:
+                    if (step == RpgData.STEP_MOM_FOUND) {
+                        for (String l : RpgData.DEW_GIVEN) in.lines.add(l);
+                        addItem(RpgData.MOON_DEW, 2);
+                        step = RpgData.STEP_DEW;
+                        return;
+                    }
+                    if (step == RpgData.STEP_KING_DOWN) {
+                        for (String l : RpgData.CHAPTER4_END) in.lines.add(l);
+                        step = RpgData.STEP_CHAPTER4_CLEAR;
+                        gold += 20000;
+                        for (Hero h : party) h.fullHeal();
+                        in.chapterClear = true;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_ALTAR:
+                    if (step == RpgData.STEP_MINHAN) {
+                        for (String l : RpgData.LEGACY) in.lines.add(l);
+                        for (Hero h : party) {
+                            h.awakened = true;
+                            h.fullHeal();
+                        }
+                        addItem(RpgData.DAD_BAG, 1);
+                        step = RpgData.STEP_LEGACY;
+                        in.awakened = true;
+                        return;
+                    }
+                    if (step > RpgData.STEP_MINHAN) {
+                        in.lines.add("[해의 제단지기] 아버지의 해로 무구를 바꾸겠나? (남은 해 " + availableSuns() + "개)");
+                        in.action = RpgData.ACT_LEGACY;
+                        return;
+                    }
+                    break;
+                case RpgData.EV_DAD_STATUE:
+                    if (step < RpgData.STEP_LEGACY) {
+                        in.lines.add("(석상 앞의 바닥이 꿈틀거린다. 거대한 무언가가 석상을 지키고 있다)");
+                        in.lines.add("(지금의 힘으로는 다가갈 수 없을 것 같다. 로아 마을의 '해의 제단'을 먼저 찾아가 보자)");
+                        return;
+                    }
+                    if (step == RpgData.STEP_LEGACY) {
+                        in.lines.add("(석상에 다가가자 땅이 흔들리며, 석상을 지키던 돌 거인이 일어섰다!)");
+                        in.lines.add("[석상 수호자] …돌이 된 자를… 건드리지 마라……");
+                        in.lines.add("[민한] 이 석상… 왠지 알 것 같아. 비켜!");
+                        in.bossBattle = true;
+                        in.bossMonster = RpgData.GUARDIAN;
+                        return;
+                    }
+                    if (step == RpgData.STEP_MOM_BACK) {
+                        for (String l : RpgData.DAD_BACK) in.lines.add(l);
+                        removeItem(RpgData.MOON_DEW, 1);
+                        rejoin(0);
+                        step = RpgData.STEP_DAD_BACK;
+                        return;
+                    }
+                    in.lines.add("(아빠의 석상이다. 가슴께에서 희미한 빛이 깜빡인다)");
+                    in.lines.add(step >= RpgData.STEP_DEW ? "[민한] 엄마 먼저 깨우고 올게, 아빠. 조금만 기다려."
+                            : "[민한] 기다려, 아빠. 꼭 되돌릴 방법을 찾을게.");
+                    return;
+                case RpgData.EV_MOM_STATUE:
+                    if (step < RpgData.STEP_DAD_FOUND) {
+                        in.lines.add("(수정이 석상을 겹겹이 감싸고 있다. 수정 너머에서 날카로운 기운이 느껴진다)");
+                        in.lines.add("(아직은 다가갈 수 없을 것 같다)");
+                        return;
+                    }
+                    if (step == RpgData.STEP_DAD_FOUND) {
+                        in.lines.add("(석상에 손을 뻗자, 동굴 천장의 수정이 쩌억 갈라지며 거대한 거미가 내려왔다!)");
+                        in.lines.add("[수정 여왕] 키키키… 이 예쁜 석상은… 내 거야……");
+                        in.bossBattle = true;
+                        in.bossMonster = RpgData.CRYSTAL_QUEEN;
+                        return;
+                    }
+                    if (step == RpgData.STEP_DEW) {
+                        for (String l : RpgData.MOM_BACK) in.lines.add(l);
+                        removeItem(RpgData.MOON_DEW, 1);
+                        rejoin(3);
+                        step = RpgData.STEP_MOM_BACK;
+                        return;
+                    }
+                    in.lines.add("(엄마의 석상이다. 손끝에 작은 불꽃이 깜빡인다)");
+                    in.lines.add("[민한] 달빛 이슬… 숲의 부엉이 할아버지한테 물어봐야 해.");
+                    return;
                 case RpgData.EV_IGNA_ELDER:
                     if (step == RpgData.STEP_GIANT_DOWN) {
                         for (String l : RpgData.WEDDING) in.lines.add(l);
@@ -392,6 +502,12 @@ public final class RpgState {
                     }
                     break;
                 case RpgData.EV_BIRTH:
+                    if (step == RpgData.STEP_CHAPTER3_CLEAR) {
+                        // 4장의 시작
+                        for (String l : RpgData.FAMILY) in.lines.add(l);
+                        step = RpgData.STEP_FAMILY;
+                        return;
+                    }
                     if (step == RpgData.STEP_HOME) {
                         for (String l : RpgData.BIRTH) in.lines.add(l);
                         step = RpgData.STEP_CHAPTER3_CLEAR;
@@ -449,6 +565,58 @@ public final class RpgState {
         for (String l : npc.linesFor(step)) in.lines.add("[" + npc.name + "] " + l);
         in.action = npc.action == RpgData.ACT_EVENT ? RpgData.ACT_NONE : npc.action;
         in.arg = npc.arg;
+    }
+
+    /** 해의 제단에서 쓸 수 있는 해 */
+    public long availableSuns() {
+        return Math.max(0, suns - sunsSpent);
+    }
+
+    public static int legacyPrice(int itemId) {
+        for (int[] g : RpgData.LEGACY_GOODS) if (g[0] == itemId) return g[1];
+        return -1;
+    }
+
+    /** 해로 전설의 무구 사기 */
+    public boolean buyLegacy(int itemId) {
+        int p = legacyPrice(itemId);
+        if (p < 0 || availableSuns() < p) return false;
+        sunsSpent += p;
+        addItem(itemId, 1);
+        return true;
+    }
+
+    /** 헤어졌던 동료가 돌아온다 */
+    private void rejoin(int heroId) {
+        for (int i = 0; i < reserve.size(); i++) {
+            Hero h = reserve.get(i);
+            if (h.id == heroId) {
+                reserve.remove(i);
+                h.fullHeal();
+                party.add(h);
+                return;
+            }
+        }
+    }
+
+    /** 인질극에서 쓰러지면: 신창과 지헌은 석상이 되어 흩어지고, 민한은 먼 숲에서 자란다 */
+    public List<String> onPetrified() {
+        List<String> out = new ArrayList<>();
+        for (String l : RpgData.PETRIFIED) out.add(l);
+        for (Hero h : party) {
+            h.fullHeal();
+            reserve.add(h);
+        }
+        party.clear();
+        Hero minhan = new Hero(4, 22);
+        Hero haru = new Hero(5, 22);
+        party.add(minhan);
+        party.add(haru);
+        gold = 500;
+        addItem(RpgData.HI_HERB, 5);
+        step = RpgData.STEP_MINHAN;
+        warp(RpgData.BEASTDEN, 11, 8);
+        return out;
     }
 
     static int bossFor(int event) {
@@ -553,7 +721,7 @@ public final class RpgState {
         if (index < 0 || chestOpened[index]) return;
         chestOpened[index] = true;
         int[] c = RpgData.CHESTS[index];
-        in.lines.add("신창은 보물상자를 열었다!");
+        in.lines.add(Josa.eun(party.get(0).name()) + " 보물상자를 열었다!");
         if (c[3] < 0) {
             gold += c[4];
             in.lines.add(c[4] + "골드를 손에 넣었다!");
@@ -604,7 +772,23 @@ public final class RpgState {
 
     public List<String> onBossDefeated(int monster) {
         String[] lines;
-        if (monster == RpgData.GIANT) {
+        if (monster == RpgData.FOX1) {
+            step = RpgData.STEP_HOSTAGE;
+            pendingBoss = RpgData.HOSTAGE;
+            lines = RpgData.FOX1_DEFEATED;
+        } else if (monster == RpgData.GUARDIAN) {
+            step = RpgData.STEP_DAD_FOUND;
+            lines = RpgData.DAD_FOUND;
+        } else if (monster == RpgData.CRYSTAL_QUEEN) {
+            step = RpgData.STEP_MOM_FOUND;
+            lines = RpgData.MOM_FOUND;
+        } else if (monster == RpgData.FOX2) {
+            step = RpgData.STEP_FOX_DOWN;
+            lines = RpgData.FOX2_DEFEATED;
+        } else if (monster == RpgData.DEMON_KING) {
+            step = RpgData.STEP_KING_DOWN;
+            lines = RpgData.KING4_DEFEATED;
+        } else if (monster == RpgData.GIANT) {
             step = RpgData.STEP_GIANT_DOWN;
             addItem(RpgData.FLAME_ORE, 1);
             addItem(RpgData.DOGEON_HAMMER, 1);
@@ -823,6 +1007,7 @@ public final class RpgState {
             if (i > 0) sb.append('/');
             sb.append(reserve.get(i).serialize());
         }
+        sb.append(';').append(sunsSpent);
         return sb.toString();
     }
 
@@ -856,6 +1041,7 @@ public final class RpgState {
             s.stepsWalked = Integer.parseInt(p[14]);
             if (p.length > 15) s.flags = Integer.parseInt(p[15]);
             if (p.length > 16 && !p[16].isEmpty()) for (String h : p[16].split("/")) s.reserve.add(Hero.deserialize(h));
+            if (p.length > 17) s.sunsSpent = Long.parseLong(p[17]);
             s.fixPosition();
             return s;
         } catch (RuntimeException e) {

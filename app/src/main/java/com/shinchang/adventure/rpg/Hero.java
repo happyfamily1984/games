@@ -39,13 +39,13 @@ public final class Hero {
 
     /** 용사로 전직한 신창 */
     public boolean isHero() {
-        return awakened && id == 0;
+        return awakened && (id == 0 || id == 4);
     }
 
     /** 각성하면 능력치가 크게 오른다: {곱, 더함} */
     private int boost(int value, double heroMul, int heroAdd, double blessMul, int blessAdd) {
         if (!awakened) return value;
-        return id == 0 ? (int) Math.round(value * heroMul) + heroAdd : (int) Math.round(value * blessMul) + blessAdd;
+        return id == 0 || id == 4 ? (int) Math.round(value * heroMul) + heroAdd : (int) Math.round(value * blessMul) + blessAdd;
     }
 
     public int maxHp() {
@@ -86,6 +86,8 @@ public final class Hero {
     public String job() {
         if (id == 0) return awakened ? "용사 · 슬레이어" : "배달부";
         if (id == 3) return awakened ? "불의 무녀 (불의 축복)" : "대장장이의 딸";
+        if (id == 4) return awakened ? "해의 계승자" : "숲의 아이";
+        if (id == 5) return awakened ? "해의 늑대" : "숲의 늑대";
         if (id == 1) return "기사";
         return "요정 상인";
     }

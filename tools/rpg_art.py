@@ -132,6 +132,59 @@ CHARS.update({
     ]),
 })
 
+# 4장 인물
+def stone(rows):
+    """석상: 모든 색을 회색 돌로"""
+    tone = {"k": "E", "h": "E", "N": "E", "B": "E", "R": "E", "x": "E", "q": "E"}
+    return ["".join("." if c == "." else tone.get(c, "e") for c in r) for r in rows]
+
+
+CHARS.update({
+    "kid": mirror([
+        ".....", ".....", "...hh", "..hhh", "..hss", "..sks",
+        "...ss", "..ooo", ".sooo", "..bbb", "..NN.", "..kk.",
+    ]),
+    "minhan": mirror([
+        "...hh", "..hhh", ".hhhs", "..sks", "..sss", "G..ss",
+        "GGnnn", "GsnnG", "GsnnG", "..ggg", "..NN.", "..kk.",
+    ]),
+    "haru": mirror([
+        ".....", ".....", ".e...", ".ee..", ".eeee", ".eeee",
+        ".ekke", "..eee", "..lll", "..eee", "..e.e", ".....",
+    ]),
+    "granny": subst(ELDER, {"H": "l", "C": "n", "D": "P"}),
+    "fox": mirror([
+        "y....", "yy..o", ".oooo", "..oss", "..sks", "..sss",
+        "o.CCC", "oosCC", "ooCCC", "..CCC", "..CCC", "..kk.",
+    ]),
+    "owl": mirror([
+        ".....", "..n..", "..nnn", ".nwkn", ".nwwn", ".nnyy",
+        ".ntnn", "nnttn", "nnttn", ".nttn", "..y.y", ".....",
+    ]),
+    "bear": mirror([
+        ".....", ".n...", ".nnnn", ".nnnn", ".nknn", "..nnP",
+        ".nnnn", "nnnnn", "nnntt", "nnntt", ".nnnn", ".NN.N",
+    ]),
+    "deer": mirror([
+        "n....", "n.n..", ".nn..", "..www", "..wkw", "...ww",
+        "...ww", "..www", ".wwww", ".wwww", ".w..w", ".k..k",
+    ]),
+    "rabbit": mirror([
+        ".....", ".....", ".....", "...w.", "...w.", "..ww.",
+        "..www", "..wkw", "..wwP", "..www", "..www", ".....",
+    ]),
+    "squirrel": mirror([
+        ".....", ".....", ".....", ".....", "nn...", "nnn..",
+        ".nn.n", "..nnn", "..nkn", "..nnt", "..nnn", "...n.",
+    ]),
+    "demonking": mirror([
+        "y...y", "y..hh", ".hhhh", ".hrhr", ".hhhh", "..hhh",
+        "RRqqq", "RqyqR", "RRqqq", "RRqqq", "R.qqq", "..kk.",
+    ]),
+})
+CHARS["statue_dad"] = stone(CHARS["hero2"])
+CHARS["statue_mom"] = stone(CHARS["jiheon"])
+
 # ---------------------------------------------------------------- 몬스터 (왼쪽 절반 8칸)
 MONSTERS = {
     "rat": mirror([
@@ -241,6 +294,28 @@ MONSTERS.update({
                       "...xxooo", "....xxoo", ".....xxx", "....xx.x", "....k..k", "........", "........", "........"]),
 })
 
+# 4장 몬스터
+MONSTERS.update({
+    "moth": subst(MONSTERS["bat"], {"p": "g", "k": "y", "P": "y"}),
+    "mantis": mirror(["........", "......gg", ".....gkg", "......gg", "..G...gg", ".GG...g.", "GG.g.ggg", "G...gggg",
+                      "....gggg", ".....ggg", "....gGgg", "...g.g.g", "..g..g..", "........", "........", "........"]),
+    "troll": subst(MONSTERS["golem"], {"x": "G", "P": "g", "k": "r"}),
+    "manashroom": subst(MONSTERS["shroom"], {"r": "p", "w": "c"}),
+    "griffin": subst(MONSTERS["gull"], {"l": "y", "e": "n", "y": "Y"}),
+    "rockgiant": subst(MONSTERS["statue"], {"e": "m", "E": "M", "y": "r"}),
+    "mummy": subst(MONSTERS["skeleton"], {"l": "t", "k": "r"}),
+    "cursestatue": subst(MONSTERS["statue"], {"e": "q", "E": "z", "y": "r"}),
+    "icewolf": subst(MONSTERS["shadowwolf"], {"p": "w", "q": "u", "r": "b"}),
+    "crystalgolem": subst(MONSTERS["golem"], {"x": "v", "P": "c", "k": "w"}),
+    "crystalbat": subst(MONSTERS["bat"], {"p": "c", "k": "b", "P": "u"}),
+    "demonsoldier": subst(MONSTERS["blackknight"], {"h": "q", "k": "z", "x": "R", "o": "r"}),
+    "ninetail": subst(MONSTERS["thornwolf"], {"G": "y", "g": "o"}),
+    "shadowyokai": subst(MONSTERS["saltspirit"], {"w": "q", "l": "z", "k": "r"}),
+    "demoncaptain": subst(MONSTERS["flamebeast"], {"o": "q", "x": "R"}),
+    "sunfairy": subst(MONSTERS["stardust"], {"y": "o", "w": "y"}),
+    "rainbowturtle": subst(MONSTERS["turtle"], {"e": "c", "E": "P", "g": "y", "s": "r"}),
+})
+
 # 보스: 24x20 (왼쪽 절반 12칸)
 MONSTERS["wolfking"] = mirror([
     "............", "...y........", "...yy.......", "..ypyy......", "..ppppy.....", ".ppppppp....",
@@ -289,6 +364,31 @@ MONSTERS["vargas"] = mirror([
     "............", "......h.....", "......hh....", ".......hhhhh", "......hhhhhh", "......hhhrrh",
     "......hhhhhh", "..xx...hhhhh", ".xxxx.hhhhhh", "xxhhhhhhhxhh", "xhhhhhhhhxxh", "xhhhhhhhhxxx",
     "xhhkhhhhhhhh", "x.hhhhhhhhhh", "..hhhhhhhhhh", "..zhhhhhhhhh", "...zzhhhhzzh", "....hhhh..hh",
+    "....kkkk..kk", "............",
+])
+
+MONSTERS["fox"] = mirror([
+    "............", "..o.........", "..oo........", "..ooo...llll", "...ooo.lllll", "....ooolllll",
+    "..o..oossskk", "..oo.osssss.", "...ooooossss", "......oCCCCC", "....ooCCCCCC", "...oooCCyCCC",
+    "..ooo.CCCCCC", ".ooo..CCCCCC", ".oo...CCCCCC", "......CCCCCC", "......CCCCCC", ".......CCCCC",
+    ".......kkk.k", "............",
+])
+MONSTERS["guardian"] = mirror([
+    "............", "........eeee", ".......eeeee", ".......eeyee", ".......eeeee", "....eeeeeeee",
+    "...eeEEeeeee", "..eeeEEeeeee", "..eee.eeeeEE", "..eee.eeeeEE", "..mmm.eeeeee", "..mmm..eeeee",
+    "........eeee", ".......eeeee", "......eeee..", "......eeee..", ".....eeeee..", ".....EEEEE..",
+    "....EEEEEE..", "............",
+])
+MONSTERS["crystalqueen"] = mirror([
+    "............", "..c.........", "...c.....uuu", "....c...uuuu", ".....c.uucuu", "c.....uuuuuu",
+    ".c....ucbcbu", "..c..uuuuuuu", "...cuuuvvvvv", "....uuvvvvvv", "..cuuvvwvvvv", ".c.uuvvvvvvv",
+    "c..uuvvvvvvv", "...cuuvvvvvv", "..c..uuvvvvv", ".c....uuuuuu", "c......c..c.", "......c..c..",
+    ".....c..c...", "............",
+])
+MONSTERS["demonking"] = mirror([
+    "...y........", "...yy.......", "....yy..hhhh", ".....yyhhhhh", "......hhhrrh", "......hhhhhh",
+    ".......hhhhh", "..RR..qqqqqq", ".RRRRqqqqqqq", "RRqqqqqqqyqq", "Rqqqqqqqqyyq", "Rqqqqqqqqqqq",
+    "Rqqhqqqqqqqq", "R.qqqqqqqqqq", "..qqqqqqqqqq", "..zqqqqqqqqq", "...zzqqqqzzq", "....qqqq..qq",
     "....kkkk..kk", "............",
 ])
 
@@ -392,11 +492,23 @@ TILES = {
 }
 
 
+CHARS["fox"] = subst(CHARS["fox"], {"C": "p"})
+MONSTERS["fox"] = subst(MONSTERS["fox"], {"C": "p"})
+
+# 4장 던전 타일: 기존 타일의 색만 바꾼다
+for _k in (",", "#", "X", "C", "c", "i"):
+    TILES["ruin" + _k] = subst(TILES["tmp" + _k], {"c": "F", "v": "T", "l": "t", "u": "f"})
+    TILES["ice" + _k] = subst(TILES.get("cave" + _k, TILES["lava" + _k]), {"m": "u", "M": "c", "d": "v", "D": "B", "l": "w",
+                                                                           "N": "v", "n": "c", "o": "w", "x": "u"})
+    TILES["demon" + _k] = subst(TILES["fort" + _k], {"z": "R", "q": "x", "h": "z", "E": "q", "p": "r"})
+
+
 def check():
     for name, rows in CHARS.items():
         assert len(rows) == 12 and all(len(r) == 10 for r in rows), name
     for name, rows in MONSTERS.items():
-        big = name in ("wolfking", "galleon", "serpent", "giant", "ignis", "witch", "lavadragon", "vargas")
+        big = name in ("wolfking", "galleon", "serpent", "giant", "ignis", "witch", "lavadragon", "vargas",
+                       "fox", "guardian", "crystalqueen", "demonking")
         w = 24 if big else 16
         h = 20 if big else 16
         assert len(rows) == h and all(len(r) == w for r in rows), (name, [len(r) for r in rows])

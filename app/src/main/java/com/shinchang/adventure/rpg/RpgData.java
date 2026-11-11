@@ -10,15 +10,20 @@ public final class RpgData {
 
     public static final int OFFICE = 0, WORLD = 1, REBEL = 2, ERDEN = 3, CAVE1 = 4, CAVE2 = 5,
             WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13,
-            WORLD3 = 14, IGNA = 15, LAVA1 = 16, LAVA2 = 17, FORT1 = 18, FORT2 = 19, FORT3 = 20;
+            WORLD3 = 14, IGNA = 15, LAVA1 = 16, LAVA2 = 17, FORT1 = 18, FORT2 = 19, FORT3 = 20,
+            LAKE = 21, WORLD4 = 22, BEASTDEN = 23, ROA = 24, RUINS1 = 25, RUINS2 = 26, CRYSTAL1 = 27, CRYSTAL2 = 28, DEMON1 = 29, DEMON2 = 30;
     public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층",
             "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층",
-            "이그나 섬", "화산섬 마을 이그나", "용암 동굴 1층", "용암 동굴 2층", "흑염의 요새 1층", "흑염의 요새 2층", "흑염의 요새 옥좌"};
+            "이그나 섬", "화산섬 마을 이그나", "용암 동굴 1층", "용암 동굴 2층", "흑염의 요새 1층", "흑염의 요새 2층", "흑염의 요새 옥좌",
+            "안개 호수", "실바 대륙", "짐승의 보금자리", "로아 마을", "바람의 고원 유적 1층", "바람의 고원 유적 2층",
+            "수정 동굴 1층", "수정 동굴 2층", "요마성 1층", "요마성 옥좌"};
 
     /** 지도 그림은 tools/rpg_maps.py 가 만든 RpgMaps 에 있다 */
     public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2,
             RpgMaps.WORLD2, RpgMaps.MERCA, RpgMaps.SALT, RpgMaps.LIGHTHOUSE, RpgMaps.SPRAY1, RpgMaps.SPRAY2, RpgMaps.TEMPLE1, RpgMaps.TEMPLE2,
-            RpgMaps.WORLD3, RpgMaps.IGNA, RpgMaps.LAVA1, RpgMaps.LAVA2, RpgMaps.FORT1, RpgMaps.FORT2, RpgMaps.FORT3};
+            RpgMaps.WORLD3, RpgMaps.IGNA, RpgMaps.LAVA1, RpgMaps.LAVA2, RpgMaps.FORT1, RpgMaps.FORT2, RpgMaps.FORT3,
+            RpgMaps.LAKE, RpgMaps.WORLD4, RpgMaps.BEASTDEN, RpgMaps.ROA, RpgMaps.RUINS1, RpgMaps.RUINS2,
+            RpgMaps.CRYSTAL1, RpgMaps.CRYSTAL2, RpgMaps.DEMON1, RpgMaps.DEMON2};
 
     /** 지도 분위기: 동굴(갈색), 바다 동굴(푸른색), 신전(청록 돌) */
     public static String theme(int map) {
@@ -27,12 +32,15 @@ public final class RpgData {
         if (map == TEMPLE1 || map == TEMPLE2) return "tmp";
         if (map == LAVA1 || map == LAVA2) return "lava";
         if (map == FORT1 || map == FORT2 || map == FORT3) return "fort";
+        if (map == RUINS1 || map == RUINS2) return "ruin";
+        if (map == CRYSTAL1 || map == CRYSTAL2) return "ice";
+        if (map == DEMON1 || map == DEMON2) return "demon";
         return null;
     }
 
     /** 바깥이 바다인 지도 */
     public static boolean isOverworld(int map) {
-        return map == WORLD || map == WORLD2 || map == WORLD3;
+        return map == WORLD || map == WORLD2 || map == WORLD3 || map == WORLD4;
     }
 
     /** 지나갈 수 없는 타일 */
@@ -44,7 +52,8 @@ public final class RpgData {
     public static boolean hasEncounters(int map) {
         return map == WORLD || map == CAVE1 || map == CAVE2 || map == WORLD2
                 || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2
-                || map == WORLD3 || map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3;
+                || map == WORLD3 || map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3
+                || map == WORLD4 || map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2;
     }
 
     /** 지도 이동: (지도, x, y) 에 들어가면 (도착 지도, x, y) 로 */
@@ -98,6 +107,31 @@ public final class RpgData {
             {FORT2, 16, 13, FORT1, 18, 6},
             {FORT2, 3, 12, FORT3, 12, 11},
             {FORT3, 12, 12, FORT2, 3, 11},
+            // 4장
+            {WORLD3, 22, 18, LAKE, 11, 14},
+            {LAKE, 11, 15, WORLD3, 22, 17},
+            {LAKE, 12, 15, WORLD3, 22, 17},
+            {WORLD4, 6, 6, BEASTDEN, 11, 16},
+            {WORLD4, 14, 18, ROA, 12, 18},
+            {WORLD4, 28, 6, RUINS1, 11, 13},
+            {WORLD4, 30, 19, CRYSTAL1, 10, 13},
+            {WORLD4, 18, 3, DEMON1, 11, 13},
+            {BEASTDEN, 11, 17, WORLD4, 6, 7},
+            {BEASTDEN, 12, 17, WORLD4, 6, 7},
+            {ROA, 12, 19, WORLD4, 14, 19},
+            {ROA, 13, 19, WORLD4, 14, 19},
+            {RUINS1, 11, 14, WORLD4, 28, 7},
+            {RUINS1, 12, 14, WORLD4, 28, 7},
+            {RUINS1, 6, 8, RUINS2, 12, 12},
+            {RUINS2, 12, 13, RUINS1, 7, 8},
+            {CRYSTAL1, 10, 14, WORLD4, 30, 20},
+            {CRYSTAL1, 11, 14, WORLD4, 30, 20},
+            {CRYSTAL1, 4, 12, CRYSTAL2, 10, 12},
+            {CRYSTAL2, 10, 13, CRYSTAL1, 4, 11},
+            {DEMON1, 11, 14, WORLD4, 18, 4},
+            {DEMON1, 12, 14, WORLD4, 18, 4},
+            {DEMON1, 18, 5, DEMON2, 12, 11},
+            {DEMON2, 12, 12, DEMON1, 18, 6},
     };
 
     /** 마을에 들어가면 그 마을이 "마지막으로 들른 마을"이 된다 (전멸·날개깃 귀환 위치) */
@@ -107,6 +141,8 @@ public final class RpgData {
             {MERCA, 3, 12},
             {SALT, 11, 7},
             {IGNA, 12, 17},
+            {BEASTDEN, 11, 15},
+            {ROA, 12, 17},
     };
 
     /** 배를 타고 내리는 곳 */
@@ -143,22 +179,40 @@ public final class RpgData {
     public static final int STEP_REVENGE = 20;
     public static final int STEP_HOME = 21;
     public static final int STEP_CHAPTER3_CLEAR = 22;
+    // 4장
+    public static final int STEP_FAMILY = 23;
+    public static final int STEP_KIDNAPPED = 24;
+    public static final int STEP_HOSTAGE = 25;
+    public static final int STEP_MINHAN = 26;
+    public static final int STEP_LEGACY = 27;
+    public static final int STEP_DAD_FOUND = 28;
+    public static final int STEP_MOM_FOUND = 29;
+    public static final int STEP_DEW = 30;
+    public static final int STEP_MOM_BACK = 31;
+    public static final int STEP_DAD_BACK = 32;
+    public static final int STEP_FOX_DOWN = 33;
+    public static final int STEP_KING_DOWN = 34;
+    public static final int STEP_CHAPTER4_CLEAR = 35;
 
-    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」", "3장 「용사의 탄생」"};
+    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」", "3장 「용사의 탄생」",
+            "4장 「해를 물려받은 아이」"};
 
     public static int chapterOf(int step) {
         if (step == STEP_PROLOGUE) return 0;
         if (step < STEP_SAILED) return 1;
-        return step < STEP_ALONE ? 2 : 3;
+        if (step < STEP_ALONE) return 2;
+        return step < STEP_FAMILY ? 3 : 4;
     }
 
     /** 찾아낸 단서 (비트) */
     public static final int FLAG_RECORD = 1, FLAG_CHRONICLE = 2, FLAG_MURAL = 4, FLAG_LIBRARY = 8, FLAG_DIARY = 16,
             FLAG_LEDGER = 32, FLAG_SHIPLOG = 64, FLAG_LIGHTLOG = 128, FLAG_TEMPLE = 256, FLAG_PROPHECY = 512, FLAG_COMPASS = 1024,
-            FLAG_SMITHLOG = 2048, FLAG_ORDER = 4096, FLAG_FIRESEAL = 8192;
+            FLAG_SMITHLOG = 2048, FLAG_ORDER = 4096, FLAG_FIRESEAL = 8192,
+            FLAG_SUNLORE = 16384, FLAG_PACT = 32768;
     public static final String[] CLUE_NAMES = {"금고의 경고문", "리벨 연대기", "성당 벽화", "에르덴 서고의 기록", "로웰의 일기",
             "길드 장부", "선박 기록", "등대 일지", "해저 신전 벽화", "문지기의 각인", "바로스의 나침반",
-            "도건의 작업 일지", "요새의 명령서", "불의 봉인 제단"};
+            "도건의 작업 일지", "요새의 명령서", "불의 봉인 제단",
+            "해의 제단 벽화", "요마왕의 맹약"};
     /** 단서 메뉴에 보여 줄 요약 */
     public static final String[] CLUE_TEXTS = {
             "청와대 금고: '문 저편에서 오는 자는 짐꾼이 아니다' — 서명 E. 가방과 같은 문양.",
@@ -175,15 +229,18 @@ public final class RpgData {
             "회색 망토가 대장장이 도건에게 '그릇을 묶을 족쇄'를 주문했다. 그릇은 다 잃고 빈 몸으로 이 섬에 온다고 했다.",
             "모르칸이 바르가스에게: 바다에서 동료를 떼어 내고, 짐꾼은 '비워서' 살려 두라. 배신은 처음부터였다.",
             "불의 봉인은 나누는 손으로만 지켜진다. 문지기: '그릇을 비워라. 잃게 하라. 빈 그릇에 왕이 깃든다.'",
+            "해를 모은 자가 짐을 내려놓을 때, 그 해는 아이에게 내려가 아이를 지킨다. 해는 신창의 유산이었다.",
+            "문지기와 요마왕의 맹약: 다시 가득 찬 짐꾼에게서 가장 소중한 것을 빼앗을 것. 해를 물려받은 아이를 데려올 것.",
     };
 
     // ------------------------------------------------------------ 등장인물 (마을 사람)
 
-    public static final int ACT_NONE = 0, ACT_SHOP = 1, ACT_INN = 2, ACT_SAVE = 3, ACT_EVENT = 4;
+    public static final int ACT_NONE = 0, ACT_SHOP = 1, ACT_INN = 2, ACT_SAVE = 3, ACT_EVENT = 4, ACT_LEGACY = 5;
     public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3, EV_HUNTER = 4,
             EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11,
             EV_SHIP_TO_IGNA = 12, EV_JIHEON = 13, EV_GIANT = 14, EV_IGNA_ELDER = 15, EV_GEN1 = 16, EV_GEN2 = 17, EV_GEN3 = 18,
-            EV_VARGAS = 19, EV_BIRTH = 20;
+            EV_VARGAS = 19, EV_BIRTH = 20,
+            EV_KID = 21, EV_FOX1 = 22, EV_OWL = 23, EV_ALTAR = 24, EV_DAD_STATUE = 25, EV_MOM_STATUE = 26, EV_FOX2 = 27, EV_KING4 = 28;
 
     public static final class Npc {
         public final int map, x, y;
@@ -593,6 +650,110 @@ public final class RpgData {
                             "[신창] 그리고 내 동료들을 데려갔지. 리나와 피피는 어디 있어!",
                             "크하하! 알고 싶으면 나를 꺾어 봐라! 문지기님께 받은 공허의 불꽃으로, 이번엔 너도 재로 만들어 주마!"),
             }),
+
+            // ---- 4장: 이그나 (민한이 자라는 동안)
+            new Npc(IGNA, 14, 16, "kid", "어린 민한", ACT_EVENT, EV_KID, STEP_FAMILY, STEP_FAMILY, new Object[][]{
+                    at(0, "아빠! 아빠!"),
+            }),
+            new Npc(IGNA, 16, 18, "granny", "인자한 할머니", ACT_NONE, 0, STEP_FAMILY, STEP_FAMILY, new Object[][]{
+                    at(0, "호호, 처음 보는 얼굴이라고? 바다 건너 섬에서 온 떠돌이 약초꾼이라오.",
+                            "저 아이가 용사님 아들이구먼. 눈이 반짝반짝, 궁금한 게 많은 눈이야.",
+                            "(할머니의 그림자가 잠깐… 꼬리가 여러 개 달린 짐승 모양으로 일렁인 것 같다)"),
+            }),
+            new Npc(IGNA, 18, 18, "villager", "걱정 많은 아낙", ACT_NONE, 0, STEP_KIDNAPPED, STEP_HOSTAGE, new Object[][]{
+                    at(0, "민한이가 그 약초꾼 할머니 손을 잡고 남동쪽 꽃길로 가는 걸 봤어요!",
+                            "그 너머는 안개 호수예요… 어서 가 보세요!"),
+            }),
+
+            // ---- 4장: 안개 호수
+            new Npc(LAKE, 11, 9, "fox", "인자한 할머니?", ACT_EVENT, EV_FOX1, STEP_KIDNAPPED, STEP_HOSTAGE, new Object[][]{
+                    at(0, "(안개 낀 호숫가. 할머니가 잠든 민한을 무릎에 누이고 자장가를 흥얼거리고 있다)",
+                            "[신창] 민한아!!",
+                            "호호… 왔구먼, 용사님. 생각보다 빠르네.",
+                            "[지헌] 그 아이에게서 손 떼요. 당장.",
+                            "(할머니의 몸이 뒤틀리며 아홉 개의 꼬리가 펼쳐진다. 얼굴이 천 개의 가면처럼 바뀐다)",
+                            "[천면귀] 문지기님 말씀이 맞았어. 빈 그릇이 다시 가득 찼다고. 아내에, 집에, 아들까지!",
+                            "[천면귀] 그러니 다시 비워 줘야지. 이번엔 가장 소중한 것부터. 호호호!"),
+                    at(STEP_HOSTAGE, "(천면귀가 민한의 목에 날카로운 손톱을 들이대고 있다)",
+                            "[천면귀] 한 발짝이라도 움직이면… 알지?"),
+            }),
+            new Npc(LAKE, 12, 9, "kid", "잠든 민한", ACT_NONE, 0, STEP_KIDNAPPED, STEP_HOSTAGE, new Object[][]{
+                    at(0, "(민한은 깊은 잠에 빠져 있다. 손에 호숫가에서 딴 꽃을 쥐고 있다)"),
+            }),
+
+            // ---- 4장: 짐승의 보금자리
+            new Npc(BEASTDEN, 11, 4, "owl", "백년 부엉이 노을", ACT_EVENT, EV_OWL, STEP_MINHAN, 99, new Object[][]{
+                    at(0, "부엉. 민한아, 사람의 마을 '로아'는 숲을 나가 남동쪽 길 끝이란다.",
+                            "네가 이 숲에 떨어지던 날 메고 있던 그 낡은 가방… 로아의 '해의 제단'에 가져가 보거라."),
+                    at(STEP_LEGACY, "해의 유산이라… 네 아버지는 문 저편에서 해를 수없이 모았다더구나. 그 해가 지금 너를 지키는 게야.",
+                            "동쪽 고원의 유적에 사람 모양 석상이 있다는 소문이 있다. 가 보거라."),
+                    at(STEP_DAD_FOUND, "아버지를 찾았구나…! 그럼 어머니도 멀지 않았을 게다. 동남쪽 수정 동굴을 찾아보거라."),
+                    at(STEP_DEW, "달빛 이슬을 석상에 부어 주거라. 어머니부터 가 보는 게 좋겠구나. 이슬의 빛은 어머니의 마법에서 왔으니."),
+                    at(STEP_DAD_BACK, "북쪽 산의 요마성으로 가는 길이 열렸다. 네 가족을 갈라놓은 그 여우가 거기 있다."),
+                    at(STEP_CHAPTER4_CLEAR, "부엉. 언제든 놀러 오너라. 숲은 늘 네 집이란다."),
+            }),
+            act(BEASTDEN, 5, 9, "bear", "곰 어미 두두", ACT_INN, 0,
+                    at(0, "크릉. 우리 아기 민한, 다쳤니? 이리 와서 둥지에서 자렴. 공짜야, 공짜.")),
+            act(BEASTDEN, 18, 9, "deer", "흰 사슴", ACT_SAVE, 0,
+                    at(0, "(흰 사슴이 이마를 민한의 손에 댄다. 지금까지의 모험이 숲에 새겨진다)")),
+            npc(BEASTDEN, 8, 13, "rabbit", "토끼 삼남매",
+                    at(0, "민한 형아다! 형아 또 사냥 가? 우리도 데려가!",
+                            "형아는 맨날 밤에 별 보면서 엄마 아빠 생각하잖아. 우리 다 알아."),
+                    at(STEP_MOM_BACK, "형아 엄마다! 진짜 예쁘다! 형아랑 눈이 똑같아!")),
+            npc(BEASTDEN, 16, 13, "squirrel", "다람쥐 톡톡",
+                    at(0, "도토리 줄까? 아, 너 이제 사람 음식 먹어야 한다고? 쳇.",
+                            "몬스터가 사나워졌어. 숲 밖은 조심해. 특히 반짝이는 무지개 거북은 쫓아가 봐! 금화를 잔뜩 떨군대."),
+                    at(STEP_DAD_BACK, "너희 아빠 진짜 세다! 곰 아줌마보다 세!")),
+
+            // ---- 4장: 로아 마을
+            new Npc(ROA, 12, 3, "elder", "해의 제단지기", ACT_EVENT, EV_ALTAR, STEP_MINHAN, 99, new Object[][]{
+                    at(0, "해의 제단에 온 것을 환영하오."),
+            }),
+            act(ROA, 4, 12, "merchant", "로아 도구점", ACT_SHOP, 6,
+                    at(0, "숲 소년이구나! 골드가 있으면 뭐든 팔지.")),
+            act(ROA, 8, 12, "innkeeper", "들꽃 여관", ACT_INN, 40,
+                    at(0, "들꽃 여관이에요. 짐승 냄새는… 괜찮아요, 씻고 주무세요.")),
+            act(ROA, 19, 14, "priest", "로아 예배당 사제", ACT_SAVE, 0,
+                    at(0, "길 잃은 아이에게 빛이 있기를. 모험을 기록해 드리지요.")),
+            npc(ROA, 16, 9, "farmer", "로아 농부",
+                    at(0, "동쪽 고원 유적에 사람 석상이 하나 있는데, 밤마다 손끝이 빛난대. 무섭지?",
+                            "그 석상 앞을 돌 거인이 지키고 있어서 아무도 못 가."),
+                    at(STEP_DAD_FOUND, "고원 석상이 네 아버지였다고? 세상에…")),
+            npc(ROA, 4, 10, "villager", "로아 할머니",
+                    at(0, "수정 동굴엔 우는 여인의 석상이 있다는구나. 동굴이 울 때마다 수정이 자란다지.",
+                            "…진짜 할머니인지 의심하는 눈이구나. 어릴 때 나쁜 할머니를 만났니? 저런."),
+                    at(STEP_MOM_BACK, "어머니를 되찾았다니! 그 우는 수정이 이제 웃는 소리를 낸다는구나.")),
+            npc(ROA, 21, 10, "child", "로아 꼬마",
+                    at(0, "형 늑대랑 다녀? 멋있다! 늑대 만져 봐도 돼?",
+                            "북쪽 산 꼭대기엔 요마성이 있어. 검은 안개 때문에 아무도 못 올라가."),
+                    at(STEP_DAD_BACK, "요마성 안개가 걷혔어! 형이 한 거지?")),
+
+            // ---- 4장: 석상이 된 부모
+            new Npc(RUINS2, 11, 3, "statue_dad", "석상", ACT_EVENT, EV_DAD_STATUE, STEP_MINHAN, STEP_MOM_BACK, new Object[][]{
+                    at(0, "(검을 들어 무언가를 막으려는 자세의 석상이다)"),
+            }),
+            new Npc(CRYSTAL2, 5, 4, "statue_mom", "석상", ACT_EVENT, EV_MOM_STATUE, STEP_MINHAN, STEP_DEW, new Object[][]{
+                    at(0, "(두 손을 앞으로 뻗은 여인의 석상이다)"),
+            }),
+
+            // ---- 4장: 요마성
+            new Npc(DEMON1, 18, 7, "fox", "천면귀", ACT_EVENT, EV_FOX2, STEP_DAD_BACK, STEP_DAD_BACK, new Object[][]{
+                    at(0, "어머, 어머. 이게 누구야? 그때 그 꼬마? 다 컸네?",
+                            "[민한] …할머니. 아니, 천면귀.",
+                            "[천면귀] 돌로 만들어 흩어 놨는데, 그걸 다 찾아서 되살렸다고? 짐승한테 키워진 주제에!",
+                            "[지헌] 그 짐승들이 당신보다 백 배는 따뜻했어요.",
+                            "[신창] 8년이다. 내 아들의 8년을 돌려받겠다.",
+                            "[천면귀] 호호호! 이번엔 인질도 없어. 정정당당히… 아니, 비겁하게 가 볼까!"),
+            }),
+            new Npc(DEMON2, 11, 2, "demonking", "요마왕 다르칸", ACT_EVENT, EV_KING4, STEP_FOX_DOWN, STEP_FOX_DOWN, new Object[][]{
+                    at(0, "(검은 옥좌에서 뿔 달린 거인이 몸을 일으킨다. 요마들이 일제히 엎드린다)",
+                            "천면귀가 졌다고? 쓸모없는 것. 하긴, 가족이란 것은 늘 계산을 망치지.",
+                            "[민한] 당신이 시켰어? 우리 가족을 부수라고.",
+                            "[다르칸] 시킨 건 문지기다. 나는 그 대가로 이 대륙을 받기로 했을 뿐.",
+                            "[다르칸] 짐꾼이 다시 비어야 그릇이 된다더군. 아내와 아들을 빼앗으면 비겠지. 그런데……",
+                            "[신창] 안 비었어. 아들이 8년 동안 혼자 채워 왔거든.",
+                            "[민한] 아빠, 엄마. 하루. 같이 가요. 이번엔 우리가 지킬 차례예요!"),
+            }),
     };
 
     // ------------------------------------------------------------ 살펴볼 수 있는 것 (단서)
@@ -742,6 +903,22 @@ public final class RpgData {
                     "제단에 오래된 글귀가 있다.",
                     "'불의 봉인은 나누는 손으로만 지켜진다. 쌓는 손이 닿으면 불은 검게 타오르리라. — 카이른'",
                     "(그 아래 누군가 새로 새긴 글씨) '그릇을 비워라. 잃게 하라. 빈 그릇에 왕이 깃든다. — 문지기'"),
+            // ---- 4장
+            new Readable(LAKE, 18, 4, 0, -1, null, "호숫가에 하얀 꽃이 피어 있다. 민한이 손에 쥐고 있던 꽃과 같다."),
+            new Readable(ROA, 9, 2, FLAG_SUNLORE, -1, null,
+                    "벽화: 문 저편에서 해를 수없이 모은 사람이 있다. 해는 그의 가방에 하나씩 쌓인다.",
+                    "글귀: '해를 모은 자가 짐을 내려놓을 때, 그 해는 아이에게 내려가 아이를 지키리라.'",
+                    "[민한] 해를 모은 사람… 아빠?"),
+            new Readable(ROA, 11, 17, 0, -1, null, "「로아 마을」 북쪽: 해의 제단 / 동쪽 고원: 바람의 고원 유적 / 동남쪽: 수정 동굴"),
+            new Readable(RUINS1, 2, 2, 0, -1, null,
+                    "벽화: 바람의 신전. 짐꾼 카이른이 이곳에서 잠시 짐을 내려놓고 쉬었다고 적혀 있다."),
+            new Readable(RUINS1, 21, 2, 0, -1, null,
+                    "벽화: 돌이 된 사람들 곁에 짐승들이 모여 있다. 짐승들이 흘린 달빛 같은 눈물이 돌을 적신다."),
+            new Readable(DEMON2, 5, 2, FLAG_PACT, -1, null,
+                    "제단 위에 피로 쓴 계약서가 놓여 있다.",
+                    "'문지기 아르센과 요마왕 다르칸의 맹약. 짐꾼이 다시 가득 차거든, 가장 소중한 것을 빼앗아 비울 것. 대가로 실바 대륙을 준다.'",
+                    "'짐꾼의 아이는 반드시 데려올 것. 그 아이는 해를 물려받았다. — 아르센'",
+                    "[신창] 문지기는 민한이까지… 처음부터 노리고 있었던 거야."),
     };
 
     /** 단서가 아닌 물건을 살폈을 때 */
@@ -1157,6 +1334,179 @@ public final class RpgData {
             "(4장은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 3장의 단서도 확인해 보세요.)",
     };
 
+    // ---- 4장 이벤트 대사
+
+    public static final String[] FAMILY = {
+            "(민한이 태어난 날 밤, 이그나 마을은 밤새 잔치를 벌였다)",
+            "[이그나 촌장] 용사의 아들이 태어났다! 오늘은 화덕도 쉬지 않는다!",
+            "[해련] 사위, 아기 좀 안아 봐요. 아이고, 손 떨리는 것 좀 봐.",
+            "[지헌] 민한아, 여기가 네 집이야. 엄마, 아빠, 할머니, 그리고 이 섬 사람들 모두가 네 가족이야.",
+            "(신창은 아기 민한을 안고 해가 뜰 때까지 마을을 걸었다. 배달 가방을 멘 채로)",
+            "……",
+            "— 그리고 몇 해가 흘렀다 —",
+            "(민한은 무엇이든 궁금해하는 아이로 자랐다. 화덕 불꽃은 왜 파란지, 바다 끝엔 뭐가 있는지)",
+            "(대장간 바닥에 엎드려 개미를 몇 시간씩 들여다보다가, 아빠의 배달 가방을 끌고 다니며 '배달 놀이'를 하곤 했다)",
+            "[지헌] 민한이 또 어디 갔지? …또 해변이네. 저 애는 아빠를 닮아서 가만히 있질 않아요.",
+            "[신창] 하하, 나는 어릴 때 저렇게 궁금한 게 많지 않았는데. 엄마 닮은 거야.",
+            "(요즘 마을에 처음 보는 약초꾼 할머니 하나가 머물고 있다. 아이들에게 사탕을 나눠 주는 인자한 할머니다)",
+    };
+
+    public static final String[] KID_LURED = {
+            "[어린 민한] 아빠! 아빠! 그 할머니가 그러는데, 호숫가에 밤에만 빛나는 나비가 있대!",
+            "[신창] 안개 호수? 거긴 멀어. 혼자 가면 안 돼, 알았지?",
+            "[어린 민한] 칫… 알았어. 그럼 아빠 가방 메고 배달 놀이 하러 갈래!",
+            "(그날 밤, 신창은 민한의 머리를 쓰다듬으며 재웠다. 민한은 꿈속에서도 나비 이야기를 했다)",
+            "……",
+            "(다음 날 새벽. 민한의 침대가 비어 있었다. 배달 가방도 사라졌다)",
+            "[지헌] 민한아? 민한아!!",
+            "[걱정 많은 아낙] 용사님! 새벽에 민한이가 그 약초꾼 할머니 손을 잡고 남동쪽 꽃길로 가는 걸 봤어요!",
+            "[신창] 안개 호수……! 지헌, 가자!",
+    };
+
+    public static final String[] FOX1_DEFEATED = {
+            "(천면귀의 가면이 하나둘 깨져 나간다. 꼬리가 하나, 둘 꺾인다)",
+            "[신창] 끝이다. 민한이를 내놔.",
+            "[천면귀] 호… 호호… 정말 세구나, 용사님. 그런데 말이야……",
+            "(천면귀가 순식간에 잠든 민한을 낚아채 목에 손톱을 들이댔다!)",
+            "[천면귀] 한 발짝만 더 와 봐. 이 작은 목이 어떻게 되는지.",
+            "[지헌] 안 돼……!! 민한아!!",
+            "[천면귀] 검 내려놔. 마법도 멈추고. 그리고… 맞아. 그냥 맞기만 해. 호호호!",
+    };
+
+    public static final String[] PETRIFIED = {
+            "(신창과 지헌은 끝내 무릎을 꿇었다. 단 한 번도 반격하지 않았다)",
+            "[천면귀] 호호, 이게 용사? 아들 하나에 이렇게 무너지다니. 역시 가득 찬 그릇은 깨기도 쉽구나.",
+            "[천면귀] 석화의 저주. 돌이 되어 세상 끝으로 흩어져라!",
+            "(신창의 발끝부터 회색 돌이 번져 올라간다)",
+            "[신창] 민한아… 아빠가… 미안……",
+            "(돌이 되어 가는 지헌이 마지막 힘을 짜내 손을 뻗었다. 손끝에서 붉은 불꽃 나비가 날아올랐다)",
+            "[지헌] (불꽃아… 내 아이를… 멀리, 안전한 곳으로……)",
+            "(불꽃 나비가 민한과 배달 가방을 감싸더니, 빛이 되어 하늘 저편으로 사라졌다)",
+            "[천면귀] 뭐야?! 아이가… 어디로!",
+            "(두 개의 석상은 검은 바람에 휩쓸려 세상 어딘가로 흩어졌다)",
+            "……",
+            "(먼 대륙, 깊은 숲. 하늘에서 떨어진 작은 불꽃이 풀숲에 내려앉았다)",
+            "(울고 있는 아이를 처음 발견한 것은 늑대 새끼 하루였다. 곰 어미가 아이를 품었고, 부엉이가 이름을 물었다)",
+            "[어린 민한] …민한. 내 이름은… 민한……",
+            "(짐승들은 사람의 아이를 정성껏 길렀다. 아이는 사냥을 배우고, 숲의 말을 배우고, 별을 보며 엄마 아빠를 그리워했다)",
+            "— 8년 후 —",
+            "(민한은 열네 살이 되었다. 곁에는 늘 늑대 하루가 있다. 어깨에는 그날의 낡은 배달 가방이 메여 있다)",
+            "[민한] 하루. 나 이제 갈 거야. 엄마 아빠를 찾으러.",
+            "[하루] 아우우— (같이 간다는 뜻이다)",
+            "(민한과 하루가 일행이 되었다! 지금부터 민한의 모험이 시작된다)",
+    };
+
+    public static final String[] LEGACY = {
+            "[해의 제단지기] 숲에서 온 소년이로군. 그 가방… 잠깐 제단에 올려 보겠나?",
+            "(민한이 배달 가방을 제단에 올리자, 원 안의 다섯 점 문장이 눈부시게 빛났다!)",
+            "(가방 깊은 곳에서 작은 해들이 하나둘 떠올라 제단 위를 맴돈다)",
+            "[해의 제단지기] 이럴 수가… 해다. 진짜 해의 조각이야. 이렇게나 많이!",
+            "[해의 제단지기] 이 해는 문 저편에서 한 사람이 평생을 바쳐 쌓아 올린 것이다. 모든 걸 내려놓고 다시 시작할 때마다 하나씩 얻는 것이지.",
+            "[민한] 문 저편… 엄마가 말해 줬어. 아빠는 문 저편에서 왔다고.",
+            "[해의 제단지기] 그렇다면 이건 네 아버지의 유산이다. 아버지가 너에게 남긴 것이야.",
+            "[해의 제단지기] 해의 제단은 해를 받고 전설의 무구를 내어 준다. 해 1000개를 바치면 태초의 해로 벼린 검까지도.",
+            "(해의 빛이 민한과 하루에게 스며든다. 몸 깊은 곳에서 아버지를 닮은 힘이 깨어난다)",
+            "✨ 민한이 「해의 계승자」로 깨어났다! 회심의 일격 30% · 슬레이어 · 능력치 대폭 상승 ✨",
+            "✨ 해의 기술: 햇살 베기 · 태양의 일격 · 해돋이 · 가족의 빛 ✨",
+            "✨ 하루에게도 해의 축복이 깃들었다! ✨",
+            "[해의 제단지기] 제단에 말을 걸면 언제든 해로 무구를 바꿔 주겠네. 아버지의 해를 아끼지 말게. 그러라고 남긴 거니까.",
+    };
+
+    public static final String[] DAD_FOUND = {
+            "(석상 수호자가 무너지자, 석상을 덮고 있던 이끼가 바람에 날려 갔다)",
+            "(드러난 얼굴은… 민한이 8년 동안 별을 보며 떠올리던 얼굴이었다)",
+            "[민한] 아…빠……?",
+            "(석상의 가슴께, 돌 속에서 아주 희미한 빛이 깜빡인다. 심장 소리 같다)",
+            "[민한] 아빠! 아빠!! 나 민한이야! 나 이렇게 컸어! 나……",
+            "(석상은 대답이 없다. 하지만 검을 든 돌 손이 아주 조금, 떨린 것 같았다)",
+            "[하루] 끼잉… (하루가 석상의 발치에 몸을 웅크린다)",
+            "[민한] …기다려, 아빠. 엄마도 찾아서, 꼭 둘 다 되돌릴게.",
+    };
+
+    public static final String[] MOM_FOUND = {
+            "(수정 여왕이 산산조각 나자, 동굴 가득 울리던 울음소리가 멎었다)",
+            "(수정에 둘러싸인 여인의 석상. 두 손을 앞으로 뻗은 채, 무언가를 멀리 보내는 자세다)",
+            "[민한] 엄마… 그날 나를 보내던 그 손이야……",
+            "(석상에서 따뜻한 불꽃이 아주 작게 피어올라, 민한의 손등에 내려앉았다)",
+            "[지헌의 목소리] (민한아… 우리 아기… 많이 컸구나……)",
+            "[민한] 엄마! 엄마 목소리야!",
+            "[지헌의 목소리] (돌의 저주는… 짐승들이 지닌 '달빛 이슬'로만 풀 수 있어… 너를 길러 준 그 숲에……)",
+            "(불꽃이 사그라들었다. 하지만 석상의 얼굴은 웃고 있는 것처럼 보였다)",
+            "[민한] 숲으로 돌아가자, 하루. 부엉이 할아버지한테!",
+    };
+
+    public static final String[] DEW_GIVEN = {
+            "[백년 부엉이 노을] 부엉… 달빛 이슬을 찾는구나. 결국 그날이 왔어.",
+            "[백년 부엉이 노을] 달빛 이슬은 짐승이 사람을 위해 흘린 눈물이란다. 백 년에 한 방울 맺히지.",
+            "[곰 어미 두두] 크릉. 네가 처음 왔던 밤, 우리 모두 울었단다. 이렇게 작은 아기가 혼자서…",
+            "[흰 사슴] (사슴이 고개를 숙이자 뿔 끝에서 은빛 이슬이 떨어진다)",
+            "[토끼 삼남매] 형아, 우리 것도! 우리도 울었어!",
+            "(짐승들이 모은 눈물이 부엉이의 깃털 위에서 두 방울의 달빛 이슬이 되었다)",
+            "(「달빛 이슬」 2개를 받았다!)",
+            "[백년 부엉이 노을] 네가 우리를 가족이라 불러 줘서 고맙구나, 민한아. 이제 진짜 가족을 데려오거라.",
+    };
+
+    public static final String[] MOM_BACK = {
+            "(민한이 달빛 이슬을 석상에 부었다. 은빛이 돌을 타고 번지며, 회색 돌이 하나둘 갈라져 떨어진다)",
+            "(갈라진 돌 사이로 붉은 머리카락이, 따뜻한 손이, 그리고 눈물 젖은 얼굴이 드러났다)",
+            "[지헌] ……민한…아……?",
+            "[민한] 엄마!!",
+            "(지헌은 아들을 끌어안았다. 8년 동안 하지 못한 포옹이었다)",
+            "[지헌] 이렇게… 이렇게 컸구나… 미안해, 미안해 민한아. 엄마가 지켜 주지 못해서……",
+            "[민한] 엄마가 지켜 줬잖아. 그날, 불꽃 나비로. 덕분에 나 하루랑 숲에서 잘 컸어.",
+            "[지헌] (하루를 보며) 네가… 우리 아이를 키워 줬구나. 고마워. 정말 고마워.",
+            "[하루] 왕! (꼬리를 마구 흔든다)",
+            "(지헌이 다시 일행이 되었다!)",
+            "[지헌] 아빠는…? 아빠도 찾았어?",
+            "[민한] 응! 고원 유적에 있어. 같이 가요, 엄마!",
+    };
+
+    public static final String[] DAD_BACK = {
+            "(마지막 달빛 이슬이 석상을 적신다. 검을 든 손에서부터 돌이 녹아내린다)",
+            "[신창] ……민…한……",
+            "(신창이 무릎을 꿇었다. 키가 훌쩍 자란 소년이 그 앞에 서 있었다)",
+            "[민한] 아빠. 나 민한이야. 열네 살이야.",
+            "[신창] (떨리는 손으로 아들의 얼굴을 만진다) …8년. 8년이나… 아빠가 한 번도 못 안아 줬구나.",
+            "[민한] 지금 안아 주면 되잖아.",
+            "(신창은 아들을, 그리고 아내를 한꺼번에 끌어안았다. 오래도록 놓지 않았다)",
+            "[민한] 아빠, 이거. 아빠 가방이야. 그 안에 해가 잔뜩 있었어. 아빠 유산이라던데?",
+            "[신창] 해……? 그건… 아빠가 문 저편에서 몇 번이고 모든 걸 내려놓을 때마다 받은 거야.",
+            "[신창] 그게 너를 지켰구나. 내려놓은 것들이, 결국 너한테 갔어.",
+            "(신창이 다시 일행이 되었다!)",
+            "[지헌] 이제 끝내러 가요. 우리 가족을 이렇게 만든 그 여우한테.",
+            "(북쪽 산의 요마성을 뒤덮고 있던 검은 안개가 걷히기 시작했다!)",
+    };
+
+    public static final String[] FOX2_DEFEATED = {
+            "[천면귀] 말도… 안 돼… 인질만 있었으면… 인질만……",
+            "[민한] 인질 같은 거 없어도, 할머니는 처음부터 졌어. 우리 가족은 한 번도 흩어진 적 없으니까.",
+            "(천면귀의 마지막 가면이 깨지자, 늙고 작은 여우 한 마리가 남았다. 여우는 안개처럼 흩어졌다)",
+            "[지헌] …끝났어요. 이제 위층만 남았어요.",
+    };
+
+    public static final String[] KING4_DEFEATED = {
+            "(요마왕 다르칸의 거대한 몸이 무너진다. 요마성 전체가 흔들린다)",
+            "[다르칸] 해의 아이… 문지기는… 너를 두려워했다… 짐꾼보다… 너를……",
+            "[다르칸] 공허의 성에서… 문지기가… 기다린다… 가득 찬 가족을… 어떻게 비울지… 보자꾸나……",
+            "(다르칸은 검은 재가 되어 흩어졌다. 요마성을 덮고 있던 어둠이 걷히고, 아침 해가 비쳐 들었다)",
+            "[신창] 끝났다. 민한아, 지헌아. 집에 가자.",
+            "[민한] 응. 근데 아빠, 하루도 같이 가도 되지? 부엉이 할아버지한테도 인사하고!",
+    };
+
+    public static final String[] CHAPTER4_END = {
+            "[백년 부엉이 노을] 부엉! 돌아왔구나. 셋이서… 아니, 넷이서.",
+            "[신창] 우리 아들을 길러 주셔서 고맙습니다. 이 은혜는 평생 잊지 않겠습니다.",
+            "[곰 어미 두두] 크릉… 우리 민한이 데려가는 거야? (곰 어미가 커다란 눈물을 뚝뚝 흘린다)",
+            "[민한] 자주 올게, 두두 엄마. 약속.",
+            "[지헌] 민한이에겐 엄마가 둘이네요. …질투 나는데요?",
+            "(그날 밤 숲에서는 사람과 짐승이 함께 둘러앉아 잔치를 벌였다)",
+            "(신창은 모닥불 너머로 웃고 있는 아내와 아들, 그리고 아들 곁에 엎드린 늑대를 오래 바라보았다)",
+            "[신창] (리나, 피피. 로웰 단장님. 이제 우리 가족이 데리러 갈게. 문지기, 기다려라.)",
+            "(요마왕이 남긴 보물을 받았다. 20000골드!)",
+            "— 4장 「해를 물려받은 아이」 끝 —",
+            "(5장은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 4장의 단서도 확인해 보세요.)",
+    };
+
     /** 보스 전투 중 연출 대사: {격노할 때, 쓰러지기 직전} */
     public static String[][] bossScript(String sprite) {
         if ("wolfking".equals(sprite)) {
@@ -1187,6 +1537,24 @@ public final class RpgData {
             return new String[][]{
                     {"[바르가스] 크하하! 좋다, 짐꾼! 이 불꽃은 문지기님께 받은 공허의 불이다!", "[지헌] 반지가 뜨거워요… 우리 불이 더 세요!"},
                     {"(흑철 갑옷에 금이 간다. 그 틈으로 텅 빈 어둠이 보인다)", "[신창] 이걸로 끝이다. 도건 어르신, 리나, 피피의 몫이다!"},
+            };
+        }
+        if ("fox".equals(sprite)) {
+            return new String[][]{
+                    {"[천면귀] 호호호! 가면이 하나 깨졌다고 끝인 줄 알았니?"},
+                    {"(가면 아래로 늙은 여우의 얼굴이 언뜻 비친다)", "[지헌] 조금만 더…!"},
+            };
+        }
+        if ("demonking".equals(sprite)) {
+            return new String[][]{
+                    {"[다르칸] 크하하! 가족 놀이는 여기까지다!", "[민한] 아빠, 엄마, 하루! 한 번 더!"},
+                    {"(다르칸의 뿔에 금이 간다)", "[신창] 민한아, 마지막은 네가 해라!", "[민한] 응! 이건… 아빠의 해야!"},
+            };
+        }
+        if ("guardian".equals(sprite) || "crystalqueen".equals(sprite)) {
+            return new String[][]{
+                    {"(수호자가 석상을 감싸듯 몸을 웅크리며 분노한다!)"},
+                    {"[민한] 비켜! 그 안에 우리 가족이 있어!"},
             };
         }
         if ("ignis".equals(sprite) || "witch".equals(sprite) || "lavadragon".equals(sprite)) {
@@ -1228,7 +1596,10 @@ public final class RpgData {
     public static final int LETTER = 30, HERO_BADGE = 31;
     public static final int PIPI_SCALE = 35, LIGHTHOUSE_LAMP = 36, BAROS_COMPASS = 37, SEA_SHARD = 38;
     public static final int HERO_SWORD = 40, PHOENIX_ARMOR = 41, BRIDE_DRESS = 42, VOW_RING = 43,
-            FLAME_ORE = 44, DOGEON_HAMMER = 45, FIRE_SHARD = 46, ASH_ROBE = 47;
+            FLAME_ORE = 44, DOGEON_HAMMER = 45, FIRE_SHARD = 46, ASH_ROBE = 47,
+            WOOD_SPEAR = 48, LEAF_CLOAK = 49, WOLF_FANG = 50, WOLF_FUR = 51,
+            SUN_SWORD = 52, SUN_ARMOR = 53, DAWN_BLADE = 54, HEAVEN_MAIL = 55, SUN_HEART = 56, SUN_MANE = 57, SUN_STAFF = 58,
+            ETERNAL_SUN = 59, MOON_DEW = 60, DAD_BAG = 61, ROA_SPEAR = 62, RANGER_MAIL = 63;
     public static final int ITEM_SLOTS = 64;
 
     public static final Item[] ITEMS = new Item[ITEM_SLOTS];
@@ -1263,6 +1634,22 @@ public final class RpgData {
         put(new Item(FLAME_ORE, "불꽃 원석", KEY, 0, 0, "도건이 마지막으로 캐려던 원석. 손에 쥐면 따뜻하다"));
         put(new Item(DOGEON_HAMMER, "도건의 망치", KEY, 0, 0, "이그나의 대장장이 도건의 망치. 손잡이가 반질반질하다"));
         put(new Item(FIRE_SHARD, "불의 봉인석 조각", KEY, 0, 0, "바르가스의 옥좌 뒤에서 찾은 불의 봉인석 조각"));
+        put(new Item(WOOD_SPEAR, "나무 창", WEAPON, 16, 80, "민한이 숲에서 깎은 창. 공격 +16"));
+        put(new Item(LEAF_CLOAK, "잎사귀 망토", ARMOR, 10, 60, "방어 +10"));
+        put(new Item(WOLF_FANG, "늑대 이빨", WEAPON, 14, 0, "하루의 이빨. 공격 +14"));
+        put(new Item(WOLF_FUR, "두꺼운 털", ARMOR, 12, 0, "하루의 털. 방어 +12"));
+        put(new Item(ROA_SPEAR, "로아의 강철창", WEAPON, 60, 3600, "공격 +60"));
+        put(new Item(RANGER_MAIL, "숲지기 갑옷", ARMOR, 45, 3200, "방어 +45"));
+        put(new Item(SUN_SWORD, "태양의 검", WEAPON, 90, 0, "해의 제단 무구. 공격 +90"));
+        put(new Item(SUN_ARMOR, "태양의 갑옷", ARMOR, 60, 0, "해의 제단 무구. 방어 +60"));
+        put(new Item(SUN_MANE, "일륜의 갈기", ARMOR, 90, 0, "짐승을 위한 해의 갑옷. 방어 +90"));
+        put(new Item(DAWN_BLADE, "전설의 검 「일광검」", WEAPON, 170, 0, "새벽빛을 벼린 전설의 검. 공격 +170"));
+        put(new Item(HEAVEN_MAIL, "전설의 갑옷 「천광의 갑주」", ARMOR, 120, 0, "하늘빛 전설의 갑옷. 방어 +120"));
+        put(new Item(SUN_HEART, "전설의 목걸이 「해의 심장」", ACCESSORY, 40, 0, "매 턴 MP를 40% 회복, 걸을 때도 회복"));
+        put(new Item(SUN_STAFF, "전설의 지팡이 「일륜」", WEAPON, 130, 0, "불꽃 무녀를 위한 전설의 지팡이. 공격 +130"));
+        put(new Item(ETERNAL_SUN, "초초 전설의 검 「태초의 해 · 영겁」", WEAPON, 480, 0, "태초의 해로 벼린 검. 공격 +480, 보통 공격이 적 전체를 벤다"));
+        put(new Item(MOON_DEW, "달빛 이슬", KEY, 0, 0, "짐승이 사람을 위해 흘린 눈물. 돌의 저주를 푼다"));
+        put(new Item(DAD_BAG, "아빠의 배달 가방", KEY, 0, 0, "원 안에 다섯 점 문장. 안에 해가 잠들어 있다"));
         put(new Item(STICK, "나무 막대", WEAPON, 2, 10, "공격 +2"));
         put(new Item(COPPER_SWORD, "구리 검", WEAPON, 6, 100, "공격 +6"));
         put(new Item(SQUIRE_SWORD, "견습 기사의 검", WEAPON, 8, 160, "공격 +8"));
@@ -1290,6 +1677,19 @@ public final class RpgData {
             {STEEL_SWORD, DRAGON_SPEAR, STEEL_ARMOR, CORAL_ARMOR},
             {HERB, HI_HERB, MANA_CANDY, WING},
             {HI_HERB, MANA_CANDY, PHOENIX, WING, OBSIDIAN_SWORD, VOLCANO_ARMOR, ASH_ROBE},
+            {HI_HERB, MANA_CANDY, PHOENIX, WING, ROA_SPEAR, RANGER_MAIL},
+    };
+
+    /** 해의 제단: {아이템, 해 개수} */
+    public static final int[][] LEGACY_GOODS = {
+            {SUN_SWORD, 20},
+            {SUN_ARMOR, 20},
+            {SUN_MANE, 40},
+            {SUN_HEART, 60},
+            {SUN_STAFF, 60},
+            {DAWN_BLADE, 80},
+            {HEAVEN_MAIL, 80},
+            {ETERNAL_SUN, 1000},
     };
 
     /** 보물상자: {지도, x, y, 아이템(-1 이면 골드), 개수 또는 골드} */
@@ -1308,6 +1708,13 @@ public final class RpgData {
             {FORT1, 6, 5, ELIXIR, 3},
             {FORT2, 21, 6, -1, 20000},
             {FORT3, 22, 6, ELIXIR, 5},
+            {RUINS1, 22, 5, ELIXIR, 2},
+            {RUINS2, 21, 6, -1, 30000},
+            {CRYSTAL1, 20, 1, PHOENIX, 3},
+            {CRYSTAL1, 11, 4, ELIXIR, 2},
+            {CRYSTAL2, 16, 4, -1, 40000},
+            {DEMON1, 6, 5, ELIXIR, 3},
+            {DEMON2, 22, 6, ELIXIR, 5},
     };
 
     // ------------------------------------------------------------ 주문 · 특기
@@ -1392,6 +1799,22 @@ public final class RpgData {
             new Spell("용광로", 13, 1, 20, FIRE_ALL, 300),
             new Spell("사랑의 기도", 13, 1, 24, HEAL_ALL, 500),
             new Spell("불사조의 날개", 13, 1, 20, REVIVE, 100),
+            // 민한
+            new Spell("숲의 숨결", 4, 1, 5, HEAL_ONE, 150),
+            new Spell("짐승의 발톱", 4, 1, 6, MULTI_HIT, 3),
+            new Spell("바람 가르기", 4, 22, 10, PHYS_ALL, 14),
+            new Spell("짐승들의 노래", 4, 26, 14, HEAL_ALL, 220),
+            // 해의 계승자 민한 (14 = 깨어난 4번)
+            new Spell("햇살 베기", 14, 1, 12, HERO_ALL, 200),
+            new Spell("태양의 일격", 14, 1, 14, HERO_ONE, 600),
+            new Spell("해돋이", 14, 1, 30, HOLY_ALL, 1500),
+            new Spell("가족의 빛", 14, 1, 20, REVIVE, 100),
+            new Spell("일식", 14, 35, 40, HERO_ALL, 450),
+            // 하루
+            new Spell("물어뜯기", 5, 1, 0, POWER_HIT, 0),
+            new Spell("늑대의 포효", 5, 1, 4, GUARD, 0),
+            new Spell("질풍 돌격", 5, 24, 6, MULTI_HIT, 4),
+            new Spell("해의 송곳니", 15, 1, 10, HERO_ONE, 350),
     };
 
     // ------------------------------------------------------------ 동료
@@ -1427,9 +1850,11 @@ public final class RpgData {
             new HeroBase("리나", "lina", 40, 4, 11, 7, 5, 9, 1, 4, 3, 1, SQUIRE_SWORD, LEATHER),
             new HeroBase("피피", "pipi", 26, 14, 9, 5, 12, 6, 3, 3, 2, 3, COIN_POUCH, FAIRY_CLOAK),
             new HeroBase("지헌", "jiheon", 44, 22, 10, 7, 8, 9, 4, 3, 3, 2, SMITH_HAMMER, SMITH_APRON),
+            new HeroBase("민한", "minhan", 60, 20, 18, 10, 14, 10, 4, 5, 3, 3, WOOD_SPEAR, LEAF_CLOAK),
+            new HeroBase("하루", "haru", 70, 10, 22, 10, 18, 11, 1, 5, 3, 3, WOLF_FANG, WOLF_FUR),
     };
 
-    public static final int MAX_LEVEL = 60;
+    public static final int MAX_LEVEL = 99;
 
     /** 다음 레벨까지 필요한 누적 경험치 */
     public static int expForLevel(int level) {
@@ -1483,7 +1908,11 @@ public final class RpgData {
             STARDUST = 22, GOLD_TOAD = 23, PEARL = 24, GEM_CRAB = 25, GALLEON = 26, SERPENT = 27,
             ASH_BAT = 28, LIZARD = 29, BOAR = 30, EMBER = 31, MAGMA = 32, IMP = 33, FLAME_WOLF = 34, LAVA_TURTLE = 35,
             BLACK_KNIGHT = 36, HELLHOUND = 37, FLAME_BEAST = 38, VOID_MAGE = 39, WYVERN = 40, BLACK_GOLEM = 41,
-            RUBY = 42, LAVA_TOAD = 43, VARGAS0 = 44, GIANT = 45, IGRON = 46, WITCH = 47, VOLKA = 48, VARGAS = 49;
+            RUBY = 42, LAVA_TOAD = 43, VARGAS0 = 44, GIANT = 45, IGRON = 46, WITCH = 47, VOLKA = 48, VARGAS = 49,
+            MOTH = 50, MANTIS = 51, TROLL = 52, MANA_SHROOM = 53, GRIFFIN = 54, ROCK_GIANT = 55, MUMMY = 56, CURSE_STATUE = 57,
+            ICE_WOLF = 58, CRYSTAL_GOLEM = 59, CRYSTAL_BAT = 60, DEMON_SOLDIER = 61, NINE_TAIL = 62, SHADOW_YOKAI = 63,
+            DEMON_CAPTAIN = 64, SUN_FAIRY = 65, RAINBOW_TURTLE = 66, FOX1 = 67, HOSTAGE = 68, GUARDIAN = 69,
+            CRYSTAL_QUEEN = 70, FOX2 = 71, DEMON_KING = 72;
     public static final int RARE_EXP = 1, RARE_GOLD = 2;
 
     public static final Monster[] MONSTERS = {
@@ -1545,6 +1974,31 @@ public final class RpgData {
             new Monster("독안개 마녀 모르가", "witch", 40, 9000, 185, 90, 30, 3500, 3500, 2),
             new Monster("용암룡 볼카", "lavadragon", 42, 12000, 200, 120, 20, 4500, 4500, 2),
             new Monster("흑염의 마장군 바르가스", "vargas", 45, 20000, 230, 140, 32, 8000, 10000, 2),
+            // 4장: 실바 대륙 (민한의 모험)
+            new Monster("독가루 나방", "moth", 20, 160, 70, 40, 24, 55, 70, 1),
+            new Monster("칼날 사마귀", "mantis", 22, 200, 82, 50, 26, 65, 80, 0),
+            new Monster("숲 트롤", "troll", 24, 320, 90, 55, 8, 80, 95, 0),
+            new Monster("마나 버섯", "manashroom", 23, 180, 72, 45, 10, 70, 75, 1),
+            new Monster("그리핀", "griffin", 34, 900, 200, 110, 40, 64, 260, 0),
+            new Monster("바위 거인", "rockgiant", 36, 1500, 220, 160, 6, 76, 300, 0),
+            new Monster("미라 기사", "mummy", 37, 1100, 230, 120, 20, 80, 320, 0),
+            new Monster("저주 석상", "cursestatue", 38, 1600, 220, 180, 5, 84, 340, 1),
+            new Monster("얼음 늑대", "icewolf", 38, 1200, 240, 120, 36, 84, 320, 0),
+            new Monster("수정 골렘", "crystalgolem", 40, 2000, 250, 190, 6, 96, 380, 0),
+            new Monster("수정 박쥐", "crystalbat", 39, 800, 230, 100, 44, 80, 300, 0),
+            new Monster("요마 병사", "demonsoldier", 42, 1700, 270, 160, 24, 104, 420, 0),
+            new Monster("구미 여우", "ninetail", 43, 1400, 280, 140, 40, 108, 440, 1),
+            new Monster("그림자 요괴", "shadowyokai", 44, 1300, 290, 130, 30, 112, 460, 1),
+            new Monster("요마 대장", "demoncaptain", 46, 2800, 310, 190, 18, 144, 600, 0),
+            new Monster("해 요정", "sunfairy", 40, 20, 40, 150, 70, 2500, 50, 0, 0.7, 0.3, RARE_EXP),
+            new Monster("무지개 거북", "rainbowturtle", 30, 2500, 20, 100, 1, 100, 12000, 0, 0, 0, RARE_GOLD),
+            // 4장 보스
+            new Monster("천면귀", "fox", 55, 14000, 300, 180, 30, 5000, 3000, 2),
+            new Monster("민한을 인질로 잡은 천면귀", "fox", 99, 999999, 450, 999, 99, 0, 0, 2),
+            new Monster("석상 수호자", "guardian", 38, 9000, 260, 150, 14, 2000, 4000, 2),
+            new Monster("수정 여왕", "crystalqueen", 42, 12000, 290, 160, 26, 2500, 5000, 2),
+            new Monster("천면귀 (본모습)", "fox", 55, 30000, 380, 200, 36, 6000, 10000, 2),
+            new Monster("요마왕 다르칸", "demonking", 60, 60000, 450, 230, 34, 20000, 30000, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
@@ -1586,6 +2040,24 @@ public final class RpgData {
             // 16: 흑염의 요새 옥좌
             {{BLACK_GOLEM, WYVERN}, {WYVERN, WYVERN, FLAME_BEAST}, {BLACK_GOLEM, VOID_MAGE, VOID_MAGE},
                     {BLACK_GOLEM, BLACK_GOLEM}, {WYVERN, FLAME_BEAST, VOID_MAGE, BLACK_KNIGHT}},
+            // 17: 실바 대륙 서쪽 (숲)
+            {{MOTH}, {MANTIS}, {TROLL}, {MANA_SHROOM}, {MOTH, MOTH}, {MANTIS, MANA_SHROOM}},
+            // 18: 실바 대륙 동쪽 (고원)
+            {{GRIFFIN}, {ROCK_GIANT}, {GRIFFIN, GRIFFIN}, {ROCK_GIANT, GRIFFIN}, {GRIFFIN, MANTIS, MANTIS}},
+            // 19: 고원 유적 1층
+            {{MUMMY}, {CURSE_STATUE}, {MUMMY, MUMMY}, {GRIFFIN, MUMMY}, {CURSE_STATUE, MUMMY}},
+            // 20: 고원 유적 2층
+            {{CURSE_STATUE, MUMMY}, {MUMMY, MUMMY, MUMMY}, {CURSE_STATUE, CURSE_STATUE}, {ROCK_GIANT, MUMMY}},
+            // 21: 수정 동굴 1층
+            {{ICE_WOLF}, {CRYSTAL_BAT, CRYSTAL_BAT}, {ICE_WOLF, CRYSTAL_BAT}, {CRYSTAL_GOLEM}},
+            // 22: 수정 동굴 2층
+            {{CRYSTAL_GOLEM, ICE_WOLF}, {ICE_WOLF, ICE_WOLF, CRYSTAL_BAT}, {CRYSTAL_GOLEM, CRYSTAL_BAT, CRYSTAL_BAT}},
+            // 23: 요마성 1층
+            {{DEMON_SOLDIER, DEMON_SOLDIER, NINE_TAIL}, {SHADOW_YOKAI, SHADOW_YOKAI, DEMON_SOLDIER}, {DEMON_CAPTAIN, NINE_TAIL},
+                    {NINE_TAIL, NINE_TAIL, NINE_TAIL, SHADOW_YOKAI}},
+            // 24: 요마성 옥좌
+            {{DEMON_CAPTAIN, DEMON_SOLDIER, DEMON_SOLDIER}, {DEMON_CAPTAIN, DEMON_CAPTAIN},
+                    {NINE_TAIL, SHADOW_YOKAI, DEMON_CAPTAIN, DEMON_SOLDIER}},
     };
 
     public static int encounterZone(int map, int x, int y) {
@@ -1603,6 +2075,13 @@ public final class RpgData {
             case FORT1: return 14;
             case FORT2: return 15;
             case FORT3: return 16;
+            case WORLD4: return x < 16 ? 17 : 18;
+            case RUINS1: return 19;
+            case RUINS2: return 20;
+            case CRYSTAL1: return 21;
+            case CRYSTAL2: return 22;
+            case DEMON1: return 23;
+            case DEMON2: return 24;
             default: return y > 11 ? 0 : 1;
         }
     }
@@ -1621,6 +2100,8 @@ public final class RpgData {
         if (map == WORLD2 && (near(x, y, 5, 17) || near(x, y, 28, 19))) return GEM_CRAB;
         if (map == LAVA1 || map == LAVA2 || map == FORT1 || map == FORT2 || map == FORT3) return RUBY;
         if (map == WORLD3 && near(x, y, 8, 17)) return LAVA_TOAD;
+        if (map == RUINS1 || map == RUINS2 || map == CRYSTAL1 || map == CRYSTAL2 || map == DEMON1 || map == DEMON2) return SUN_FAIRY;
+        if (map == WORLD4 && (near(x, y, 6, 6) || near(x, y, 14, 18))) return RAINBOW_TURTLE;
         return -1;
     }
 

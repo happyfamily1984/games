@@ -128,6 +128,7 @@ public class RpgActivity extends Activity {
         state.perkBroker = main.highestJob >= 1;
         state.perkFire = main.highestJob >= 2;
         state.perkFaith = main.religionUnlocked;
+        state.suns = main.suns;
     }
 
     private List<String> introLines() {
@@ -428,16 +429,17 @@ public class RpgActivity extends Activity {
         if (state.map != oldMap) {
             view.setState(state);
             showMapLabel(RpgData.MAP_NAMES[state.map]);
-            int chapter = RpgData.chapterOf(state.step);
-            if (chapter != oldChapter) say("— " + RpgData.CHAPTER_TITLES[chapter] + " —", null);
         }
+        int chapter = RpgData.chapterOf(state.step);
+        if (chapter != oldChapter && !in.chapterClear) say("— " + RpgData.CHAPTER_TITLES[chapter] + " —", null);
         if (in.bossBattle) {
             startBattle(new int[]{in.bossMonster}, true);
             return;
         }
         if (in.awakened) {
             view.victoryFlash();
-            Toast.makeText(this, "✨ 신창이 용사로 전직했습니다! ✨", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, state.step == RpgData.STEP_LEGACY ? "✨ 민한이 해의 계승자로 깨어났습니다! ✨"
+                    : "✨ 신창이 용사로 전직했습니다! ✨", Toast.LENGTH_LONG).show();
         }
         if (in.chapterClear) {
             save();
@@ -449,6 +451,9 @@ public class RpgActivity extends Activity {
                 break;
             case RpgData.ACT_INN:
                 openInn(in.arg);
+                break;
+            case RpgData.ACT_LEGACY:
+                openLegacy();
                 break;
             case RpgData.ACT_SAVE:
                 save();
@@ -655,8 +660,28 @@ public class RpgActivity extends Activity {
             endBattle();
             if (boss) {
                 view.victoryFlash();
-                say(state.onBossDefeated(bossId), this::save);
+                say(state.onBossDefeated(bossId), () -> {
+                    save();
+                    // 보스를 이긴 직후 이어지는 전투 (4장: 인질극)
+                    if (state.pendingBoss >= 0) {
+                        int next = state.pendingBoss;
+                        state.pendingBoss = -1;
+                        startBattle(new int[]{next}, true);
+                    }
+                });
             }
+            return;
+        }
+        if (battle.lost() && battle.firstMonster == RpgData.HOSTAGE) {
+            // 4장: 석상이 되어 흩어지고, 민한의 이야기가 시작된다
+            endBattle();
+            List<String> lines = state.onPetrified();
+            view.setState(state);
+            showMapLabel(RpgData.MAP_NAMES[state.map]);
+            say(lines, () -> {
+                save();
+                refreshStatus();
+            });
             return;
         }
         if (battle.lost() && battle.firstMonster == RpgData.VARGAS0) {
@@ -866,6 +891,33 @@ public class RpgActivity extends Activity {
         chooseFrom("무엇을 하시겠어요?  (골드 " + state.gold + ")", new String[]{"사기", "팔기", "그만두기"}, i -> {
             if (i == 0) openBuy(shop);
             else if (i == 1) openSell(shop);
+        });
+    }
+
+    /** 해의 제단: 세속에서 모은 해로 전설의 무구를 산다 */
+    private void openLegacy() {
+        int[][] goods = RpgData.LEGACY_GOODS;
+        String[] names = new String[goods.length];
+        for (int i = 0; i < goods.length; i++) {
+            RpgData.Item it = RpgData.ITEMS[goods[i][0]];
+            names[i] = "☀ " + goods[i][1] + "  " + it.name + "  – " + it.desc + (state.hasItem(it.id) ? "  (가방에 있음)" : "");
+        }
+        chooseFrom("해의 제단  (남은 해 " + state.availableSuns() + "개 / 전체 " + state.suns + "개)", names, i -> {
+            RpgData.Item it = RpgData.ITEMS[goods[i][0]];
+            if (!state.buyLegacy(it.id)) {
+                say("[해의 제단지기] 해가 모자라는구나. 해는 세속에서 「전부 내려놓기」로 얻을 수 있다네.", null);
+                return;
+            }
+            save();
+            String[] who = new String[state.party.size() + 1];
+            for (int k = 0; k < state.party.size(); k++) who[k] = state.party.get(k).name() + "에게 장비";
+            who[state.party.size()] = "가방에 넣어 두기";
+            chooseFrom("☀ " + Josa.eul(it.name) + " 받았다! 지금 장비할까요?", who, k -> {
+                if (k < state.party.size()) state.equip(state.party.get(k), it.id);
+                refreshStatus();
+                save();
+                openLegacy();
+            });
         });
     }
 

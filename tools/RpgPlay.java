@@ -58,7 +58,7 @@ public class RpgPlay {
     }
 
     // ---- 마을 ----
-    static boolean isTown(int m) { return m == RpgData.REBEL || m == RpgData.ERDEN || m == RpgData.MERCA || m == RpgData.SALT || m == RpgData.IGNA; }
+    static boolean isTown(int m) { return m == RpgData.REBEL || m == RpgData.ERDEN || m == RpgData.MERCA || m == RpgData.SALT || m == RpgData.IGNA || m == RpgData.BEASTDEN || m == RpgData.ROA; }
     static boolean ch2(int m) { return m >= RpgData.WORLD2; }
     static void exitTown() {
         switch (s.map) {
@@ -68,6 +68,9 @@ public class RpgPlay {
             case RpgData.SALT: walkTo(11, 0, false); break;
             case RpgData.LIGHTHOUSE: walkTo(6, 12, false); break;
             case RpgData.IGNA: walkTo(12, 19, false); break;
+            case RpgData.BEASTDEN: walkTo(11, 17, false); break;
+            case RpgData.ROA: walkTo(12, 19, false); break;
+            case RpgData.LAKE: walkTo(11, 15, false); break;
             default: break;
         }
     }
@@ -89,6 +92,15 @@ public class RpgPlay {
                 case RpgData.FORT2: walkTo(16, 13, false); break;
                 case RpgData.FORT1: walkTo(11, 14, false); break;
                 case RpgData.WORLD3: walkTo(8, 17, false); break;
+                case RpgData.LAKE: walkTo(11, 15, false); break;
+                case RpgData.RUINS2: walkTo(12, 13, false); break;
+                case RpgData.RUINS1: walkTo(11, 14, false); break;
+                case RpgData.CRYSTAL2: walkTo(10, 13, false); break;
+                case RpgData.CRYSTAL1: walkTo(10, 14, false); break;
+                case RpgData.DEMON2: walkTo(12, 12, false); break;
+                case RpgData.DEMON1: walkTo(11, 14, false); break;
+                case RpgData.WORLD4:
+                    if (s.townMap == RpgData.ROA) walkTo(14, 18, false); else walkTo(6, 6, false); break;
                 case RpgData.WORLD:
                     if (s.townMap == RpgData.REBEL) walkTo(6, 18, false); else walkTo(20, 8, false); break;
                 case RpgData.WORLD2:
@@ -161,6 +173,10 @@ public class RpgPlay {
         return b + "| " + s.gold + "G | 전투 " + battles + ", 전멸 " + defeats + ", " + String.format("%.0f분", seconds / 60); }
 
     // ---- 던전 들어가기 ----
+    static void enterRuins2() { goToTown(); exitTown(); walkTo(28, 6, false); while (s.map == RpgData.RUINS1) walkTo(6, 8, false); }
+    static void enterCrystal2() { goToTown(); exitTown(); walkTo(30, 19, false); while (s.map == RpgData.CRYSTAL1) walkTo(4, 12, false); }
+    static void enterDemon1() { goToTown(); exitTown(); walkTo(18, 3, false); }
+    static void enterDemon2() { enterDemon1(); while (s.map == RpgData.DEMON1) walkTo(18, 5, false); }
     static void enterLava2() { goToTown(); exitTown(); walkTo(24, 12, false); while (s.map == RpgData.LAVA1) walkTo(4, 11, false); }
     static void enterFort1() { goToTown(); exitTown(); walkTo(14, 7, false); }
     static void enterFort2() { enterFort1(); while (s.map == RpgData.FORT1) walkTo(18, 5, false); }
@@ -187,6 +203,7 @@ public class RpgPlay {
 
     public static void main(String[] a) {
         s = new RpgState(); s.setRandom(rnd); s.perkBroker = s.perkFire = s.perkFaith = true;
+        s.suns = Long.getLong("suns", 1500);
 
         // ===================== 프롤로그 · 1장
         ok(s.map == RpgData.OFFICE, "집무실에서 시작");
@@ -328,13 +345,90 @@ public class RpgPlay {
         RpgState.Interaction birth = talkNpc(npc("지헌 어머니 해련"));
         ok(birth.chapterClear && s.step == RpgData.STEP_CHAPTER3_CLEAR, "민한 탄생 → 3장 클리어");
         ok(s.npcAt(4, 4) != null && s.npcAt(4, 4).name.equals("아기 민한"), "집에 아기 민한");
-        ok(s.clues().size() == RpgData.CLUE_NAMES.length, "단서 " + s.clues().size() + "개 모두");
+        ok(s.clues().size() == 14, "3장까지 단서 " + s.clues().size() + "개 모두");
         String save3 = s.serialize(); RpgState r3 = RpgState.deserialize(save3);
         ok(r3.serialize().equals(save3) && r3.party.get(0).isHero() && r3.reserve.size() == 2, "3장 저장/불러오기 (각성·장신구·헤어진 동료)");
         double ch3 = seconds - ch3start;
         System.out.println("   ── 3장 끝: " + party());
 
-        System.out.printf("   1장 %.0f분 (전투 %d) / 2장 %.0f분 (전투 %d) / 3장 %.0f분 (전투 %d)%n", ch1 / 60, battles1, ch2 / 60, battles2, ch3 / 60, battles - b3);
+        int battles3 = battles - b3;
+
+        // ===================== 4장 「해를 물려받은 아이」
+        double ch4start = seconds; int b4 = battles;
+        talkNpc(npc("지헌 어머니 해련")); ok(s.step == RpgData.STEP_FAMILY && RpgData.chapterOf(s.step) == 4, "4장 시작: 가족의 기쁨, 민한이 자란다");
+        checkNpcs();
+        talkNpc(npc("인자한 할머니"));
+        talkNpc(npc("어린 민한")); ok(s.step == RpgData.STEP_KIDNAPPED, "할머니에게 유인되어 민한이 납치됨");
+        rest();
+        exitTown(); walkTo(22, 18, false); ok(s.map == RpgData.LAKE, "안개 호수");
+        walkTo(11, 9, true); RpgState.Interaction fx = s.interact();
+        ok(fx.bossBattle && fx.bossMonster == RpgData.FOX1, "천면귀 첫 결전");
+        ok(fight(new int[]{RpgData.FOX1}, true), "신창·지헌이 천면귀를 물리침 " + party());
+        s.onBossDefeated(RpgData.FOX1);
+        ok(s.pendingBoss == RpgData.HOSTAGE && s.step == RpgData.STEP_HOSTAGE, "천면귀가 민한을 인질로 잡음");
+        s.pendingBoss = -1;
+        Battle hb = new Battle(s, new int[]{RpgData.HOSTAGE}, true, rnd); int hr = 0;
+        while (!hb.over() && hr < 40) hb.playRound(BossSim.ai(s, hb, hr++));
+        ok(hb.lost() && hb.enemies.get(0).hp == hb.enemies.get(0).m.hp, "인질극: 반격하지 못하고 쓰러짐 (" + hr + "라운드)");
+        s.onPetrified();
+        ok(s.party.size() == 2 && s.party.get(0).id == 4 && s.party.get(1).id == 5 && s.map == RpgData.BEASTDEN
+                && s.step == RpgData.STEP_MINHAN && s.member(0) == null, "석상이 되어 흩어짐 → 8년 후 민한과 하루의 모험");
+        checkNpcs();
+        talkNpc(npc("백년 부엉이 노을"));
+        System.out.println("   민한의 출발: " + party());
+        exitTown(); walkTo(14, 18, false); ok(s.map == RpgData.ROA, "로아 마을"); checkNpcs();
+        read(9, 2); ok(s.hasFlag(RpgData.FLAG_SUNLORE), "해의 제단 벽화");
+        RpgState.Interaction lg = talkNpc(npc("해의 제단지기"));
+        Hero mh = s.party.get(0), haru = s.party.get(1);
+        ok(lg.awakened && s.step == RpgData.STEP_LEGACY && mh.isHero() && haru.awakened, "아버지의 유산: 민한이 해의 계승자로");
+        RpgState.Interaction lg2 = talkNpc(npc("해의 제단지기")); ok(lg2.action == RpgData.ACT_LEGACY, "해의 제단 열림 (해 " + s.availableSuns() + "개)");
+        long sunsBefore = s.availableSuns();
+        int[][] buy = s.suns >= 1260 ? new int[][]{{RpgData.ETERNAL_SUN, 0}, {RpgData.HEAVEN_MAIL, 0}, {RpgData.SUN_HEART, 0}, {RpgData.SUN_MANE, 1}}
+                : new int[][]{{RpgData.DAWN_BLADE, 0}, {RpgData.HEAVEN_MAIL, 0}, {RpgData.SUN_HEART, 0}, {RpgData.SUN_MANE, 1}};
+        for (int[] b : buy) { if (s.buyLegacy(b[0])) s.equip(s.party.get(b[1]), b[0]); }
+        ok(s.availableSuns() < sunsBefore, "해로 전설의 장비 구입: " + RpgData.ITEMS[mh.weapon].name + ", " + RpgData.ITEMS[mh.armor].name
+                + ", " + RpgData.ITEMS[mh.accessory].name + " (남은 해 " + s.availableSuns() + ")");
+        System.out.println("   전설 장비: 민한 HP" + mh.maxHp() + " 공격" + mh.atk() + " 방어" + mh.def() + " | 하루 HP" + haru.maxHp() + " 공격" + haru.atk() + " 방어" + haru.def());
+        restock();
+        int legacyBattles = battles, legacyLost = defeats;
+        exitTown(); walkTo(28, 6, false); ok(s.map == RpgData.RUINS1, "바람의 고원 유적");
+        read(2, 2); read(21, 2); read(22, 5);
+        while (s.map == RpgData.RUINS1) walkTo(6, 8, false);
+        read(21, 6);
+        bossFight(RpgPlay::enterRuins2, RpgData.RUINS2, 11, 3, RpgData.STEP_DAD_FOUND, 12, 11);
+        ok(s.step == RpgData.STEP_DAD_FOUND, "아빠의 석상을 찾음");
+        goToTown(); exitTown(); walkTo(30, 19, false); ok(s.map == RpgData.CRYSTAL1, "수정 동굴");
+        read(20, 1); read(11, 4);
+        while (s.map == RpgData.CRYSTAL1) walkTo(4, 12, false);
+        read(16, 4);
+        bossFight(RpgPlay::enterCrystal2, RpgData.CRYSTAL2, 5, 4, RpgData.STEP_MOM_FOUND, 10, 12);
+        ok(s.step == RpgData.STEP_MOM_FOUND, "엄마의 석상을 찾음 (달빛 이슬 이야기)");
+        s.townMap = RpgData.BEASTDEN; goToTown();
+        talkNpc(npc("백년 부엉이 노을")); ok(s.items[RpgData.MOON_DEW] == 2 && s.step == RpgData.STEP_DEW, "짐승들이 모은 달빛 이슬 2개");
+        enterCrystal2(); walkTo(5, 4, true); s.interact();
+        ok(s.step == RpgData.STEP_MOM_BACK && s.member(3) != null, "엄마 지헌이 돌아옴");
+        goToTown(); enterRuins2(); walkTo(11, 3, true); s.interact();
+        ok(s.step == RpgData.STEP_DAD_BACK && s.member(0) != null && s.member(0).isHero() && s.party.size() == 4, "아빠 신창이 돌아옴 (가족 4명)");
+        goToTown(); restock();
+        exitTown(); walkTo(18, 3, false); ok(s.map == RpgData.DEMON1, "안개가 걷힌 요마성");
+        read(6, 5);
+        bossFight(RpgPlay::enterDemon1, RpgData.DEMON1, 18, 7, RpgData.STEP_FOX_DOWN, 11, 12);
+        while (s.map == RpgData.DEMON1) walkTo(18, 5, false);
+        ok(s.map == RpgData.DEMON2, "요마성 옥좌");
+        read(22, 6); read(5, 2); ok(s.hasFlag(RpgData.FLAG_PACT), "요마왕의 맹약");
+        bossFight(RpgPlay::enterDemon2, RpgData.DEMON2, 11, 2, RpgData.STEP_KING_DOWN, 12, 11);
+        System.out.println("   유산 이후: 전투 " + (battles - legacyBattles) + "번, 전멸 " + (defeats - legacyLost) + "번 " + party());
+        s.townMap = RpgData.BEASTDEN; goToTown();
+        RpgState.Interaction end4 = talkNpc(npc("백년 부엉이 노을"));
+        ok(end4.chapterClear && s.step == RpgData.STEP_CHAPTER4_CLEAR, "요마왕 토벌 → 4장 클리어");
+        ok(s.clues().size() == RpgData.CLUE_NAMES.length, "단서 " + s.clues().size() + "개 모두");
+        String save4 = s.serialize(); RpgState r4 = RpgState.deserialize(save4);
+        ok(r4.serialize().equals(save4) && r4.sunsSpent == s.sunsSpent, "4장 저장/불러오기 (쓴 해 " + s.sunsSpent + ")");
+        double ch4 = seconds - ch4start;
+        System.out.println("   ── 4장 끝: " + party());
+
+        System.out.printf("   1장 %.0f분 (전투 %d) / 2장 %.0f분 (전투 %d) / 3장 %.0f분 (전투 %d) / 4장 %.0f분 (전투 %d)%n",
+                ch1 / 60, battles1, ch2 / 60, battles2, ch3 / 60, battles3, ch4 / 60, battles - b4);
         System.out.println("   진귀한 몬스터 처치: 경험치형 " + rareExp + "번, 골드형 " + rareGold + "번 / 휴식 " + rests + "번");
         StringBuilder lvs = new StringBuilder("   레벨 도달 시각(분): "); for (int i = 2; i < levelAt.length; i++) if (levelAt[i] > 0) lvs.append(i).append("=").append(levelAt[i]).append(" ");
         System.out.println(lvs);

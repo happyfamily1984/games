@@ -188,7 +188,7 @@ public final class Battle {
 
         if (!actions.isEmpty() && actions.get(0).cmd == FLEE) {
             if (!boss && random.nextDouble() < 0.6) {
-                log.add("신창 일행은 도망쳤다!");
+                log.add(state.party.get(0).name() + " 일행은 도망쳤다!");
                 fled = true;
                 return log;
             }
@@ -264,7 +264,7 @@ public final class Battle {
             state.gold += totalGold;
             for (Hero h : state.party) log.addAll(h.gainExp(totalExp));
         } else if (lost()) {
-            log.add("신창 일행은 전멸했다……");
+            log.add(firstMonster == RpgData.HOSTAGE ? "……" : state.party.get(0).name() + " 일행은 전멸했다……");
         }
     }
 
@@ -285,9 +285,33 @@ public final class Battle {
         }
     }
 
+    private static final String[] HOSTAGE_LINES = {
+            "[천면귀] 움직이지 마! 손가락 하나라도 까딱하면 이 아이는 끝이야!",
+            "(민한의 목에 손톱이 닿아 있다. 손을 쓸 수가 없다……)",
+            "[천면귀] 호호호! 그래, 그렇게 가만히 맞기만 해!",
+            "(아이가 잠결에 '아빠…' 하고 중얼거린다. 검을 쥔 손에 힘이 빠진다)",
+            "[천면귀] 용사라더니 고작 이 정도? 아들 하나에 무릎을 꿇다니!",
+    };
+    private int hostageLine;
+
     private void heroActInner(Hero h, Action a, List<String> log) {
+        if (firstMonster == RpgData.HOSTAGE) {
+            // 인질극: 무엇을 해도 반격할 수 없다
+            log.add(HOSTAGE_LINES[hostageLine++ % HOSTAGE_LINES.length]);
+            log.add(Josa.eun(h.name()) + " 아무것도 할 수 없었다……");
+            return;
+        }
         switch (a.cmd) {
             case ATTACK: {
+                if (h.weapon == RpgData.ETERNAL_SUN) {
+                    // 초초 전설의 검: 보통 공격이 적 전체를 벤다
+                    log.add(Josa.i(h.name()) + " 휘두른 「태초의 해」가 해처럼 타오르며 모든 적을 벤다!");
+                    for (Enemy t : aliveEnemies()) {
+                        if (dodged(t, false, log)) continue;
+                        hitEnemy(t, damage(h.atk(), t.m.def), log);
+                    }
+                    break;
+                }
                 Enemy t = enemyTarget(a.target);
                 if (t == null) return;
                 log.add(Josa.eun(h.name()) + " " + Josa.eul(t.name) + " 공격했다!");
@@ -545,6 +569,10 @@ public final class Battle {
             case "witch": return " 독안개를 퍼뜨렸다!";
             case "lavadragon": return " 용암 브레스를 뿜었다!";
             case "vargas": return " 공허의 검은 불꽃을 터뜨렸다!";
+            case "fox": return " 아홉 꼬리로 여우불을 퍼부었다!";
+            case "guardian": return " 대지를 내리쳐 바위를 쏟아냈다!";
+            case "crystalqueen": return " 수정 가시를 사방으로 쏘았다!";
+            case "demonking": return " 요마의 검은 낙뢰를 내리쳤다!";
             default: return " 어둠의 포효를 내질렀다!";
         }
     }
