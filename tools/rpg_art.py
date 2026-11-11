@@ -80,6 +80,19 @@ CHARS = {
     "soldier": subst(SOLDIER, {"C": "v", "D": "y", "N": "N"}),
     "boss": BOSS_MAP,
     "hunter": subst(PERSON, {"H": "n", "C": "G", "D": "n", "N": "N"}),
+    "captain": subst(SOLDIER, {"e": "B", "E": "B", "C": "w", "D": "y", "N": "B"}),
+    "baron": subst(ROBE, {"H": "n", "C": "q", "D": "y"}),
+    "apprentice": subst(PERSON, {"H": "y", "C": "c", "D": "w", "N": "N"}),
+    "sailor": subst(PERSON, {"H": "N", "C": "w", "D": "b", "N": "b"}),
+    "pirate": subst(PERSON, {"H": "r", "C": "R", "D": "k", "N": "k"}),
+    "pipi": mirror([
+        ".....", "u..PP", "uuPPP", "uuPss", ".usks", "..sss",
+        "..ggg", ".sggy", "..ggg", "..ggg", "...s.", "...k.",
+    ]),
+    "serpent": mirror([
+        ".....", "...cc", "..ccc", "..crc", "..ccc", "...cc",
+        "..vcc", ".vvcc", "vvccc", "vccvv", "vvvvv", ".....",
+    ]),
     "pup": mirror([
         ".....", ".....", ".....", ".....", ".n...", ".nn..",
         ".nnnn", ".nkkn", "..nnn", "..nnn", "..n.n", ".....",
@@ -135,12 +148,60 @@ MONSTERS = {
     ]),
 }
 
+# 2장 몬스터
+MONSTERS.update({
+    "crab": mirror(["........", "........", "rr......", "r.r.....", ".rr.....", "..r..rrr", ".....rrr", "...rrrrr",
+                    "..rrkwrr", ".rrrrrrr", "rrrrrrrr", ".rrRRRRR", "..r.r.r.", ".r..r..r", "........", "........"]),
+    "gull": mirror(["........", "........", "......ll", "....llll", "...lkkkl", "...lkwkl", "....llly", "..llllll",
+                    ".lllllll", "eeelllll", "eeeelll.", "...elll.", "....y.y.", "....y.y.", "........", "........"]),
+    "saltspirit": mirror(["........", ".......w", "......ww", ".....wlw", "....wlll", "...wllll", "...lkllk", "...lllll",
+                          "...lllll", "....llll", ".....lll", "....l.ll", "...l..l.", "........", "........", "........"]),
+    "jelly": mirror(["........", "........", ".....PPP", "...PPPPP", "..PPPwPP", "..PPPPPP", "..PkPPPk", "..PPPPPP",
+                     "...PPPPP", "...p.p.p", "...p.p.p", "..p..p..", "..p...p.", "........", "........", "........"]),
+    "pirate": mirror(["........", "....rrrr", "...rrrrr", "...sksss", "...sssss", "....ssss", "...NNNNN", "..wNwNNN",
+                      "..swwwww", "..swwwww", ".e.BBBBB", "e..BBBBB", "...BB..B", "...kk..k", "........", "........"]),
+    "octopus": mirror(["........", "....pppp", "...ppppp", "..pppppp", "..ppkwpp", "..pppppp", "...ppppp", "..p.p.pp",
+                       ".p..p.p.", ".p.p..p.", "p..p.p..", "...p....", "........", "........", "........", "........"]),
+    "urchin": mirror(["........", "...e..e.", "....e.e.", "..e.eee.", "...eqqqq", "..eqqqqq", ".eqqrqqq", "..qqqqqq",
+                      "eeqqqqqq", "..qqqqqq", ".eqqqqqq", "..eqqqqq", "...e.eee", "..e..e..", "........", "........"]),
+    "golem": mirror(["........", "....xxxx", "...xPPPx", "...xPkPx", "...xPPPx", "..xxxxxx", ".xxPPPPP", "xxPPxPPP",
+                     "xPPPPPPP", "xx.xPPPP", "....xPPP", "....xPPx", "...xxx.x", "...xxx..", "........", "........"]),
+    "merknight": mirror(["........", "....eeee", "...eeeee", "...essss", "...sksks", "....ssss", "..cccccc", "y.cvvvcc",
+                         "y.ccccvv", "y..ccccc", "...ccccc", "....cccc", "....c.cc", "...c..cc", "........", "........"]),
+    "skelsailor": mirror(["....wwww", "...bbbbb", "...lllll", "...lkkll", "...lkkll", "....llll", ".....lkl", "...bbbbb",
+                          "..l.wbwb", ".l..l.ll", "....llll", ".....l.l", "....ll.l", "....l..l", "...ll..l", "........"]),
+    "statue": mirror(["....eeee", "...eeeee", "...eEyEe", "...eeeee", "..EEEEEE", ".eeeeeee", "eeeEeeee", "eeeeeeee",
+                      "e.eeeeee", "e.eEeeee", "..eeeeee", "..eeeeee", "..ee.eee", "..EE.EEE", "........", "........"]),
+    "eel": mirror(["........", "........", "........", "......vv", ".....vvv", "....vvkv", "...vvvvv", "..vvv...",
+                   ".vvv....", "vvv.....", "vvvv....", ".vvvvv..", "...vvvvv", ".....vvv", "........", "........"]),
+    "stardust": mirror(["........", "........", "....y...", "...yyy..", "....y..w", "......ww", "....wwyw", "...wyyyy",
+                        "...wykyk", "....yyyy", "...wwyyy", "....w.yy", "......y.", "........", "........", "........"]),
+    "goldtoad": mirror(["........", "........", "........", "........", "....yyyy", "...yYYyy", "..ykwyyy", "..yyyyyy",
+                        ".yyyyyyy", ".yYyyyYy", "yyyyyyyy", "yyYyyyyY", ".yy..yyy", "Yy...Yyy", "........", "........"]),
+    "pearl": mirror(["........", "........", "....u...", "...uuu..", "....u..w", "......ww", "....wwPw", "...wPPPP",
+                     "...wPkPk", "....PPPP", "...wwPPP", "....w.PP", "......P.", "........", "........", "........"]),
+    "gemcrab": mirror(["........", "........", "cc......", "c.c.....", ".cc..y..", "..c.yby.", ".....yby", "...ycbcy",
+                       "..ycbcbc", ".cccbcbc", "cccccccc", ".ccrrrrr", "..c.c.c.", ".c..c..c", "........", "........"]),
+})
+
 # 보스: 24x20 (왼쪽 절반 12칸)
 MONSTERS["wolfking"] = mirror([
     "............", "...y........", "...yy.......", "..ypyy......", "..ppppy.....", ".ppppppp....",
     ".pqqqqqqqq..", ".qqqqqqqqqqq", "qqqrrqqqqqqq", "qqqrrqqqqqqq", ".qqqqqqqqqqq", "..qqwqwqqqqq",
     "...qqqqqqqqq", "..pqqqqqqqqq", ".ppqqqqqqqqq", "ppqqqqqqqqqq", ".qqqqqqqqqqq", "..qqqq..qqqq",
     "..qqq....qqq", "..kkk....kkk",
+])
+MONSTERS["galleon"] = mirror([
+    "............", "....kkkkkkkk", "...kkkkkkkkk", "..kkkkkkwkkk", ".kkkkkkkkkkk", "....ssssssss",
+    "....skkssssk", "....ssssssss", "....rrssssss", "...rrrrrrrrr", "....rrrrrrrr", "..RRRRNNNNNN",
+    ".RRRRNNyNNNN", "sRRRRNNNNNNN", "s.RRRNNNNNNN", "...RRNNNNNNN", "....BBBBBBBB", "....BBBB..BB",
+    "....kkkk..kk", "....kkkk..kk",
+])
+MONSTERS["serpent"] = mirror([
+    "............", "........cccc", ".......ccccc", "......cccrcc", "......cccccc", ".......ccwcc",
+    "........cccc", ".........ccc", "....vvvv.ccc", "...vvvvvvccc", "..vvccvvvvcc", ".vvccccvvvvv",
+    "vvcc..ccvvvv", "vcc....ccvvv", "vcc....ccvvv", "vvcc..ccvvvv", ".vvccccvvvvv", "..vvvvvvvvvv",
+    "....vvvvvvvv", "............",
 ])
 
 # ---------------------------------------------------------------- 타일 (8x8)
@@ -193,6 +254,26 @@ TILES = {
     "j": ["........", "..GGGG..", ".GgGGgG.", "GGgGGGGG", "GgGGgGgG", ".GGGGGG.", "..G..G..", "........"],
     "e": ["........", "..eeee..", ".eyyyye.", ".eykkye.", ".eyyyye.", "..eyye..", "...ee...", "........"],
     "i": ["dddddddd", "dDdyyddd", "dddyYddd", "ddddnddd", "dDddnddd", "ddddnDdd", "dddddddd", "dDdddddd"],
+    # 2장: 부두, 배, 등대, 해저 신전 입구
+    "_": ["nnnnnnnn", "NNNNNNNN", "tnntnntn", "nnnnnnnn", "NNNNNNNN", "nnntnnnt", "nnnnnnnn", "NNNNNNNN"],
+    "v": ["vvvvvvvv", "vvvnnvvv", "vvnwwnvv", "vnnnnnnv", "nNNNNNNn", "vNnnnnNv", "vvNNNNvv", "vvvvvvvv"],
+    "I": ["gggrrggg", "ggryyrgg", "gggwwggg", "gggrrggg", "gggwwggg", "gggrrggg", "ggwwwwgg", "gggggggg"],
+    "G": ["vvvvvvvv", "vveeeevv", "veuvvuev", "vevvvvev", "vevvvvev", "veuvvuev", "vveeeevv", "vvvvvvvv"],
+    "G1": ["vveeeevv", "veeeeeev", "eeMMMMee", "eeMkkMee", "eeMkkMee", "eeMMMMee", "veeeeeev", "vveeeevv"],
+    # 바다 동굴
+    "sea,": ["eeeeeeee", "eueeeeee", "eeeeeeue", "eeeeeeee", "eeeueeee", "eeeeeeeu", "eeeeeeee", "eueeeeee"],
+    "sea#": ["BBBBBBBB", "BvBBBvBB", "BBBBBBvB", "vBBBvBBB", "BBBBBBBB", "BvBBBBvB", "BBBvBBBB", "BBBBBBBB"],
+    "seaX": ["llllllll", "leeeeeel", "leeeeeel", "leeeeeel", "leeeeeel", "leeeeeel", "leeeeeel", "leeeeeel"],
+    "seaC": ["eeeeeeee", "eNNNNNNe", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "eeeeeeee"],
+    "seac": ["eeeeeeee", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "eeeeeeee"],
+    "seai": ["BBBBBBBB", "BvBPPBBB", "BBPxPBBB", "BBBxBBBB", "BvBxBBvB", "BBBxBBBB", "BBBBBBBB", "BvBBBBBB"],
+    # 해저 신전
+    "tmp,": ["llllllll", "lclllllc", "llllllll", "lllcllll", "llllllll", "lclllllc", "llllllll", "llllclll"],
+    "tmp#": ["cccccccc", "vvvvvvvv", "cvvccvvc", "cvvccvvc", "cccccccc", "vccvvccv", "vccvvccv", "cccccccc"],
+    "tmpX": ["cccccccc", "cllllllc", "cllllllc", "cllllllc", "cllllllc", "cllllllc", "cllllllc", "cllllllc"],
+    "tmpC": ["llllllll", "lNNNNNNl", "NnnnnnnN", "NNNNNNNN", "NnnyynnN", "NnnnnnnN", "NNNNNNNN", "llllllll"],
+    "tmpc": ["llllllll", "NnnnnnnN", "NkkkkkkN", "NNNNNNNN", "NnnnnnnN", "NnnnnnnN", "NNNNNNNN", "llllllll"],
+    "tmpi": ["llllllll", "lllyylll", "llyYYyll", "lllyylll", "lllcclll", "lllcclll", "llcccclll"[:8], "llllllll"],
     # 동굴용
     "cave,": ["mmmmmmmm", "mMmmmmmm", "mmmmmmMm", "mmmmmmmm", "mmmmmmmm", "mmMmmmmm", "mmmmmmmm", "mmmmmMmm"],
     "cave#": ["dddddddd", "dDddDddd", "ddddddDd", "DddddDdd", "dddDdddd", "dDddddDd", "ddddDddd", "dDdddddd"],
@@ -206,8 +287,9 @@ def check():
     for name, rows in CHARS.items():
         assert len(rows) == 12 and all(len(r) == 10 for r in rows), name
     for name, rows in MONSTERS.items():
-        w = 24 if name == "wolfking" else 16
-        h = 20 if name == "wolfking" else 16
+        big = name in ("wolfking", "galleon", "serpent")
+        w = 24 if big else 16
+        h = 20 if big else 16
         assert len(rows) == h and all(len(r) == w for r in rows), (name, [len(r) for r in rows])
     for name, rows in TILES.items():
         assert len(rows) == 8 and all(len(r) == 8 for r in rows), name

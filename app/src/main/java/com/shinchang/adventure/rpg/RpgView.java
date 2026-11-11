@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.SystemClock;
 import android.view.View;
@@ -16,7 +17,8 @@ import java.util.Map;
 /** 아르카디아 지도와 전투 화면을 도트 그림으로 그린다. */
 public class RpgView extends View {
 
-    private static final int VIEW_TILES = 11;
+    /** 화면 가로에 보이는 타일 수 (많을수록 도트가 작아 보인다) */
+    private static final int VIEW_TILES = 14;
     private static final long STEP_MS = 140;
 
     private RpgState state;
@@ -29,7 +31,9 @@ public class RpgView extends View {
     // 걷기 애니메이션과 동료가 따라오는 위치
     private int fromX, fromY;
     private long stepStart;
-    private int followX = -1, followY = -1, followFromX, followFromY;
+    /** 동료 둘이 차례로 따라온다: [0] = 바로 뒤, [1] = 그 뒤 */
+    private final int[] followX = {-1, -1}, followY = {-1, -1}, followFromX = new int[2], followFromY = new int[2];
+    private final RectF dst = new RectF();
     private int shownMap = -1;
     // 보스전 연출
     private long screenFlashUntil, shakeUntil;
@@ -63,18 +67,24 @@ public class RpgView extends View {
     public void stepped(int oldX, int oldY) {
         fromX = oldX;
         fromY = oldY;
-        followFromX = followX < 0 ? oldX : followX;
-        followFromY = followY < 0 ? oldY : followY;
-        followX = oldX;
-        followY = oldY;
+        followFromX[1] = followX[1] < 0 ? oldX : followX[1];
+        followFromY[1] = followY[1] < 0 ? oldY : followY[1];
+        followX[1] = followX[0] < 0 ? oldX : followX[0];
+        followY[1] = followY[0] < 0 ? oldY : followY[0];
+        followFromX[0] = followX[0] < 0 ? oldX : followX[0];
+        followFromY[0] = followY[0] < 0 ? oldY : followY[0];
+        followX[0] = oldX;
+        followY[0] = oldY;
         stepStart = SystemClock.uptimeMillis();
         invalidate();
     }
 
     /** 지도를 옮겼을 때 동료를 주인공 위치로 */
     public void resetFollower() {
-        followX = followFromX = state.x;
-        followY = followFromY = state.y;
+        for (int i = 0; i < 2; i++) {
+            followX[i] = followFromX[i] = state.x;
+            followY[i] = followFromY[i] = state.y;
+        }
         fromX = state.x;
         fromY = state.y;
         stepStart = 0;
@@ -122,13 +132,40 @@ public class RpgView extends View {
 
     // ---- 도트 그림 캐시 ----
 
-    private Bitmap bitmap(String key, String[] rows, int size) {
-        key = key + "@" + size;
-        if (cache.size() > 300) cache.clear();
+    /**
+     * Scale2x(EPX): 도트를 두 배로 늘리면서 대각선 계단을 매끄럽게 다듬는다.
+     * 한 번 돌리면 8x8 타일이 16x16, 두 번이면 32x32 해상도처럼 보인다.
+     */
+    static String[] scale2x(String[] src) {
+        int h = src.length, w = src[0].length();
+        char[][] out = new char[h * 2][w * 2];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                char p = src[y].charAt(x);
+                char a = y > 0 ? src[y - 1].charAt(x) : p;
+                char b = x < w - 1 ? src[y].charAt(x + 1) : p;
+                char c = x > 0 ? src[y].charAt(x - 1) : p;
+                char d = y < h - 1 ? src[y + 1].charAt(x) : p;
+                out[2 * y][2 * x] = c == a && c != d && a != b ? a : p;
+                out[2 * y][2 * x + 1] = a == b && a != c && b != d ? b : p;
+                out[2 * y + 1][2 * x] = d == c && d != b && c != a ? c : p;
+                out[2 * y + 1][2 * x + 1] = b == d && b != a && d != c ? d : p;
+            }
+        }
+        String[] r = new String[h * 2];
+        for (int y = 0; y < h * 2; y++) r[y] = new String(out[y]);
+        return r;
+    }
+
+    /** 그림을 smooth 번 다듬은 뒤, 긴 변이 size 픽셀쯤 되도록 미리 그려 둔다 */
+    private Bitmap bitmap(String key, String[] rows, int size, int smooth) {
+        key = key + "@" + size + "/" + smooth;
+        if (cache.size() > 400) cache.clear();
         Bitmap b = cache.get(key);
         if (b != null) return b;
+        for (int i = 0; i < smooth; i++) rows = scale2x(rows);
         int h = rows.length, w = rows[0].length();
-        int px = Math.max(1, size / Math.max(w, h));
+        int px = Math.max(1, Math.round(size / (float) Math.max(w, h)));
         b = Bitmap.createBitmap(w * px, h * px, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         Paint p = new Paint();
@@ -144,10 +181,16 @@ public class RpgView extends View {
         return b;
     }
 
+    /** 미리 그린 그림을 정확한 크기로 붙인다 (도트가 흐려지지 않게 최근접 확대) */
+    private void blit(Canvas canvas, Bitmap b, float left, float top, float width, float height) {
+        dst.set(left, top, left + width, top + height);
+        canvas.drawBitmap(b, null, dst, pixelPaint);
+    }
+
     /** 바탕이 투명한 물건 타일 */
-    private static final String OBJECTS = "btoxFQYPANLZje";
+    private static final String OBJECTS = "btoxFQYPANLZjeq";
     /** 물건 밑에 깔 수 있는 바닥 */
-    private static final String GROUNDS = ";,:.f=r";
+    private static final String GROUNDS = ";,:.f=r_";
     private static final int[][] AROUND = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}, {-1, 1}, {1, 1}, {-1, -1}, {1, -1}};
 
     private char groundAt(int tx, int ty) {
@@ -159,10 +202,24 @@ public class RpgView extends View {
     }
 
     private String tileKey(char t) {
-        boolean cave = state.map == RpgData.CAVE1 || state.map == RpgData.CAVE2;
-        if (cave && (t == ',' || t == '#' || t == 'X' || t == 'C' || t == 'c')) return "cave" + t;
+        String theme = RpgData.theme(state.map);
+        if (theme != null && ",#XCci".indexOf(t) >= 0) {
+            String key = theme + t;
+            if (RpgArt.tile(key) != null) return key;
+        }
         if (t == '~' && (SystemClock.uptimeMillis() / 500) % 2 == 1) return "~1";
+        // 등불을 받으면 해저 신전 입구에 돌계단이 떠오른다
+        if (t == 'G' && state.step >= RpgData.STEP_LAMP) return "G1";
         return String.valueOf(t);
+    }
+
+    private void drawTile(Canvas canvas, String key, float x, float y, int ts) {
+        String[] art = RpgArt.tile(key);
+        if (art == null) {
+            key = ".";
+            art = RpgArt.tile(key);
+        }
+        blit(canvas, bitmap("t" + key, art, ts, 1), x, y, ts, ts);
     }
 
     // ---- 그리기 ----
@@ -204,7 +261,7 @@ public class RpgView extends View {
             shownMap = state.map;
             resetFollower();
         }
-        int ts = Math.max(8, getWidth() / VIEW_TILES / 8 * 8);
+        int ts = Math.max(16, getWidth() / VIEW_TILES);
         long now = SystemClock.uptimeMillis();
         float t = stepStart == 0 ? 1f : Math.min(1f, (now - stepStart) / (float) STEP_MS);
         float px = fromX + (state.x - fromX) * t;
@@ -215,7 +272,7 @@ public class RpgView extends View {
         canvas.drawColor(0xFF000000);
         int x0 = (int) Math.floor(camX / ts) - 1, y0 = (int) Math.floor(camY / ts) - 1;
         int x1 = x0 + getWidth() / ts + 3, y1 = y0 + getHeight() / ts + 3;
-        boolean world = state.map == RpgData.WORLD;
+        boolean world = RpgData.isOverworld(state.map);
         for (int ty = y0; ty <= y1; ty++) {
             for (int tx = x0; tx <= x1; tx++) {
                 boolean outside = tx < 0 || ty < 0 || tx >= state.mapWidth() || ty >= state.mapHeight();
@@ -223,24 +280,21 @@ public class RpgView extends View {
                 if (ch == ' ') continue;
                 if (OBJECTS.indexOf(ch) >= 0) {
                     // 가구·물건은 바탕이 투명하니 주변 바닥을 먼저 깐다
-                    char g = groundAt(tx, ty);
-                    canvas.drawBitmap(bitmap("t" + tileKey(g), RpgArt.tile(tileKey(g)), ts), tx * ts - camX, ty * ts - camY, pixelPaint);
+                    drawTile(canvas, tileKey(groundAt(tx, ty)), tx * ts - camX, ty * ts - camY, ts);
                 }
-                String[] art = RpgArt.tile(tileKey(ch));
-                if (art == null) art = RpgArt.tile(".");
-                canvas.drawBitmap(bitmap("t" + tileKey(ch), art, ts), tx * ts - camX, ty * ts - camY, pixelPaint);
+                drawTile(canvas, tileKey(ch), tx * ts - camX, ty * ts - camY, ts);
             }
         }
 
         for (RpgData.Npc n : state.visibleNpcs()) {
             drawChar(canvas, n.sprite, n.x * ts - camX, n.y * ts - camY, ts, false);
         }
-        // 동료(리나)는 주인공 뒤를 따라온다
-        if (state.party.size() > 1) {
-            float fx = followFromX + (followX - followFromX) * t;
-            float fy = followFromY + (followY - followFromY) * t;
+        // 동료들은 주인공 뒤를 차례로 따라온다 (맨 뒤부터 그린다)
+        for (int i = Math.min(2, state.party.size() - 1); i >= 1; i--) {
+            float fx = followFromX[i - 1] + (followX[i - 1] - followFromX[i - 1]) * t;
+            float fy = followFromY[i - 1] + (followY[i - 1] - followFromY[i - 1]) * t;
             if (Math.round(fx) != state.x || Math.round(fy) != state.y || t < 1) {
-                drawChar(canvas, state.party.get(1).base().sprite, fx * ts - camX, fy * ts - camY, ts, t < 1);
+                drawChar(canvas, state.party.get(i).base().sprite, fx * ts - camX, fy * ts - camY, ts, t < 1);
             }
         }
         drawChar(canvas, "hero", px * ts - camX, py * ts - camY, ts, t < 1);
@@ -250,17 +304,34 @@ public class RpgView extends View {
 
     private void drawChar(Canvas canvas, String key, float x, float y, int ts, boolean walking) {
         String[] art = RpgArt.character(key);
-        Bitmap b = bitmap("c" + key, art, ts);
+        Bitmap b = bitmap("c" + key, art, ts, 1);
         // 걷는 동안 살짝 통통 튄다
         float bob = walking && (SystemClock.uptimeMillis() / 70) % 2 == 0 ? -ts / 16f : 0;
-        canvas.drawBitmap(b, x + (ts - b.getWidth()) / 2f, y + (ts - b.getHeight()) + bob, pixelPaint);
+        float h = ts, w = ts * art[0].length() / (float) art.length;
+        blit(canvas, b, x + (ts - w) / 2f, y + bob, w, h);
     }
 
     private void drawBattle(Canvas canvas) {
         int w = getWidth(), h = getHeight();
-        boolean cave = state.map == RpgData.CAVE1 || state.map == RpgData.CAVE2;
-        int top = cave ? 0xFF1B1410 : 0xFF6FA8DC;
-        int bottom = cave ? 0xFF3A2C22 : 0xFF2E7D32;
+        String theme = RpgData.theme(state.map);
+        boolean cave = theme != null;
+        int top, bottom;
+        if ("cave".equals(theme)) {
+            top = 0xFF1B1410;
+            bottom = 0xFF3A2C22;
+        } else if ("sea".equals(theme)) {
+            top = 0xFF0B1A2E;
+            bottom = 0xFF1F4A6E;
+        } else if ("tmp".equals(theme)) {
+            top = 0xFF0E2E33;
+            bottom = 0xFF2F7F86;
+        } else if (state.map == RpgData.WORLD2) {
+            top = 0xFF7EC8F0;
+            bottom = 0xFFE3C88F;
+        } else {
+            top = 0xFF6FA8DC;
+            bottom = 0xFF2E7D32;
+        }
         bgPaint.setShader(new LinearGradient(0, 0, 0, h, top, bottom, Shader.TileMode.CLAMP));
         canvas.drawRect(0, 0, w, h, bgPaint);
         bgPaint.setShader(null);
@@ -276,12 +347,18 @@ public class RpgView extends View {
             if (!e.alive()) continue;
             if (i == flashEnemy && now < flashUntil && (now / 60) % 2 == 0) continue;
             String[] art = RpgArt.monster(e.m.sprite);
-            int size = battle.boss ? (int) (w * 0.6f) : Math.min((int) (slot * 0.9f), (int) (w * 0.32f));
-            size = Math.max(16, size / art[0].length() * art[0].length());
-            Bitmap b = bitmap("m" + e.m.sprite + size, art, size);
+            float size = battle.boss ? w * 0.62f : Math.min(slot * 0.9f, w * 0.32f);
+            Bitmap b = bitmap("m" + e.m.sprite, art, (int) size, 2);
+            float bw = size, bh = size * art.length / (float) art[0].length();
             float cx = battle.boss ? w / 2f : slot * (i + 1);
-            canvas.drawBitmap(b, cx - b.getWidth() / 2f, h * 0.74f - b.getHeight(), pixelPaint);
+            // 진귀한 몬스터는 반짝반짝
+            if (e.m.rare != 0 && (now / 150) % 4 == 0) bgPaint.setColor(0x66FFF3A0);
+            else bgPaint.setColor(0);
+            if (e.m.rare != 0) canvas.drawCircle(cx, h * 0.74f - bh / 2, bw * 0.6f, bgPaint);
+            blit(canvas, b, cx - bw / 2f, h * 0.74f - bh, bw, bh);
         }
-        if (now < flashUntil) postInvalidateDelayed(30);
+        boolean rare = false;
+        for (Battle.Enemy e : enemies) if (e.alive() && e.m.rare != 0) rare = true;
+        if (now < flashUntil || rare) postInvalidateDelayed(30);
     }
 }

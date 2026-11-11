@@ -126,6 +126,8 @@ public final class RpgState {
     public boolean walkable(int tx, int ty) {
         char t = tile(tx, ty);
         if (RpgData.blocks(t) || t == 'c') return false;
+        // 해저 신전 입구는 등대의 등불을 받아야 열린다
+        if (t == 'G' && step < RpgData.STEP_LAMP) return false;
         return npcAt(tx, ty) == null;
     }
 
@@ -160,6 +162,12 @@ public final class RpgState {
         if (RpgData.hasEncounters(map) && tile(x, y) != 'B' && random.nextDouble() < encounterRate()) {
             int[][] groups = RpgData.ENCOUNTERS[RpgData.encounterZone(map, x, y)];
             r.encounter = groups[random.nextInt(groups.length)];
+            // 가끔 진귀한 몬스터가 섞여 나온다
+            int rare = RpgData.rareMonsterAt(map, x, y);
+            if (rare >= 0) {
+                double chance = RpgData.MONSTERS[rare].rare == RpgData.RARE_EXP ? RpgData.RARE_EXP_CHANCE : RpgData.RARE_GOLD_CHANCE;
+                if (random.nextDouble() < chance) r.encounter = new int[]{rare};
+            }
         }
         return r;
     }
@@ -220,6 +228,10 @@ public final class RpgState {
         public int arg;
         /** 보스전을 시작해야 하면 true */
         public boolean bossBattle;
+        /** 보스 몬스터 번호 */
+        public int bossMonster = -1;
+        /** 배를 타고 지도가 바뀌었으면 true */
+        public boolean sailed;
         /** 장(챕터)이 끝났으면 true */
         public boolean chapterClear;
     }
@@ -314,9 +326,54 @@ public final class RpgState {
                     }
                     break;
                 case RpgData.EV_BOSS:
-                    for (String l : npc.linesFor(step)) in.lines.add("[" + npc.name + "] " + l);
+                case RpgData.EV_MIDBOSS:
+                case RpgData.EV_BOSS2:
+                    for (String l : npc.linesFor(step)) in.lines.add(l.startsWith("[") || l.startsWith("(") ? l : "[" + npc.name + "] " + l);
                     in.bossBattle = true;
+                    in.bossMonster = npc.arg == RpgData.EV_BOSS ? RpgData.WOLF_KING
+                            : npc.arg == RpgData.EV_MIDBOSS ? RpgData.GALLEON : RpgData.SERPENT;
                     return;
+                case RpgData.EV_SHIP_TO_MERCA:
+                    if (step == RpgData.STEP_CHAPTER1_CLEAR) {
+                        for (String l : RpgData.SAIL_TO_MERCA_FIRST) in.lines.add(l);
+                        step = RpgData.STEP_SAILED;
+                    } else {
+                        for (String l : RpgData.SAIL_TO_MERCA) in.lines.add(l);
+                    }
+                    warp(RpgData.PIER_MERCA[0], RpgData.PIER_MERCA[1], RpgData.PIER_MERCA[2]);
+                    in.sailed = true;
+                    return;
+                case RpgData.EV_SHIP_TO_ERDEN:
+                    for (String l : RpgData.SAIL_TO_ERDEN) in.lines.add(l);
+                    warp(RpgData.PIER_ERDEN[0], RpgData.PIER_ERDEN[1], RpgData.PIER_ERDEN[2]);
+                    in.sailed = true;
+                    return;
+                case RpgData.EV_GUILD:
+                    guildEvent(in);
+                    return;
+                case RpgData.EV_PIPI:
+                    if (step == RpgData.STEP_GALLEON_DOWN) {
+                        for (String l : RpgData.PIPI_JOINS) in.lines.add(l);
+                        removeItem(RpgData.PIPI_SCALE, 1);
+                        Hero pipi = new Hero(2, Math.max(15, party.get(0).level - 1));
+                        party.add(pipi);
+                        step = RpgData.STEP_PIPI;
+                        return;
+                    }
+                    if (step == RpgData.STEP_GUILD_REFUSED) {
+                        String[] lines = hasFlagSeen(RpgData.PIPI_QUEST) ? RpgData.PIPI_WAITING : RpgData.PIPI_QUEST;
+                        for (String l : lines) in.lines.add(l);
+                        return;
+                    }
+                    break;
+                case RpgData.EV_NOAH:
+                    if (step == RpgData.STEP_PIPI) {
+                        for (String l : RpgData.NOAH_GIVES_LAMP) in.lines.add(l);
+                        addItem(RpgData.LIGHTHOUSE_LAMP, 1);
+                        step = RpgData.STEP_LAMP;
+                        return;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -379,12 +436,61 @@ public final class RpgState {
         }
     }
 
+    /** 같은 긴 대사를 두 번 보여 주지 않으려고, 한 번 본 대사 묶음을 기억한다 (저장하지 않음) */
+    private final java.util.Set<String[]> seen = new java.util.HashSet<>();
+
+    private boolean hasFlagSeen(String[] lines) {
+        return !seen.add(lines);
+    }
+
+    private void guildEvent(Interaction in) {
+        String[] lines;
+        switch (step) {
+            case RpgData.STEP_SAILED:
+                lines = RpgData.GUILD_FIRST;
+                step = RpgData.STEP_GUILD_REFUSED;
+                break;
+            case RpgData.STEP_SERPENT_DOWN:
+                lines = concat(RpgData.GUILD_CLEAR_OPEN,
+                        hasItem(RpgData.BAROS_COMPASS) ? RpgData.GUILD_CLEAR_COMPASS : RpgData.GUILD_CLEAR_NO_COMPASS,
+                        RpgData.GUILD_CLEAR_CLOSE);
+                removeItem(RpgData.BAROS_COMPASS, 1);
+                step = RpgData.STEP_CHAPTER2_CLEAR;
+                gold += 5000;
+                in.chapterClear = true;
+                break;
+            case RpgData.STEP_CHAPTER2_CLEAR:
+                lines = RpgData.GUILD_AFTER_CLEAR;
+                break;
+            default:
+                lines = RpgData.GUILD_WAITING;
+                break;
+        }
+        for (String l : lines) in.lines.add(l);
+    }
+
     /** 보스를 쓰러뜨린 뒤 */
     public List<String> onBossDefeated() {
-        step = RpgData.STEP_BOSS_DOWN;
-        addItem(RpgData.SEAL_SHARD, 1);
+        return onBossDefeated(RpgData.WOLF_KING);
+    }
+
+    public List<String> onBossDefeated(int monster) {
+        String[] lines;
+        if (monster == RpgData.GALLEON) {
+            step = RpgData.STEP_GALLEON_DOWN;
+            addItem(RpgData.PIPI_SCALE, 1);
+            lines = RpgData.GALLEON_DEFEATED;
+        } else if (monster == RpgData.SERPENT) {
+            step = RpgData.STEP_SERPENT_DOWN;
+            addItem(RpgData.SEA_SHARD, 1);
+            lines = RpgData.SERPENT_DEFEATED;
+        } else {
+            step = RpgData.STEP_BOSS_DOWN;
+            addItem(RpgData.SEAL_SHARD, 1);
+            lines = RpgData.BOSS_DEFEATED;
+        }
         List<String> out = new ArrayList<>();
-        for (String l : RpgData.BOSS_DEFEATED) out.add(l);
+        for (String l : lines) out.add(l);
         return out;
     }
 
@@ -418,6 +524,17 @@ public final class RpgState {
             target.hp = Math.min(target.maxHp(), target.hp + item.power + random.nextInt(8));
             return Josa.i(target.name()) + " HP를 " + (target.hp - before) + " 회복했다.";
         }
+        if (id == RpgData.HI_HERB) {
+            if (!target.alive()) return Josa.eun(target.name()) + " 쓰러져 있어 약초가 듣지 않는다.";
+            int before = target.hp;
+            target.hp = Math.min(target.maxHp(), target.hp + item.power + random.nextInt(20));
+            return Josa.i(target.name()) + " HP를 " + (target.hp - before) + " 회복했다.";
+        }
+        if (id == RpgData.PHOENIX) {
+            if (target.alive()) return Josa.eun(target.name()) + " 쓰러져 있지 않다. 깃털이 바람에 날아갔다…";
+            target.hp = Math.max(1, target.maxHp() / 2);
+            return Josa.i(target.name()) + " 되살아났다!";
+        }
         if (id == RpgData.MANA_CANDY) {
             int before = target.mp;
             target.mp = Math.min(target.maxMp(), target.mp + item.power);
@@ -445,9 +562,21 @@ public final class RpgState {
     /** 필드에서 회복 주문 쓰기 */
     public String castInField(Hero caster, int spellIndex, Hero target) {
         RpgData.Spell s = RpgData.SPELLS[spellIndex];
-        if (s.kind != RpgData.HEAL_ONE) return "그 주문은 전투 중에만 쓸 수 있다.";
+        if (!s.fieldUsable()) return "그 주문은 전투 중에만 쓸 수 있다.";
         if (caster.mp < s.mp) return "MP가 모자라다.";
-        if (!target.alive()) return Josa.eun(target.name()) + " 쓰러져 있어 여관에서 쉬어야 한다.";
+        String used = Josa.eun(caster.name()) + " 「" + s.name + "」" + Josa.eulOf(s.name) + " 썼다! ";
+        if (s.kind == RpgData.REVIVE) {
+            if (target.alive()) return Josa.eun(target.name()) + " 쓰러져 있지 않다.";
+            caster.mp -= s.mp;
+            target.hp = Math.max(1, target.maxHp() * s.power / 100);
+            return used + Josa.i(target.name()) + " 되살아났다!";
+        }
+        if (s.kind == RpgData.HEAL_ALL) {
+            caster.mp -= s.mp;
+            for (Hero h : party) if (h.alive()) h.hp = Math.min(h.maxHp(), h.hp + (int) Math.round(s.power * healBonus()));
+            return used + "일행의 HP가 회복되었다.";
+        }
+        if (!target.alive()) return Josa.eun(target.name()) + " 쓰러져 있다. 되살리는 주문이나 소생의 깃털이 필요하다.";
         caster.mp -= s.mp;
         int before = target.hp;
         target.hp = Math.min(target.maxHp(), target.hp + (int) Math.round(s.power * healBonus()));
@@ -513,7 +642,7 @@ public final class RpgState {
     }
 
     public String chapterTitle() {
-        return step == RpgData.STEP_PROLOGUE ? RpgData.CHAPTER_TITLES[0] : RpgData.CHAPTER_TITLES[1];
+        return RpgData.CHAPTER_TITLES[RpgData.chapterOf(step)];
     }
 
     // ---- 저장 ----

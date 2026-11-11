@@ -14,6 +14,9 @@ public final class Battle {
         public final RpgData.Monster m;
         public final String name;
         public int hp;
+        /** 스스로 도망쳤으면 true (보상 없음) */
+        public boolean fled;
+        boolean stolen;
 
         Enemy(RpgData.Monster m, String name) {
             this.m = m;
@@ -43,7 +46,11 @@ public final class Battle {
 
     public final List<Enemy> enemies = new ArrayList<>();
     public final boolean boss;
+    /** 첫 번째 몬스터 번호 (보스 판별용) */
+    public final int firstMonster;
     private final RpgState state;
+    /** 행운의 저울: 아군이 적의 공격을 피할 확률 */
+    private double partyEvade;
     private final Random random;
     private boolean fled;
     /** 수호의 맹세: 받는 피해 배율 */
@@ -59,6 +66,7 @@ public final class Battle {
     public Battle(RpgState state, int[] monsterIds, boolean boss, Random random) {
         this.state = state;
         this.boss = boss;
+        this.firstMonster = monsterIds[0];
         this.random = random;
         // 같은 몬스터가 여럿이면 A, B, C 를 붙인다
         for (int i = 0; i < monsterIds.length; i++) {
@@ -72,12 +80,14 @@ public final class Battle {
                 name += " " + (char) ('A' + n);
             }
             enemies.add(new Enemy(m, name));
-            totalGold += m.gold;
         }
     }
 
     public String intro() {
         if (boss) return Josa.i(enemies.get(0).name) + " 덤벼들었다!";
+        RpgData.Monster first = enemies.get(0).m;
+        if (first.rare == RpgData.RARE_EXP) return "✨ 진귀한 " + Josa.i(first.name) + " 나타났다! (재빨라서 금방 도망칠 것 같다!)";
+        if (first.rare == RpgData.RARE_GOLD) return "✨ 진귀한 " + Josa.i(first.name) + " 나타났다! (몸에서 금빛이 번쩍인다!)";
         if (enemies.size() == 1) return Josa.i(enemies.get(0).name) + " 나타났다!";
         return "몬스터 무리가 나타났다!";
     }
@@ -220,9 +230,18 @@ public final class Battle {
     private void finishLog(List<String> log) {
         if (won()) {
             double base = 0, bonus = 0, pl = partyLevel();
+            int defeated = 0;
+            totalGold = 0;
             for (Enemy e : enemies) {
+                if (e.fled) continue;
+                defeated++;
                 base += e.m.exp;
-                bonus += e.m.exp * expFactor(e.m.level, pl);
+                bonus += e.m.exp * (e.m.special == 2 || e.m.rare != 0 ? 1.0 : expFactor(e.m.level, pl));
+                totalGold += e.m.gold;
+            }
+            if (defeated == 0) {
+                log.add("몬스터는 모두 사라져 버렸다…");
+                return;
             }
             totalExp = (int) Math.round(bonus);
             log.add(boss ? Josa.eul(enemies.get(0).name) + " 쓰러뜨렸다!" : "몬스터를 모두 물리쳤다!");
@@ -235,12 +254,21 @@ public final class Battle {
         }
     }
 
+    /** 진귀한 몬스터는 공격을 잘 피한다 (주문은 절반 확률로만 피한다) */
+    private boolean dodged(Enemy t, boolean magic, List<String> log) {
+        double chance = magic ? t.m.evade * 0.5 : t.m.evade;
+        if (chance <= 0 || random.nextDouble() >= chance) return false;
+        log.add(Josa.eun(t.name) + " 재빠르게 몸을 피했다!");
+        return true;
+    }
+
     private void heroAct(Hero h, Action a, List<String> log) {
         switch (a.cmd) {
             case ATTACK: {
                 Enemy t = enemyTarget(a.target);
                 if (t == null) return;
                 log.add(Josa.eun(h.name()) + " " + Josa.eul(t.name) + " 공격했다!");
+                if (dodged(t, false, log)) return;
                 hitEnemy(t, damage(h.atk(), t.m.def), log);
                 break;
             }
@@ -280,6 +308,54 @@ public final class Battle {
         h.mp -= s.mp;
         log.add(Josa.eun(h.name()) + " 「" + s.name + "」" + Josa.eulOf(s.name) + " 썼다!");
         switch (s.kind) {
+            case RpgData.REVIVE: {
+                Hero t = a.target >= 0 && a.target < state.party.size() ? state.party.get(a.target) : null;
+                if (t == null || t.alive()) {
+                    log.add("그러나 아무 일도 일어나지 않았다.");
+                    return;
+                }
+                t.hp = Math.max(1, t.maxHp() * s.power / 100);
+                log.add(Josa.i(t.name()) + " 되살아났다!");
+                break;
+            }
+            case RpgData.PHYS_ALL:
+                log.add("바람을 가르는 일섬!");
+                for (Enemy t : aliveEnemies()) {
+                    if (dodged(t, false, log)) continue;
+                    hitEnemy(t, damage(h.atk(), t.m.def) * s.power / 10, log);
+                }
+                break;
+            case RpgData.WATER_ONE: {
+                Enemy t = enemyTarget(a.target);
+                if (t == null) return;
+                if (dodged(t, true, log)) return;
+                hitEnemy(t, rand(s.power * 8 / 10, s.power * 12 / 10), log);
+                break;
+            }
+            case RpgData.WATER_ALL:
+                log.add("거대한 물결이 몰아친다!");
+                for (Enemy t : aliveEnemies()) {
+                    if (dodged(t, true, log)) continue;
+                    hitEnemy(t, rand(s.power * 8 / 10, s.power * 12 / 10), log);
+                }
+                break;
+            case RpgData.STEAL_GOLD: {
+                Enemy t = enemyTarget(a.target);
+                if (t == null) return;
+                if (t.stolen || t.m.gold <= 0) {
+                    log.add("[피피] 쳇, 더 나올 게 없나 봐.");
+                    return;
+                }
+                t.stolen = true;
+                int got = Math.max(1, (int) Math.round(t.m.gold * (0.3 + random.nextDouble() * 0.3)));
+                state.gold += got;
+                log.add("[피피] 자자, 이 정도면 공정한 거래지? " + t.name + "에게서 " + got + "골드를 받아 냈다!");
+                break;
+            }
+            case RpgData.EVADE_UP:
+                partyEvade = 0.35;
+                log.add("저울이 반짝이며 행운이 기울었다! 이번 전투 동안 적의 공격을 자주 피하게 된다!");
+                break;
             case RpgData.HEAL_ONE: {
                 Hero t = heroTarget(a.target);
                 if (t == null) t = h;
@@ -292,11 +368,13 @@ public final class Battle {
             case RpgData.FIRE_ONE: {
                 Enemy t = enemyTarget(a.target);
                 if (t == null) return;
+                if (dodged(t, true, log)) return;
                 hitEnemy(t, (int) Math.round(rand(s.power * 8 / 10, s.power * 12 / 10) * state.fireBonus()), log);
                 break;
             }
             case RpgData.FIRE_ALL:
                 for (Enemy t : aliveEnemies()) {
+                    if (dodged(t, true, log)) continue;
                     hitEnemy(t, (int) Math.round(rand(s.power * 8 / 10, s.power * 12 / 10) * state.fireBonus()), log);
                 }
                 break;
@@ -323,6 +401,7 @@ public final class Battle {
                 Enemy t = enemyTarget(a.target);
                 if (t == null) return;
                 log.add("배달 가방의 문장이 눈부시게 빛난다!");
+                if (dodged(t, false, log)) return;
                 // 방어를 무시하는 일격
                 hitEnemy(t, rand(s.power * 9 / 10, s.power * 11 / 10) + h.atk(), log);
                 break;
@@ -331,6 +410,7 @@ public final class Battle {
                 for (int k = 0; k < s.power; k++) {
                     Enemy t = k == 0 ? enemyTarget(a.target) : enemyTarget(-1);
                     if (t == null) break;
+                    if (dodged(t, false, log)) continue;
                     hitEnemy(t, (int) Math.round(damage(h.atk(), t.m.def) * 1.1), log);
                 }
                 break;
@@ -365,21 +445,36 @@ public final class Battle {
     }
 
     private void enemyAct(Enemy e, List<String> log) {
+        // 진귀한 경험치 몬스터는 틈만 나면 도망친다
+        if (e.m.flee > 0 && random.nextDouble() < e.m.flee) {
+            log.add(Josa.eun(e.name) + " 도망쳐 버렸다!");
+            e.fled = true;
+            e.hp = 0;
+            return;
+        }
         if (e.m.special == 1 && random.nextDouble() < 0.3) {
             Hero t = randomAliveHero();
             if (t == null) return;
-            log.add(Josa.eun(e.name) + " 불씨를 뱉었다!");
-            hurtHero(t, rand(7, 11), log);
+            log.add(Josa.eun(e.name) + (e.m.level >= 12 ? " 바닷물 폭탄을 쏘았다!" : " 불씨를 뱉었다!"));
+            hurtHero(t, (int) Math.round(rand(Math.max(7, e.m.atk / 2), Math.max(11, e.m.atk * 4 / 5)) * guard), log);
             return;
         }
         if (e.m.special == 2 && random.nextDouble() < (enraged ? 0.4 : 0.25)) {
-            log.add(Josa.eun(e.name) + " 어둠의 포효를 내질렀다!");
-            for (Hero t : state.party) if (t.alive()) hurtHero(t, (int) Math.round(rand(22, 32) * (enraged ? 1.3 : 1) * guard), log);
+            String move = "galleon".equals(e.m.sprite) ? " 갑판 대포를 마구 쏘아 댔다!"
+                    : "serpent".equals(e.m.sprite) ? " 검은 해일을 일으켰다!" : " 어둠의 포효를 내질렀다!";
+            log.add(Josa.eun(e.name) + move);
+            for (Hero t : state.party) {
+                if (t.alive()) hurtHero(t, (int) Math.round(rand(e.m.atk / 2, e.m.atk * 7 / 10) * (enraged ? 1.3 : 1) * guard), log);
+            }
             return;
         }
         Hero t = randomAliveHero();
         if (t == null) return;
         log.add(Josa.i(e.name) + " 덤벼들었다!");
+        if (partyEvade > 0 && random.nextDouble() < partyEvade) {
+            log.add("행운의 저울이 기울었다! " + Josa.eun(t.name()) + " 공격을 가볍게 피했다!");
+            return;
+        }
         int idx = state.party.indexOf(t);
         int atk = enraged ? (int) Math.round(e.m.atk * 1.3) : e.m.atk;
         int dmg = (int) Math.round(damage(atk, t.def()) * guard);

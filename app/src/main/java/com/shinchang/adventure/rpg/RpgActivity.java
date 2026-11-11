@@ -378,25 +378,28 @@ public class RpgActivity extends Activity {
         }
         if (busy()) return;
         int oldMap = state.map;
+        int oldChapter = RpgData.chapterOf(state.step);
         RpgState.Interaction in = state.interact();
-        Runnable after = () -> afterInteraction(in, oldMap);
+        Runnable after = () -> afterInteraction(in, oldMap, oldChapter);
         if (in.lines.isEmpty()) after.run();
         else say(in.lines, after);
     }
 
-    private void afterInteraction(RpgState.Interaction in, int oldMap) {
+    private void afterInteraction(RpgState.Interaction in, int oldMap, int oldChapter) {
         if (state.map != oldMap) {
             view.setState(state);
             showMapLabel(RpgData.MAP_NAMES[state.map]);
-            say("— " + RpgData.CHAPTER_TITLES[1] + " —", null);
+            int chapter = RpgData.chapterOf(state.step);
+            if (chapter != oldChapter) say("— " + RpgData.CHAPTER_TITLES[chapter] + " —", null);
         }
         if (in.bossBattle) {
-            startBattle(new int[]{RpgData.WOLF_KING}, true);
+            startBattle(new int[]{in.bossMonster}, true);
             return;
         }
         if (in.chapterClear) {
             save();
-            Toast.makeText(this, "1장 클리어! 진행이 기록되었습니다.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, RpgData.chapterOf(state.step) == 1 ? "1장 클리어! 진행이 기록되었습니다."
+                    : "2장 클리어! 진행이 기록되었습니다.", Toast.LENGTH_LONG).show();
         }
         switch (in.action) {
             case RpgData.ACT_SHOP:
@@ -556,7 +559,7 @@ public class RpgActivity extends Activity {
 
     private void chooseBattleItem() {
         List<Integer> usable = new ArrayList<>();
-        for (int id : new int[]{RpgData.HERB, RpgData.MANA_CANDY}) if (state.hasItem(id)) usable.add(id);
+        for (int id : new int[]{RpgData.HERB, RpgData.HI_HERB, RpgData.MANA_CANDY, RpgData.PHOENIX}) if (state.hasItem(id)) usable.add(id);
         if (usable.isEmpty()) {
             Toast.makeText(this, "전투에서 쓸 도구가 없다.", Toast.LENGTH_SHORT).show();
             return;
@@ -583,11 +586,12 @@ public class RpgActivity extends Activity {
     private void afterRound() {
         if (battle.won()) {
             boolean boss = battle.boss;
+            int bossId = battle.firstMonster;
             state.battlesWon++;
             endBattle();
             if (boss) {
                 view.victoryFlash();
-                say(state.onBossDefeated(), this::save);
+                say(state.onBossDefeated(bossId), this::save);
             }
             return;
         }
@@ -719,7 +723,7 @@ public class RpgActivity extends Activity {
             Hero h = state.party.get(hi);
             for (int sp : h.spells()) {
                 RpgData.Spell s = RpgData.SPELLS[sp];
-                names.add(h.name() + " · " + s.name + " (MP " + s.mp + ")" + (s.kind == RpgData.HEAL_ONE ? "" : " – 전투 전용"));
+                names.add(h.name() + " · " + s.name + " (MP " + s.mp + ")" + (s.fieldUsable() ? "" : " – 전투 전용"));
                 refs.add(new int[]{hi, sp});
             }
         }
@@ -730,7 +734,7 @@ public class RpgActivity extends Activity {
         chooseFrom("✨ 주문", names.toArray(new String[0]), i -> {
             Hero caster = state.party.get(refs.get(i)[0]);
             int sp = refs.get(i)[1];
-            if (RpgData.SPELLS[sp].kind != RpgData.HEAL_ONE) {
+            if (!RpgData.SPELLS[sp].fieldUsable()) {
                 say("그 주문은 전투 중에만 쓸 수 있다.", null);
                 return;
             }

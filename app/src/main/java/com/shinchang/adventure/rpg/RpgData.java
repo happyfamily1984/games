@@ -8,20 +8,37 @@ public final class RpgData {
 
     // ------------------------------------------------------------ 지도
 
-    public static final int OFFICE = 0, WORLD = 1, REBEL = 2, ERDEN = 3, CAVE1 = 4, CAVE2 = 5;
-    public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층"};
+    public static final int OFFICE = 0, WORLD = 1, REBEL = 2, ERDEN = 3, CAVE1 = 4, CAVE2 = 5,
+            WORLD2 = 6, MERCA = 7, SALT = 8, LIGHTHOUSE = 9, SPRAY1 = 10, SPRAY2 = 11, TEMPLE1 = 12, TEMPLE2 = 13;
+    public static final String[] MAP_NAMES = {"청와대 집무실", "아르카디아 평원", "리벨 마을", "에르덴 성", "그림자 동굴 1층", "그림자 동굴 2층",
+            "메르카 평원", "항구 도시 메르카", "소금꽃 마을", "곶의 등대", "물보라 동굴 1층", "물보라 동굴 2층", "해저 신전 1층", "해저 신전 2층"};
 
     /** 지도 그림은 tools/rpg_maps.py 가 만든 RpgMaps 에 있다 */
-    public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2};
+    public static final String[][] MAPS = {RpgMaps.OFFICE, RpgMaps.WORLD, RpgMaps.REBEL, RpgMaps.ERDEN, RpgMaps.CAVE1, RpgMaps.CAVE2,
+            RpgMaps.WORLD2, RpgMaps.MERCA, RpgMaps.SALT, RpgMaps.LIGHTHOUSE, RpgMaps.SPRAY1, RpgMaps.SPRAY2, RpgMaps.TEMPLE1, RpgMaps.TEMPLE2};
+
+    /** 지도 분위기: 동굴(갈색), 바다 동굴(푸른색), 신전(청록 돌) */
+    public static String theme(int map) {
+        if (map == CAVE1 || map == CAVE2) return "cave";
+        if (map == SPRAY1 || map == SPRAY2) return "sea";
+        if (map == TEMPLE1 || map == TEMPLE2) return "tmp";
+        return null;
+    }
+
+    /** 바깥이 바다인 지도 */
+    public static boolean isOverworld(int map) {
+        return map == WORLD || map == WORLD2;
+    }
 
     /** 지나갈 수 없는 타일 */
     public static boolean blocks(char t) {
-        return "#~^H|WCbtkoxFQYPAMgNLZije".indexOf(t) >= 0;
+        return "#~^H|WCbtkoxFQYPAMgNLZijevq".indexOf(t) >= 0;
     }
 
     /** 몬스터가 나오는 지도 */
     public static boolean hasEncounters(int map) {
-        return map == WORLD || map == CAVE1 || map == CAVE2;
+        return map == WORLD || map == CAVE1 || map == CAVE2 || map == WORLD2
+                || map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2;
     }
 
     /** 지도 이동: (지도, x, y) 에 들어가면 (도착 지도, x, y) 로 */
@@ -40,13 +57,38 @@ public final class RpgData {
             // 동굴 계단
             {CAVE1, 4, 12, CAVE2, 10, 12},
             {CAVE2, 10, 13, CAVE1, 4, 11},
+            // 2장: 메르카 평원
+            {WORLD2, 5, 17, MERCA, 1, 12},
+            {WORLD2, 28, 19, SALT, 11, 1},
+            {WORLD2, 31, 5, LIGHTHOUSE, 6, 11},
+            {WORLD2, 7, 2, SPRAY1, 11, 13},
+            {WORLD2, 33, 3, TEMPLE1, 11, 13},
+            {MERCA, 0, 11, WORLD2, 5, 18},
+            {MERCA, 0, 12, WORLD2, 5, 18},
+            {SALT, 11, 0, WORLD2, 28, 20},
+            {SALT, 12, 0, WORLD2, 28, 20},
+            {LIGHTHOUSE, 6, 12, WORLD2, 31, 6},
+            {SPRAY1, 11, 14, WORLD2, 7, 3},
+            {SPRAY1, 12, 14, WORLD2, 7, 3},
+            {SPRAY1, 4, 11, SPRAY2, 11, 12},
+            {SPRAY2, 11, 13, SPRAY1, 3, 11},
+            {TEMPLE1, 11, 14, WORLD2, 32, 3},
+            {TEMPLE1, 12, 14, WORLD2, 32, 3},
+            {TEMPLE1, 6, 8, TEMPLE2, 12, 12},
+            {TEMPLE2, 12, 13, TEMPLE1, 7, 8},
     };
 
     /** 마을에 들어가면 그 마을이 "마지막으로 들른 마을"이 된다 (전멸·날개깃 귀환 위치) */
     public static final int[][] TOWN_RETURN = {
             {REBEL, 12, 19},
             {ERDEN, 13, 25},
+            {MERCA, 3, 12},
+            {SALT, 11, 7},
     };
+
+    /** 배를 타고 내리는 곳 */
+    public static final int[] PIER_ERDEN = {ERDEN, 23, 19};
+    public static final int[] PIER_MERCA = {MERCA, 14, 22};
 
     /** 처음 시작 위치 (집무실) */
     public static final int START_X = 6, START_Y = 5;
@@ -59,12 +101,27 @@ public final class RpgData {
     public static final int STEP_LINA = 3;
     public static final int STEP_BOSS_DOWN = 4;
     public static final int STEP_CHAPTER1_CLEAR = 5;
+    // 2장
+    public static final int STEP_SAILED = 6;
+    public static final int STEP_GUILD_REFUSED = 7;
+    public static final int STEP_GALLEON_DOWN = 8;
+    public static final int STEP_PIPI = 9;
+    public static final int STEP_LAMP = 10;
+    public static final int STEP_SERPENT_DOWN = 11;
+    public static final int STEP_CHAPTER2_CLEAR = 12;
 
-    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」"};
+    public static final String[] CHAPTER_TITLES = {"프롤로그 「청와대의 머신」", "1장 「배달부 용사」", "2장 「상인의 길」"};
+
+    public static int chapterOf(int step) {
+        if (step == STEP_PROLOGUE) return 0;
+        return step < STEP_SAILED ? 1 : 2;
+    }
 
     /** 찾아낸 단서 (비트) */
-    public static final int FLAG_RECORD = 1, FLAG_CHRONICLE = 2, FLAG_MURAL = 4, FLAG_LIBRARY = 8, FLAG_DIARY = 16;
-    public static final String[] CLUE_NAMES = {"금고의 경고문", "리벨 연대기", "성당 벽화", "에르덴 서고의 기록", "로웰의 일기"};
+    public static final int FLAG_RECORD = 1, FLAG_CHRONICLE = 2, FLAG_MURAL = 4, FLAG_LIBRARY = 8, FLAG_DIARY = 16,
+            FLAG_LEDGER = 32, FLAG_SHIPLOG = 64, FLAG_LIGHTLOG = 128, FLAG_TEMPLE = 256, FLAG_PROPHECY = 512, FLAG_COMPASS = 1024;
+    public static final String[] CLUE_NAMES = {"금고의 경고문", "리벨 연대기", "성당 벽화", "에르덴 서고의 기록", "로웰의 일기",
+            "길드 장부", "선박 기록", "등대 일지", "해저 신전 벽화", "문지기의 각인", "바로스의 나침반"};
     /** 단서 메뉴에 보여 줄 요약 */
     public static final String[] CLUE_TEXTS = {
             "청와대 금고: '문 저편에서 오는 자는 짐꾼이 아니다' — 서명 E. 가방과 같은 문양.",
@@ -72,12 +129,19 @@ public final class RpgData {
             "리벨 성당: 짐꾼은 마지막에 짐을 모두 내려놓고 웃는다. 곁에 등을 돌린 회색 망토.",
             "공허의 왕은 욕망을 먹고 '가장 많이 가진 자'의 몸을 탐한다. 다섯 번째 봉인석의 기록은 찢겨 있다.",
             "회색 망토 '문지기'가 봉인석을 깨뜨렸다. 가장 많이 가진 자가 오면 그릇이 완성된다고 했다. 로웰은 바다로.",
+            "메르카 길드의 봉인석 발굴 자금은 에르덴의 'M'이 댔다. 깨진 조각은 목걸이로 가공돼 팔려 나갔다.",
+            "기사 로웰은 한 달 전, 회색 망토를 쫓아 북쪽 화산섬 이그나행 화물선을 탔다.",
+            "쌍둥이 바로스와 바론. 10년 전 바로스는 봉인을 지키러 해저 신전에 들어가 돌아오지 않았다.",
+            "카이른이 바다의 봉인석을 내려놓을 때, 다섯 점 문양 망토를 두른 여인이 등불을 들고 있었다.",
+            "'그릇이 오는 날, 다섯 봉인은 하나씩 열린다.' 문지기는 신창이 오기를 기다려 봉인을 열고 있다.",
+            "'바론에게. 돈보다 무거운 걸 잊지 마.' 바로스가 남긴 말.",
     };
 
     // ------------------------------------------------------------ 등장인물 (마을 사람)
 
     public static final int ACT_NONE = 0, ACT_SHOP = 1, ACT_INN = 2, ACT_SAVE = 3, ACT_EVENT = 4;
-    public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3, EV_HUNTER = 4;
+    public static final int EV_ELDER = 1, EV_KING = 2, EV_BOSS = 3, EV_HUNTER = 4,
+            EV_SHIP_TO_MERCA = 5, EV_SHIP_TO_ERDEN = 6, EV_GUILD = 7, EV_PIPI = 8, EV_NOAH = 9, EV_MIDBOSS = 10, EV_BOSS2 = 11;
 
     public static final class Npc {
         public final int map, x, y;
@@ -260,6 +324,132 @@ public final class RpgData {
                             "짐꾼이든 그릇이든… 이 돌에 다가오는 자는 물어뜯는다!",
                             "[리나] 신창 씨, 온다!"),
             }),
+
+            // ================================================== 2장 「상인의 길」
+            // ---- 에르덴 부두 / 메르카 부두의 선장
+            new Npc(ERDEN, 24, 18, "captain", "모르칸의 선장", ACT_EVENT, EV_SHIP_TO_MERCA, STEP_CHAPTER1_CLEAR, 99, new Object[][]{
+                    at(0, "대신 모르칸 님의 명으로 메르카까지 모시겠습니다."),
+            }),
+            new Npc(MERCA, 14, 23, "captain", "모르칸의 선장", ACT_EVENT, EV_SHIP_TO_ERDEN, STEP_SAILED, 99, new Object[][]{
+                    at(0, "에르덴으로 돌아가시겠습니까?"),
+            }),
+
+            // ---- 메르카: 상인 길드
+            act(MERCA, 11, 3, "merchant", "길드 접수원", ACT_NONE, 0,
+                    at(0, "상인 길드 메르카 본부입니다. 외지인은 길드장님 허가 없이는 거래할 수 없어요.",
+                            "길드장 바론 님은 안쪽 집무실에 계십니다."),
+                    at(STEP_SERPENT_DOWN, "길드장님이 푸른 돌 거래를 모두 끊으라고 하셨어요. 10년 만에 처음 보는 표정이었어요.")),
+            new Npc(MERCA, 19, 3, "baron", "길드장 바론", ACT_EVENT, EV_GUILD, 0, 99, new Object[][]{
+                    at(0, "바쁘니 용건만 말하시오."),
+            }),
+            npc(MERCA, 13, 6, "apprentice", "견습 상인 테오",
+                    at(0, "길드장님은 원래 저렇지 않았대요. 10년 전 쌍둥이 형 바로스 님이 바다에서 실종된 뒤로…",
+                            "바로스 님은 늘 '푸른 돌은 팔면 안 된다'고 하셨대요. 길드장님은 그 말을 듣지 않았고요.",
+                            "…요즘 길드장님, 밤마다 부두에 나가서 바다만 보세요."),
+                    at(STEP_SERPENT_DOWN, "길드장님이 웃으셨어요! 그리고 저한테 처음으로 '고맙다'고 하셨어요.")),
+
+            // ---- 메르카: 피피 (동료가 되기 전, 시장 노점)
+            new Npc(MERCA, 10, 10, "pipi", "요정 상인 피피", ACT_EVENT, EV_PIPI, STEP_SAILED, STEP_GALLEON_DOWN, new Object[][]{
+                    at(0, "어서 와~ 요정 상인 피피의 노점! …손님 아니면 저리 가. 지금 장사 망해서 기분 별로거든."),
+            }),
+            npc(MERCA, 18, 10, "merchant", "목걸이 상인",
+                    at(0, "푸른 돌 목걸이 사세요~ 바다에서 건진 귀한 보석이에요!",
+                            "…요즘 이걸 산 사람들이 열이 난다는 소문이 있긴 한데, 기분 탓이겠죠?"),
+                    at(STEP_SERPENT_DOWN, "길드가 푸른 돌을 전부 거둬 갔어요. 그런데 손님들 열이 내렸다니, 진짜 그 돌 때문이었나 봐요.")),
+            npc(MERCA, 10, 14, "villager", "생선 장수",
+                    at(0, "10년 전부터 바다가 미쳤어. 밤바다가 푸르게 빛나는 날이면 배가 돌아오질 않아.",
+                            "다들 '심해의 군주가 깨어났다'고 하지. 원래는 바다를 지켜 주던 큰 뱀이었다는데."),
+                    at(STEP_SERPENT_DOWN, "어젯밤 바다가 잔잔했어! 10년 만에 처음이야. 고기도 다시 잡히겠지.")),
+            npc(MERCA, 20, 19, "sailor", "선원",
+                    at(0, "모르칸 대신의 배라고? 그 배는 요상해. 화물칸에 늘 푸른 돌을 잔뜩 싣고 에르덴으로 돌아가거든."),
+                    at(STEP_SERPENT_DOWN, "모르칸의 배가 오늘은 빈 배로 떠난대. 길드가 돌을 안 팔았거든.")),
+            npc(MERCA, 26, 16, "minister", "항만 관리인",
+                    at(0, "10년째 바다가 거칠어서 배가 거의 못 떠요. 예외는 모르칸 대신의 배뿐이죠.",
+                            "아, 한 달 전엔 에르덴 기사 한 분이 화산섬 이그나행 화물선을 기어이 타고 가셨어요. 선박 기록에 있을 거예요.")),
+            act(MERCA, 3, 2, "merchant", "메르카 도구점", ACT_SHOP, 2,
+                    at(0, "바다 건너온 물건도 있답니다. 상급 약초는 꼭 챙기세요.")),
+            act(MERCA, 25, 2, "merchant", "메르카 무기점", ACT_SHOP, 3,
+                    at(0, "해적이 들끓으니 무기가 잘 팔려요. 해룡의 창은 메르카 명물이지요.")),
+            act(MERCA, 3, 14, "innkeeper", "갈매기 여관", ACT_INN, 20,
+                    at(0, "갈매기 여관입니다. 파도 소리 들으며 푹 쉬세요.")),
+            act(MERCA, 25, 10, "priest", "항구 예배당 사제", ACT_SAVE, 0,
+                    at(0, "바다에 나가는 이들을 위해 기도합니다. 모험을 기록해 드리지요.")),
+            new Npc(MERCA, 2, 8, "guard", "회색 옷의 사내", ACT_NONE, 0, STEP_SAILED, STEP_GUILD_REFUSED, new Object[][]{
+                    at(0, "……짐꾼이 왔군. 문지기님께 알려야겠어.",
+                            "(사내는 신창을 흘끗 보더니 골목으로 사라지려 한다)",
+                            "…뭘 보시오. 볼일 없소."),
+            }),
+            npc(MERCA, 16, 16, "child", "부두 꼬마",
+                    at(0, "저기 등대 보여? 등대지기 노아 할아버지는 10년째 매일 밤 불을 켜. 누굴 기다린대."),
+                    at(STEP_SERPENT_DOWN, "노아 할아버지가 오늘은 등대 불을 엄청 밝게 켰어! 무슨 좋은 일 있나 봐.")),
+
+            // ---- 소금꽃 마을
+            npc(SALT, 4, 4, "elder", "소금꽃 촌장",
+                    at(0, "푸른 열병이 돌고 있네. 길드가 바다에서 건진 돌 부스러기를 버린 뒤로, 그 물을 마신 사람들이 앓아누웠지.",
+                            "등대지기 노아라면 뭔가 알 걸세. 바다 일은 그 사람이 제일 잘 알아. 마을 북쪽 길로 곶 끝까지 가게."),
+                    at(STEP_SERPENT_DOWN, "열이 내렸어! 다들 일어나 그물을 손질하고 있다네. 자네들 덕분이야.")),
+            npc(SALT, 17, 4, "farmer", "앓는 어부",
+                    at(0, "으… 몸이 불덩이 같아… 꿈마다 파란 뱀이 나와…"),
+                    at(STEP_SERPENT_DOWN, "개운해! 꿈속 파란 뱀이 '미안하다'고 하고 사라졌어. 이상한 꿈이지?")),
+            npc(SALT, 19, 4, "villager", "앓는 아낙",
+                    at(0, "남편이 길드에서 푸른 돌 목걸이를 사 왔어요… 그날부터 온 식구가 열이 나요."),
+                    at(STEP_SERPENT_DOWN, "목걸이는 바다에 돌려보냈어요. 몸이 이렇게 가벼울 수가!")),
+            npc(SALT, 17, 11, "child", "마리",
+                    at(0, "우리 아빠는 소금꽃 마을 최고의 어부였어. 그런데 1년 전 회색 옷 남자가 금화를 잔뜩 주고 간 뒤로 해적이 됐대.",
+                            "아빠는 수염이 빨개서 '붉은 수염 갈리온'이라고 불려. 북서쪽 물보라 동굴에 산대…",
+                            "아빠한테 이 조개 목걸이 줬었는데, 아직 갖고 있을까? …아빠를 미워하지 말아 줘."),
+                    at(STEP_GALLEON_DOWN, "아빠가 돌아왔어! 내 조개 목걸이를 아직 갖고 있었어. 다시 어부가 된대!",
+                            "아저씨, 고마워. 아빠를 때려 줘서. …아니, 데려와 줘서.")),
+            new Npc(SALT, 19, 11, "pirate", "어부 갈리온", ACT_NONE, 0, STEP_GALLEON_DOWN, 99, new Object[][]{
+                    at(0, "…부끄럽소. 회색 망토가 준 금화에 눈이 멀어 1년을 해적으로 살았소.",
+                            "그자가 이런 말을 했지. '그릇은 이미 문을 건넜다. 이제 바다의 봉인만 열면 된다.'",
+                            "…그릇이 당신이었군, 짐꾼. 조심하시오. 그자는 당신을 부수려는 게 아니라 '채우려는' 거요.",
+                            "해저 신전엔 길드장 바론의 쌍둥이 형 바로스가 있소. 10년 전 봉인을 지키러 들어가 돌아오지 못했지."),
+                    at(STEP_SERPENT_DOWN, "바다가 잔잔해졌소. 내일은 마리와 함께 첫 그물을 던지러 가오."),
+            }),
+            act(SALT, 3, 11, "innkeeper", "어부의 여관", ACT_INN, 14,
+                    at(0, "어부들이 쉬어 가는 작은 여관이오.")),
+            act(SALT, 7, 11, "merchant", "소금꽃 잡화점", ACT_SHOP, 4,
+                    at(0, "소금, 그물, 약초… 어촌에 필요한 건 다 있소.")),
+            npc(SALT, 11, 13, "sailor", "늙은 어부",
+                    at(0, "등대 불빛이 10년째 꺼지지 않는 이유? 노아 영감이 누군가를 기다리고 있거든.",
+                            "쌍둥이 중 형, 바로스. 둘 다 저 등대에서 자라다시피 했지."),
+                    at(STEP_SERPENT_DOWN, "노아 영감이 오늘 등대에서 노래를 부르더군. 그 영감 노래하는 건 처음 봤소.")),
+
+            // ---- 곶의 등대
+            new Npc(LIGHTHOUSE, 6, 2, "elder", "등대지기 노아", ACT_EVENT, EV_NOAH, 0, 99, new Object[][]{
+                    at(0, "바로스와 바론… 쌍둥이는 어릴 적 이 등대에서 살다시피 했지.",
+                            "10년 전, 바로스는 '길드가 봉인석을 캐면 안 된다'며 해저 신전으로 내려갔고 돌아오지 않았어.",
+                            "바론은 그날 이후 돈만 세는 사람이 됐지. 형을 잃은 죄책감을 금화로 덮으려는 게야.",
+                            "나는 매일 밤 등불을 켜네. 바로스가 돌아올 길을 비추려고.",
+                            "해저 신전은 등대의 등불이 있어야 길이 열려. …하지만 낯선 이에게 내줄 순 없네."),
+                    at(STEP_LAMP, "곶 끝 바다에 등불을 비추게. 신전으로 가는 돌계단이 떠오를 걸세."),
+                    at(STEP_SERPENT_DOWN, "바로스가… 돌아왔구나. 이제 등불을 꺼도 되겠어.",
+                            "아니, 오늘 밤은 더 밝게 켜야지. 바론이 형을 배웅할 수 있도록."),
+            }),
+
+            // ---- 물보라 동굴: 중간 보스
+            new Npc(SPRAY2, 5, 4, "pirate", "붉은 수염 갈리온", ACT_EVENT, EV_MIDBOSS, STEP_GUILD_REFUSED, STEP_GUILD_REFUSED, new Object[][]{
+                    at(0, "(동굴 끝, 보물 더미 위에 붉은 수염의 사내가 앉아 있다)",
+                            "하! 요정 꼬마의 저울을 찾으러 왔나? 이건 이제 내 거다!",
+                            "회색 망토 나리가 그러더군. 짐꾼이 오면 붙잡아 두라고. 금화를 산더미처럼 준다고!",
+                            "[리나] 당신… 소금꽃 마을 마리의 아버지죠? 마리가 기다리고 있어요!",
+                            "…그 이름을 꺼내지 마라! 이제 와서 돌아갈 수 있을 것 같으냐!",
+                            "[신창] 돌아갈 수 있어요. 짐은 언제든 내려놓을 수 있으니까.",
+                            "닥쳐라! 덤벼라, 짐꾼!"),
+            }),
+
+            // ---- 해저 신전: 보스
+            new Npc(TEMPLE2, 11, 3, "serpent", "심해의 군주", ACT_EVENT, EV_BOSS2, STEP_LAMP, STEP_LAMP, new Object[][]{
+                    at(0, "(신전 가장 깊은 곳. 금 간 푸른 봉인석을 거대한 바다뱀이 칭칭 감고 있다)",
+                            "(바다뱀의 비늘 사이로 사람의 얼굴 같은 그림자가 일렁인다)",
+                            "…쉬이이… 문 저편의… 그릇…",
+                            "[???] …오지… 마… 바론… 팔지… 마…",
+                            "[피피] 저 목소리… 바로스 아저씨야! 뱀 안에 바로스 아저씨가 있어!",
+                            "[리나] 어둠에 먹힌 수호자가, 봉인을 지키러 온 사람까지 삼킨 거예요…!",
+                            "[신창] 둘 다 데려가자. 바로스 씨도, 이 바다의 수호자도.",
+                            "쉬이이이익——!!"),
+            }),
     };
 
     // ------------------------------------------------------------ 살펴볼 수 있는 것 (단서)
@@ -342,6 +532,43 @@ public final class RpgData {
                     "'그는 말했다. 문 저편에서 가장 많이 가진 자가 오면, 공허의 왕께 바칠 그릇이 완성된다고.'",
                     "'나는 그자를 쫓아 바다로 간다. 리나, 미안하다. 이 방패는 짐꾼에게 길을 알려 주리라.'",
                     "(「로웰의 일기」를 손에 넣었다!)"),
+            // ---- 2장
+            new Readable(MERCA, 2, 10, 0, -1, null,
+                    "「항구 도시 메르카」 북쪽: 상인 길드 / 남쪽: 부두 / 서쪽 출구: 메르카 평원"),
+            new Readable(MERCA, 17, 2, FLAG_LEDGER, -1, "[피피] 'M'… 에르덴에서 온 'M'이라면? 냄새가 나. 돈 냄새 말고, 음모 냄새.",
+                    "「길드 장부」를 펼쳤다.",
+                    "'푸른 돌 발굴 자금: 금화 3만 — 에르덴, M.'",
+                    "'푸른 돌 판매처: 대륙 각지. 부스러기는 목걸이로 가공할 것.'",
+                    "[신창] 에르덴의 M… 대신 모르칸?"),
+            new Readable(MERCA, 18, 2, 0, -1, null, "길드의 오래된 계약서들이다. 10년 전 장부 한 권만 유독 손때가 묻어 있다."),
+            new Readable(MERCA, 23, 14, FLAG_SHIPLOG, -1, "[리나] 아버지가… 이그나로! 살아 계셔. 회색 망토를 아직 쫓고 계신 거야.",
+                    "「선박 기록」을 넘겼다.",
+                    "'한 달 전. 에르덴 기사 로웰, 화산섬 이그나행 화물선 승선. 사유: 회색 망토의 사내 추적.'",
+                    "'같은 날, 회색 망토의 사내 역시 이그나행 배를 수소문함. 배삯은 금화로 치름.'"),
+            new Readable(MERCA, 24, 14, 0, -1, null, "메르카 항로도다. 북쪽 끝에 붉게 칠한 섬 '이그나'가 있다."),
+            new Readable(SALT, 10, 2, 0, -1, null, "「소금꽃 마을」 북쪽 길: 메르카 평원 / 곶 끝: 등대"),
+            new Readable(SALT, 3, 3, 0, -1, null, "물때표와 그물 수선법이 적힌 책이다. 맨 뒷장에 아이 글씨로 '아빠 빨리 와'라고 적혀 있다."),
+            new Readable(LIGHTHOUSE, 2, 2, FLAG_LIGHTLOG, -1, null,
+                    "「등대 일지」를 펼쳤다.",
+                    "'○월 ○일. 바로스가 해저 신전으로 내려갔다. 길드의 발굴을 막겠다며. 바론은 따라가지 않았다.'",
+                    "'○월 ○일. 오늘도 바로스는 돌아오지 않았다. 밤바다가 푸르게 빛났다.'",
+                    "'○월 ○일. 바론이 처음으로 등대에 왔다. 아무 말 없이 바다만 보다 갔다. 손에 형의 나침반 상자를 쥐고 있었다. 상자는 비어 있었다.'"),
+            new Readable(LIGHTHOUSE, 3, 2, 0, -1, null, "바다 지도와 별자리 책이다. 곶 끝 바다에 '등불로 여는 계단'이 그려져 있다."),
+            new Readable(SPRAY1, 5, 2, 0, -1, null,
+                    "벽에 해적들의 낙서가 있다. '두목은 회색 망토에게 금화를 받았다. 푸른 돌을 에르덴 배에 실어 나르면 두 배.'"),
+            new Readable(TEMPLE1, 2, 2, FLAG_TEMPLE, -1, "[피피] 등불 든 여자… 노아 할아버지 등불이랑 똑같이 생겼어.",
+                    "벽화: 짐꾼 카이른이 푸른 돌을 바다 깊이 내려놓는다.",
+                    "곁에서 한 여인이 등불을 들고 길을 비춘다. 여인의 망토 자락에 원 안의 다섯 점 문양이 있다."),
+            new Readable(TEMPLE1, 21, 2, FLAG_TEMPLE, -1, null,
+                    "벽화: 거대한 바다뱀이 돌을 감싸고 잠든다.",
+                    "글귀: '수호자 심해의 군주. 어둠이 닿지 않는 한, 그는 바다의 친구라.'"),
+            new Readable(TEMPLE2, 2, 7, FLAG_PROPHECY, -1, "[리나] '그릇이 오는 날'… 신창 씨가 온 날부터 봉인이 하나씩 깨지고 있어요.",
+                    "누군가 지팡이로 새긴 듯한 새 글귀가 벽을 긁고 있다.",
+                    "'그릇이 오는 날, 다섯 봉인은 하나씩 열린다. 그릇이 가득 차면 문이 완성되리라. — 문지기'"),
+            new Readable(TEMPLE2, 4, 8, FLAG_COMPASS, RpgData.BAROS_COMPASS, "[피피] 이 나침반… 저울에 올리면 바늘이 멈추질 않아. 엄청 무거운 마음이 담겨 있어.",
+                    "바닷물에 삭은 가방이 떨어져 있다. 안에 녹슨 나침반이 있다.",
+                    "뒷면에 새겨진 글씨: '바론에게. 돈보다 무거운 걸 잊지 마. — 바로스'",
+                    "(「바로스의 나침반」을 손에 넣었다!)"),
     };
 
     /** 단서가 아닌 물건을 살폈을 때 */
@@ -454,7 +681,7 @@ public final class RpgData {
     };
 
     public static final String[] KING_AFTER_CLEAR = {
-            "[에르덴 왕] 용자여, 메르카로 가는 배는 곧 준비될 걸세. 모르칸이 서두르고 있다네.",
+            "[에르덴 왕] 용자여, 메르카로 가는 배가 준비됐네. 성 아랫마을 동쪽 부두의 선장에게 말을 걸게.",
     };
 
     public static final String[] BOSS_DEFEATED = {
@@ -472,12 +699,148 @@ public final class RpgData {
             "[리나] 콩이를 미나에게 데려다주고, 폐하께도 알려요. 루프스의 몫까지요.",
     };
 
+    // ---- 2장 이벤트 대사
+
+    public static final String[] SAIL_TO_MERCA_FIRST = {
+            "[모르칸의 선장] 대신 모르칸 님의 명으로 메르카까지 모시겠습니다. 바다가 거칠지만 이 배만은 무사하지요.",
+            "[리나] 이상하네요. 10년째 배가 못 뜬다는 바다를, 대신의 배만 무사히 다닌다니.",
+            "(배는 사흘 밤낮을 달려 남쪽 바다를 건넜다. 밤마다 바다가 푸르스름하게 빛났다)",
+            "[모르칸의 선장] 메르카에 도착했습니다. …대신께서 길드장 바론을 꼭 만나 보라 하셨습니다.",
+            "(바닷바람에 소금 냄새와 돈 냄새가 섞여 있다)",
+    };
+
+    public static final String[] SAIL_TO_MERCA = {"(배를 타고 메르카로 건너갔다)"};
+    public static final String[] SAIL_TO_ERDEN = {"(배를 타고 에르덴 성 부두로 돌아왔다)"};
+
+    public static final String[] GUILD_FIRST = {
+            "[길드장 바론] 에르덴에서 온 짐꾼이라… 모르칸 대신에게 얘기는 들었소.",
+            "[신창] 길드가 사들인다는 푸른 돌 말입니다. 그건 봉인석일지도 모릅니다. 깨지면 바다가…",
+            "[길드장 바론] 하! 돈이 되는 돌이 봉인석이든 무엇이든. 이 도시에선 저울 위에 올라간 것만 진짜요.",
+            "[길드장 바론] 외지인이 길드 일에 끼어들 자격은 없소. 바다에 나갈 배도, 신전 가는 길도 내줄 수 없지.",
+            "[길드장 바론] …그런 헛소리를 하던 요정 상인이 하나 있었지. 피피라고. 시장에서 쫓겨나 노점이나 하고 있을 거요.",
+            "(바론은 책상 위의 빈 나침반 상자를 무심코 쓰다듬었다)",
+    };
+
+    public static final String[] GUILD_WAITING = {
+            "[길드장 바론] 길드 일에 끼어들지 마시오. 바다는 메르카의 것이오.",
+    };
+
+    public static final String[] PIPI_QUEST = {
+            "[피피] 길드장이 날 보냈다고? 흥.",
+            "[피피] 그 푸른 돌, 우리 집안 대대로 내려오는 '마음의 저울'에 올렸더니 바늘이 부러질 듯 기울더라.",
+            "[피피] 마음의 저울은 물건에 담긴 '마음의 무게'를 달아. 그건 보석이 아니야. 무언가를 가두고 있는 돌이야.",
+            "[피피] 그래서 거래를 거부했더니 길드에서 쫓겨났지. 게다가… 해적들이 내 저울을 훔쳐 갔어! 북서쪽 물보라 동굴로 갔대.",
+            "[피피] 저울을 되찾아 주면 너희랑 같이 가 줄게. 장사꾼은 빚은 꼭 갚거든.",
+            "[리나] 물보라 동굴… 메르카 평원 북서쪽 산이에요.",
+    };
+
+    public static final String[] PIPI_WAITING = {
+            "[피피] 내 저울은 북서쪽 물보라 동굴에 있어! 해적 두목이 가져갔대. 부탁해~",
+    };
+
+    public static final String[] PIPI_JOINS = {
+            "[피피] 내 저울!! 진짜 찾아왔구나!",
+            "[피피] (피피가 저울에 신창의 배달 가방을 올려 본다)",
+            "[피피] …어라? 바늘이 반대로 기울어. 이런 건 처음이야. 텅 빈 것처럼 가벼운데, 동시에 엄청 무거워.",
+            "[피피] 너, 대체 뭘 그렇게 많이 짊어지고 살았어? 돈? 권력? …아니면 그걸 다 쌓느라 비워 둔 무언가?",
+            "[신창] …글쎄. 나도 잘 모르겠어.",
+            "[피피] 좋아, 약속대로 같이 갈게! 요정 상인 피피, 오늘부터 짐꾼 일행이다!",
+            "(피피가 동료가 되었다!)",
+            "[피피] 아, 그리고. 해저 신전에 가려면 등대지기 노아 할아버지의 등불이 필요해. 할아버지는 날 알아. 소금꽃 마을 쪽 곶 끝이야!",
+    };
+
+    public static final String[] NOAH_GIVES_LAMP = {
+            "[등대지기 노아] 그 저울… 피피로구나! 바로스가 아끼던 꼬마 요정.",
+            "[피피] 노아 할아버지, 이 사람 가방을 저울에 달았더니 반대로 기울었어. 이런 사람이라면 믿어도 돼.",
+            "[등대지기 노아] …그래. 바로스도 그런 사람이었지. 자기보다 남의 짐을 먼저 들던 녀석.",
+            "[등대지기 노아] 이 등불을 가져가게. 곶 끝 바다에 비추면 신전으로 가는 돌계단이 떠오를 걸세.",
+            "(「등대의 등불」을 받았다!)",
+            "[등대지기 노아] 그리고 부탁하네. 바로스를… 데려와 주게. 살아 있든, 아니든.",
+    };
+
+    public static final String[] GALLEON_DEFEATED = {
+            "[갈리온] 크윽…",
+            "(갈리온은 무릎을 꿇고 조개 목걸이를 움켜쥐었다)",
+            "[갈리온] …1년이야. 1년 동안 금화를 세느라 딸 얼굴을 잊고 살았어.",
+            "[신창] 마을로 돌아가요. 마리가 기다리고 있어요.",
+            "[갈리온] …저울은 저기 있소. 그리고 이것도 알아 두시오.",
+            "[갈리온] 회색 망토는 에르덴의 높은 양반과 손을 잡았소. 금화엔 에르덴 왕가의 문장이 찍혀 있었지.",
+            "(「피피의 저울」을 되찾았다!)",
+            "[리나] 에르덴 왕가의 금화… 폐하일 리는 없어요. 그렇다면…",
+            "[신창] 피피에게 저울을 돌려주러 가자.",
+    };
+
+    public static final String[] SERPENT_DEFEATED = {
+            "(심해의 군주의 몸에서 검은 물결이 빠져나간다)",
+            "(푸른 빛 속에서 한 남자의 혼이 떠올랐다. 젊은 상인의 모습이다)",
+            "[바로스] …10년 만에 숨을 쉬는 것 같군. 고맙소, 짐꾼.",
+            "[바로스] 나는 봉인을 지키려다 어둠에 먹힌 수호자와 하나가 되어 버렸소. 수호자가 끝까지 버틴 덕에 봉인석은 금만 갔지.",
+            "[피피] 아저씨…!",
+            "[바로스] 피피, 저울을 지켜 줬구나. 착하다.",
+            "[바로스] 바론에게 전해 주시오. 나는 원망하지 않았다고. …돈을 세던 그 손으로, 이젠 사람을 안아 주라고.",
+            "(바로스의 혼은 웃으며 푸른 빛 속으로 사라졌다)",
+            "(바다뱀은 은은한 푸른빛으로 돌아와, 금 간 봉인석을 조용히 감싸고 다시 잠들었다)",
+            "(봉인석에서 떨어진 조각을 손에 넣었다. 「바다의 봉인석 조각」)",
+            "[리나] 이번엔 완전히 깨지기 전에 지켰어요. 문지기 뜻대로는 안 돼요.",
+            "[피피] …바론 아저씨한테 가자. 꼭 전해야 할 말이 있어.",
+    };
+
+    public static final String[] GUILD_CLEAR_OPEN = {
+            "[길드장 바론] …돌아왔군. 신전은, 바로스는……",
+    };
+
+    public static final String[] GUILD_CLEAR_COMPASS = {
+            "[신창] 바로스 씨가 이걸 남겼습니다.",
+            "(바론은 녹슨 나침반을 받아 들고, 뒷면의 글씨를 오래오래 바라보았다)",
+            "[길드장 바론] '돈보다 무거운 걸 잊지 마'… 형은 10년 전에도 똑같은 말을 했지.",
+            "[길드장 바론] 나는 그 말을 듣지 않고 봉인석을 캐려 했고, 형은 그걸 막으려다… 나 대신 바다에 남았어.",
+            "[길드장 바론] (나침반을 쥔 손이 떨린다) …형. 형……",
+            "[피피] 아저씨가 원망하지 않는대. 돈을 세던 손으로, 이젠 사람을 안아 주래.",
+            "(바론은 처음으로 견습 상인 테오의 어깨를 끌어안았다)",
+    };
+
+    public static final String[] GUILD_CLEAR_NO_COMPASS = {
+            "[신창] 바로스 씨는… 원망하지 않는다고 전해 달랬습니다.",
+            "[길드장 바론] …형다운 말이군. (바론은 빈 나침반 상자를 꼭 쥐었다)",
+            "[피피] 신전 2층 어딘가에 아저씨 가방이 있었을지도 몰라…",
+    };
+
+    public static final String[] GUILD_CLEAR_CLOSE = {
+            "[길드장 바론] 고백하겠소. 봉인석 발굴 자금은 에르덴의 대신 모르칸이 댔소. 회색 망토의 금화와 함께.",
+            "[길드장 바론] 모르칸은 '짐꾼이 바다로 오면 반드시 신전으로 보내라'고 했지. 당신을 미끼로 쓰려 했던 거요.",
+            "[리나] 대신이…! 그럼 아버지가 실종된 것도…",
+            "[길드장 바론] 기사 로웰은 한 달 전 북쪽 화산섬 이그나행 배를 탔소. 회색 망토를 쫓는다며.",
+            "[길드장 바론] 길드는 오늘부로 푸른 돌 거래를 끊겠소. 그리고 이건… 형이 지키고 싶어 했던 것들에 쓰시오.",
+            "(5000골드를 받았다!)",
+            "[피피] 바론 아저씨가 돈을 내놓다니! 오늘 저울이 고장 났나 봐.",
+            "[신창] 다섯 봉인석 중 둘에 금이 갔어. 문지기는 다음 봉인을 노릴 거야.",
+            "[리나] 불의 봉인석… 그리고 아버지가 있는 이그나로 가요.",
+            "— 2장 「상인의 길」 끝 —",
+            "(3장 「불의 탑」은 다음 업데이트에서 이어집니다. 메뉴 「단서」에서 2장의 단서도 확인해 보세요.)",
+    };
+
+    public static final String[] GUILD_AFTER_CLEAR = {
+            "[길드장 바론] 이그나로 가는 배를 준비하고 있소. …형의 나침반이 북쪽을 가리키더군.",
+    };
+
     /** 보스 전투 중 연출 대사: {격노할 때, 쓰러지기 직전} */
     public static String[][] bossScript(String sprite) {
         if ("wolfking".equals(sprite)) {
             return new String[][]{
                     {"[리나] 버텨요! 저 녀석도… 괴로워하고 있어요!"},
                     {"(딸랑… 어둠 속에서 방울 소리가 희미하게 울린다)", "[신창] 조금만 더…! 돌아와, 루프스!"},
+            };
+        }
+        if ("galleon".equals(sprite)) {
+            return new String[][]{
+                    {"[갈리온] 크하하! 금화만 있으면 뭐든 살 수 있다! 용서도, 딸도!"},
+                    {"(갈리온의 품에서 낡은 조개 목걸이가 떨어졌다. 아이가 만든 듯한 서툰 솜씨다)", "[갈리온] 마리… 의… 목걸이……"},
+            };
+        }
+        if ("serpent".equals(sprite)) {
+            return new String[][]{
+                    {"[바로스의 목소리] …아파… 바론… 미안해…", "[피피] 버텨, 아저씨! 금방 꺼내 줄게!"},
+                    {"(비늘 사이로 푸른 빛이 새어 나온다. 어둠이 걷히고 있다)", "[신창] 지금이야! 마지막 한 번만 더!"},
             };
         }
         return new String[][]{{}, {}};
@@ -505,10 +868,13 @@ public final class RpgData {
         }
     }
 
-    public static final int HERB = 0, MANA_CANDY = 1, WING = 2;
-    public static final int STICK = 10, COPPER_SWORD = 11, SQUIRE_SWORD = 12, IRON_SWORD = 13, KNIGHT_SPEAR = 14;
-    public static final int CLOTHES = 20, LEATHER = 21, CHAIN_MAIL = 22, SILVER_ARMOR = 23;
+    public static final int HERB = 0, MANA_CANDY = 1, WING = 2, HI_HERB = 3, PHOENIX = 4;
+    public static final int STICK = 10, COPPER_SWORD = 11, SQUIRE_SWORD = 12, IRON_SWORD = 13, KNIGHT_SPEAR = 14,
+            STEEL_SWORD = 15, DRAGON_SPEAR = 16, COIN_POUCH = 17;
+    public static final int CLOTHES = 20, LEATHER = 21, CHAIN_MAIL = 22, SILVER_ARMOR = 23,
+            STEEL_ARMOR = 24, CORAL_ARMOR = 25, FAIRY_CLOAK = 26, SEA_ARMOR = 27;
     public static final int LETTER = 30, HERO_BADGE = 31;
+    public static final int PIPI_SCALE = 35, LIGHTHOUSE_LAMP = 36, BAROS_COMPASS = 37, SEA_SHARD = 38;
     public static final int ITEM_SLOTS = 40;
 
     public static final Item[] ITEMS = new Item[ITEM_SLOTS];
@@ -517,6 +883,19 @@ public final class RpgData {
         put(new Item(HERB, "약초", CONSUMABLE, 30, 8, "HP를 30쯤 회복"));
         put(new Item(MANA_CANDY, "마나 사탕", CONSUMABLE, 15, 30, "MP를 15 회복"));
         put(new Item(WING, "날개깃", CONSUMABLE, 0, 25, "마지막으로 들른 마을로 돌아간다"));
+        put(new Item(HI_HERB, "상급 약초", CONSUMABLE, 120, 60, "HP를 120쯤 회복"));
+        put(new Item(PHOENIX, "소생의 깃털", CONSUMABLE, 50, 300, "쓰러진 동료를 HP 절반으로 되살린다"));
+        put(new Item(STEEL_SWORD, "강철검", WEAPON, 24, 2400, "공격 +24"));
+        put(new Item(DRAGON_SPEAR, "해룡의 창", WEAPON, 32, 6200, "공격 +32"));
+        put(new Item(COIN_POUCH, "동전 주머니", WEAPON, 14, 500, "공격 +14 (피피가 던지는 묵직한 동전)"));
+        put(new Item(STEEL_ARMOR, "강철 갑옷", ARMOR, 18, 2000, "방어 +18"));
+        put(new Item(CORAL_ARMOR, "산호 갑옷", ARMOR, 26, 5400, "방어 +26"));
+        put(new Item(FAIRY_CLOAK, "요정 망토", ARMOR, 12, 900, "방어 +12"));
+        put(new Item(SEA_ARMOR, "해신의 갑옷", ARMOR, 34, 12000, "방어 +34"));
+        put(new Item(PIPI_SCALE, "피피의 저울", KEY, 0, 0, "물건에 담긴 마음의 무게를 다는 요정의 저울"));
+        put(new Item(LIGHTHOUSE_LAMP, "등대의 등불", KEY, 0, 0, "곶 끝 바다에 비추면 해저 신전으로 가는 계단이 떠오른다"));
+        put(new Item(BAROS_COMPASS, "바로스의 나침반", KEY, 0, 0, "'바론에게. 돈보다 무거운 걸 잊지 마.'"));
+        put(new Item(SEA_SHARD, "바다의 봉인석 조각", KEY, 0, 0, "금 간 바다의 봉인석에서 떨어진 조각"));
         put(new Item(STICK, "나무 막대", WEAPON, 2, 10, "공격 +2"));
         put(new Item(COPPER_SWORD, "구리 검", WEAPON, 6, 100, "공격 +6"));
         put(new Item(SQUIRE_SWORD, "견습 기사의 검", WEAPON, 8, 160, "공격 +8"));
@@ -540,6 +919,9 @@ public final class RpgData {
     public static final int[][] SHOPS = {
             {HERB, WING, COPPER_SWORD, LEATHER},
             {HERB, MANA_CANDY, WING, IRON_SWORD, CHAIN_MAIL, KNIGHT_SPEAR},
+            {HI_HERB, MANA_CANDY, PHOENIX, WING},
+            {STEEL_SWORD, DRAGON_SPEAR, STEEL_ARMOR, CORAL_ARMOR},
+            {HERB, HI_HERB, MANA_CANDY, WING},
     };
 
     /** 보물상자: {지도, x, y, 아이템(-1 이면 골드), 개수 또는 골드} */
@@ -547,12 +929,18 @@ public final class RpgData {
             {CAVE1, 20, 1, -1, 300},
             {CAVE1, 11, 4, HERB, 3},
             {CAVE2, 16, 4, SILVER_ARMOR, 1},
+            {SPRAY1, 22, 1, HI_HERB, 3},
+            {SPRAY1, 11, 4, -1, 1500},
+            {SPRAY2, 20, 3, STEEL_ARMOR, 1},
+            {TEMPLE1, 22, 5, PHOENIX, 2},
+            {TEMPLE2, 21, 6, SEA_ARMOR, 1},
     };
 
     // ------------------------------------------------------------ 주문 · 특기
 
     public static final int HEAL_ONE = 0, FIRE_ONE = 1, FIRE_ALL = 2, POWER_HIT = 3, GUARD = 4,
-            HEAL_ALL = 5, BIG_HIT = 6, MULTI_HIT = 7;
+            HEAL_ALL = 5, BIG_HIT = 6, MULTI_HIT = 7, REVIVE = 8, PHYS_ALL = 9, STEAL_GOLD = 10,
+            WATER_ONE = 11, WATER_ALL = 12, EVADE_UP = 13;
 
     public static final class Spell {
         public final String name;
@@ -572,11 +960,17 @@ public final class RpgData {
         }
 
         public boolean targetsEnemy() {
-            return kind == FIRE_ONE || kind == POWER_HIT || kind == BIG_HIT || kind == MULTI_HIT;
+            return kind == FIRE_ONE || kind == POWER_HIT || kind == BIG_HIT || kind == MULTI_HIT
+                    || kind == STEAL_GOLD || kind == WATER_ONE;
         }
 
         public boolean targetsAlly() {
-            return kind == HEAL_ONE;
+            return kind == HEAL_ONE || kind == REVIVE;
+        }
+
+        /** 필드에서도 쓸 수 있는 주문 */
+        public boolean fieldUsable() {
+            return kind == HEAL_ONE || kind == HEAL_ALL || kind == REVIVE;
         }
     }
 
@@ -592,6 +986,16 @@ public final class RpgData {
             new Spell("강타", 1, 4, 3, POWER_HIT, 20),
             new Spell("수호의 맹세", 1, 7, 4, GUARD, 0),
             new Spell("기사의 연격", 1, 10, 6, MULTI_HIT, 3),
+            // 2장에서 새로 배우는 기술 (번호는 뒤에 붙인다)
+            new Spell("되살림", 0, 15, 12, REVIVE, 50),
+            new Spell("짐꾼의 대일격", 0, 21, 16, BIG_HIT, 320),
+            new Spell("질풍 베기", 1, 15, 8, PHYS_ALL, 13),
+            new Spell("검기 폭풍", 1, 20, 12, MULTI_HIT, 5),
+            // 피피
+            new Spell("물방울 탄환", 2, 1, 3, WATER_ONE, 40),
+            new Spell("흥정", 2, 1, 2, STEAL_GOLD, 0),
+            new Spell("해일", 2, 18, 9, WATER_ALL, 75),
+            new Spell("행운의 저울", 2, 22, 10, EVADE_UP, 0),
     };
 
     // ------------------------------------------------------------ 동료
@@ -625,9 +1029,10 @@ public final class RpgData {
     public static final HeroBase[] HEROES = {
             new HeroBase("신창", "hero", 30, 8, 8, 5, 6, 7, 3, 3, 2, 2, STICK, CLOTHES),
             new HeroBase("리나", "lina", 40, 4, 11, 7, 5, 9, 1, 4, 3, 1, SQUIRE_SWORD, LEATHER),
+            new HeroBase("피피", "pipi", 26, 14, 9, 5, 12, 6, 3, 3, 2, 3, COIN_POUCH, FAIRY_CLOAK),
     };
 
-    public static final int MAX_LEVEL = 30;
+    public static final int MAX_LEVEL = 40;
 
     /** 다음 레벨까지 필요한 누적 경험치 */
     public static int expForLevel(int level) {
@@ -645,8 +1050,22 @@ public final class RpgData {
         public final int special;
         /** 강함의 기준 레벨. 파티보다 높으면 경험치 보너스 */
         public final int level;
+        /** 공격을 피할 확률 (진귀한 경험치 몬스터) */
+        public final double evade;
+        /** 매 턴 도망칠 확률 */
+        public final double flee;
+        /** 0 보통, RARE_EXP 경험치 몬스터, RARE_GOLD 골드 몬스터 */
+        public final int rare;
 
         Monster(String name, String sprite, int level, int hp, int atk, int def, int agi, int exp, int gold, int special) {
+            this(name, sprite, level, hp, atk, def, agi, exp, gold, special, 0, 0, 0);
+        }
+
+        Monster(String name, String sprite, int level, int hp, int atk, int def, int agi, int exp, int gold, int special,
+                double evade, double flee, int rare) {
+            this.evade = evade;
+            this.flee = flee;
+            this.rare = rare;
             this.name = name;
             this.level = level;
             this.sprite = sprite;
@@ -661,7 +1080,11 @@ public final class RpgData {
     }
 
     public static final int RAT = 0, SHROOM = 1, BAT = 2, THORN_WOLF = 3, PIXIE = 4, TURTLE = 5,
-            SPIDER = 6, SKELETON = 7, SHADOW_WOLF = 8, WOLF_KING = 9;
+            SPIDER = 6, SKELETON = 7, SHADOW_WOLF = 8, WOLF_KING = 9,
+            CRAB = 10, GULL = 11, SALT_SPIRIT = 12, JELLY = 13, PIRATE = 14, OCTOPUS = 15, URCHIN = 16, CORAL_GOLEM = 17,
+            MER_KNIGHT = 18, SKEL_SAILOR = 19, STATUE = 20, EEL = 21,
+            STARDUST = 22, GOLD_TOAD = 23, PEARL = 24, GEM_CRAB = 25, GALLEON = 26, SERPENT = 27;
+    public static final int RARE_EXP = 1, RARE_GOLD = 2;
 
     public static final Monster[] MONSTERS = {
             //          이름, 그림, 레벨, HP, 공격, 방어, 민첩, 경험치, 골드, 특수
@@ -674,7 +1097,28 @@ public final class RpgData {
             new Monster("동굴 거미", "spider", 8, 30, 17, 7, 9, 30, 16, 0),
             new Monster("해골 병사", "skeleton", 9, 44, 20, 10, 5, 44, 24, 0),
             new Monster("그림자 늑대", "shadowwolf", 11, 58, 23, 11, 10, 68, 32, 0),
-            new Monster("그림자 늑대왕", "wolfking", 15, 1700, 46, 17, 11, 1200, 600, 2),
+            new Monster("그림자 늑대왕", "wolfking", 15, 1700, 46, 17, 11, 700, 600, 2),
+            // 2장
+            new Monster("갯바위 게", "crab", 13, 80, 30, 26, 6, 32, 40, 0),
+            new Monster("갈매기 도적", "gull", 13, 60, 32, 14, 20, 30, 55, 0),
+            new Monster("소금 정령", "saltspirit", 14, 70, 28, 18, 12, 33, 36, 1),
+            new Monster("물보라 해파리", "jelly", 15, 66, 30, 12, 14, 37, 30, 1),
+            new Monster("해적 졸개", "pirate", 16, 110, 36, 20, 12, 45, 70, 0),
+            new Monster("동굴 문어", "octopus", 17, 130, 38, 18, 10, 54, 50, 0),
+            new Monster("독가시 성게", "urchin", 17, 90, 34, 40, 4, 53, 48, 0),
+            new Monster("산호 골렘", "golem", 18, 200, 42, 30, 5, 68, 80, 0),
+            new Monster("인어 기사", "merknight", 20, 170, 48, 30, 16, 86, 90, 0),
+            new Monster("해골 선원", "skelsailor", 21, 190, 50, 28, 12, 94, 100, 0),
+            new Monster("고대 수호석상", "statue", 22, 280, 52, 44, 4, 112, 110, 0),
+            new Monster("심연 장어", "eel", 23, 220, 56, 30, 20, 122, 90, 1),
+            // 진귀한 몬스터: 경험치형은 잘 피하고 잘 도망친다, 골드형은 약하지만 단단하다
+            new Monster("별가루 요정", "stardust", 13, 8, 6, 60, 40, 450, 10, 0, 0.7, 0.3, RARE_EXP),
+            new Monster("황금 두꺼비", "goldtoad", 6, 150, 4, 10, 1, 12, 450, 0, 0, 0, RARE_GOLD),
+            new Monster("진주 요정", "pearl", 24, 14, 20, 80, 50, 1300, 20, 0, 0.7, 0.3, RARE_EXP),
+            new Monster("보석 소라게", "gemcrab", 15, 460, 8, 26, 2, 40, 2600, 0, 0, 0, RARE_GOLD),
+            // 2장 보스
+            new Monster("붉은 수염 갈리온", "galleon", 20, 3800, 72, 34, 14, 1600, 1500, 2),
+            new Monster("심해의 군주", "serpent", 27, 6800, 84, 44, 17, 3500, 4000, 2),
     };
 
     /** 지역별 몬스터 무리 후보: 몬스터 번호 목록 */
@@ -687,12 +1131,50 @@ public final class RpgData {
             {{BAT, BAT}, {SPIDER}, {SKELETON}, {SPIDER, BAT}, {SKELETON, BAT}, {SPIDER, SPIDER}},
             // 3: 동굴 2층
             {{SKELETON}, {SHADOW_WOLF}, {SPIDER, SKELETON}, {SHADOW_WOLF, BAT}, {SKELETON, SKELETON}},
+            // 4: 메르카 평원 서쪽 (강 서쪽)
+            {{CRAB}, {GULL}, {SALT_SPIRIT}, {CRAB, GULL}, {GULL, GULL}, {SALT_SPIRIT, CRAB}},
+            // 5: 메르카 평원 동쪽 (강 동쪽, 곶)
+            {{JELLY}, {PIRATE}, {JELLY, GULL}, {PIRATE, SALT_SPIRIT}, {JELLY, JELLY}, {PIRATE, CRAB}},
+            // 6: 물보라 동굴 1층
+            {{PIRATE}, {OCTOPUS}, {URCHIN}, {PIRATE, PIRATE}, {OCTOPUS, JELLY}, {URCHIN, PIRATE}},
+            // 7: 물보라 동굴 2층
+            {{CORAL_GOLEM}, {OCTOPUS, PIRATE}, {URCHIN, URCHIN}, {CORAL_GOLEM, JELLY}, {PIRATE, PIRATE, OCTOPUS}},
+            // 8: 해저 신전 1층
+            {{MER_KNIGHT}, {SKEL_SAILOR}, {MER_KNIGHT, URCHIN}, {SKEL_SAILOR, OCTOPUS}, {CORAL_GOLEM, MER_KNIGHT}},
+            // 9: 해저 신전 2층
+            {{STATUE}, {EEL}, {MER_KNIGHT, SKEL_SAILOR}, {EEL, MER_KNIGHT}, {STATUE, EEL}},
     };
 
     public static int encounterZone(int map, int x, int y) {
-        if (map == CAVE1) return 2;
-        if (map == CAVE2) return 3;
-        return y > 11 ? 0 : 1;
+        switch (map) {
+            case CAVE1: return 2;
+            case CAVE2: return 3;
+            case WORLD2: return x < 17 ? 4 : 5;
+            case SPRAY1: return 6;
+            case SPRAY2: return 7;
+            case TEMPLE1: return 8;
+            case TEMPLE2: return 9;
+            default: return y > 11 ? 0 : 1;
+        }
+    }
+
+    /** 진귀한 몬스터가 나올 확률 */
+    public static final double RARE_EXP_CHANCE = 0.05, RARE_GOLD_CHANCE = 0.06;
+
+    /**
+     * 진귀한 몬스터 후보: 보스 앞 던전에서는 경험치 몬스터, 마을 근교 평원에서는 골드 몬스터.
+     * 해당 없으면 -1.
+     */
+    public static int rareMonsterAt(int map, int x, int y) {
+        if (map == CAVE1 || map == CAVE2) return STARDUST;
+        if (map == SPRAY1 || map == SPRAY2 || map == TEMPLE1 || map == TEMPLE2) return PEARL;
+        if (map == WORLD && (near(x, y, 6, 18) || near(x, y, 20, 8))) return GOLD_TOAD;
+        if (map == WORLD2 && (near(x, y, 5, 17) || near(x, y, 28, 19))) return GEM_CRAB;
+        return -1;
+    }
+
+    private static boolean near(int x, int y, int tx, int ty) {
+        return Math.abs(x - tx) + Math.abs(y - ty) <= 7;
     }
 
     private RpgData() {
